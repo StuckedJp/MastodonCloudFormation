@@ -1,27 +1,27 @@
 {
     "Parameters": [
-        { "ParameterKey": "ResourcePrefix", "ParameterValue": "MastodonTest" },
+        { "ParameterKey": "ResourcePrefix", "ParameterValue": "" },
 
-        { "ParameterKey": "Tag1Key", "ParameterValue": "class" },
-        { "ParameterKey": "Tag1Value", "ParameterValue": "mastodon" },
+        { "ParameterKey": "Tag1Key", "ParameterValue": "" },
+        { "ParameterKey": "Tag1Value", "ParameterValue": "" },
 
-        { "ParameterKey": "SubnetAvailabilityZone1", "ParameterValue": "ap-northeast-1a" },
-        { "ParameterKey": "SubnetAvailabilityZone2", "ParameterValue": "ap-northeast-1c" },
+        { "ParameterKey": "SubnetAvailabilityZone1", "ParameterValue": "" },
+        { "ParameterKey": "SubnetAvailabilityZone2", "ParameterValue": "" },
 
-        { "ParameterKey": "DBInstanceClass", "ParameterValue": "db.t2.micro" },
-        { "ParameterKey": "DBName", "ParameterValue": "mastodon" },
-        { "ParameterKey": "DBEngineVersion", "ParameterValue": "9.5.4" },
-        { "ParameterKey": "DBLicenseModel", "ParameterValue": "postgresql-license" },
-        { "ParameterKey": "DBMasterUsername", "ParameterValue": "mastodon" },
-        { "ParameterKey": "DBMasterUserPassword", "ParameterValue": "derfTGYHUjik" },
-        { "ParameterKey": "DBStorageType", "ParameterValue": "standard" },
+        { "ParameterKey": "DBInstanceClass", "ParameterValue": "" },
+        { "ParameterKey": "DBName", "ParameterValue": "" },
+        { "ParameterKey": "DBEngineVersion", "ParameterValue": "" },
+        { "ParameterKey": "DBLicenseModel", "ParameterValue": "" },
+        { "ParameterKey": "DBMasterUsername", "ParameterValue": "" },
+        { "ParameterKey": "DBMasterUserPassword", "ParameterValue": "" },
+        { "ParameterKey": "DBStorageType", "ParameterValue": "" },
 
-        { "ParameterKey": "InstanceType", "ParameterValue": "t2.small" }
+        { "ParameterKey": "InstanceType", "ParameterValue": "" }
     ],
     "Tags": [
         {
-            "Key": "class",
-            "Value": "mastodon"
+            "Key": "",
+            "Value": ""
         }
     ]
 }
