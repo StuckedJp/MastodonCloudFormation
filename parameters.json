@@ -1,0 +1,27 @@
+{
+    "Parameters": [
+        { "ParameterKey": "ResourcePrefix", "ParameterValue": "MastodonTest" },
+
+        { "ParameterKey": "Tag1Key", "ParameterValue": "class" },
+        { "ParameterKey": "Tag1Value", "ParameterValue": "mastodon" },
+
+        { "ParameterKey": "SubnetAvailabilityZone1", "ParameterValue": "ap-northeast-1a" },
+        { "ParameterKey": "SubnetAvailabilityZone2", "ParameterValue": "ap-northeast-1c" },
+
+        { "ParameterKey": "DBInstanceClass", "ParameterValue": "db.t2.micro" },
+        { "ParameterKey": "DBName", "ParameterValue": "mastodon" },
+        { "ParameterKey": "DBEngineVersion", "ParameterValue": "9.5.4" },
+        { "ParameterKey": "DBLicenseModel", "ParameterValue": "postgresql-license" },
+        { "ParameterKey": "DBMasterUsername", "ParameterValue": "mastodon" },
+        { "ParameterKey": "DBMasterUserPassword", "ParameterValue": "derfTGYHUjik" },
+        { "ParameterKey": "DBStorageType", "ParameterValue": "standard" },
+
+        { "ParameterKey": "InstanceType", "ParameterValue": "t2.small" }
+    ],
+    "Tags": [
+        {
+            "Key": "class",
+            "Value": "mastodon"
+        }
+    ]
+}

@@ -1,0 +1,357 @@
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",
+
+  "Description" : "",
+
+  "Parameters": {
+    "ResourcePrefix": {
+      "Description" : "Resource prefix",
+      "Type": "String"
+    },
+    "Tag1Key": {
+      "Description" : "Tag key",
+      "Type": "String"
+    },
+    "Tag1Value": {
+      "Description" : "Tag value",
+      "Type": "String"
+    },
+    "SubnetAvailabilityZone1": {
+      "Description" : "Availability Zone of Subnet",
+      "Type": "String"
+    },
+    "SubnetAvailabilityZone2": {
+      "Description" : "Availability Zone of Subnet",
+      "Type": "String"
+    },
+
+
+    "DBInstanceClass": {
+      "Description" : "RDS instance type",
+      "Type": "String",
+      "Default" : "db.t2.micro",
+      "AllowedValues" : [ "db.m4.large", "db.m4.xlarge", "db.m4.2xlarge", "db.m4.4xlarge",
+                          "db.m4.10xlarge", "db.m3.medium", "db.m3.large", "db.m3.xlarge", "db.m3.2xlarge",
+                          "db.r3.large", "db.r3.xlarge", "db.r3.2xlarge", "db.r3.4xlarge", "db.r3.8xlarge",
+                          "db.t2.micro","db.t2.small", "db.t2.medium", "db.t2.large"
+      ],
+      "ConstraintDescription" : "must be a valid RDS instance type."
+    },
+    "DBName": {
+      "Description" : "Database schema name",
+      "Type": "String"
+    },
+    "DBEngineVersion": {
+      "Description" : "RDS (Postgresql) engine version",
+      "Type": "String",
+      "AllowedValues" : [ "9.6.1", "9.5.4", "9.5.2", "9.4.9", "9.4.7", "9.3.14", "9.3.12" ],
+      "ConstraintDescription" : "must be a valid RDS engine version."
+    },
+    "DBLicenseModel": {
+      "Description" : "RDS (Postgresql) engine license model",
+      "Type": "String",
+      "Default" : "postgresql-license",
+      "AllowedValues" : [ "postgresql-license" ],
+      "ConstraintDescription" : "must be a valid RDS license model."
+    },
+    "DBMasterUsername": {
+      "Description" : "Database master user name",
+      "Type": "String"
+    },
+    "DBMasterUserPassword": {
+      "Description" : "Database master user password",
+      "Type": "String"
+    },
+    "DBStorageType": {
+      "Description" : "RDS (Postgresql) storage type",
+      "Type": "String",
+      "Default" : "standard",
+      "AllowedValues" : [ "standard", "gp2", "io1" ],
+      "ConstraintDescription" : "must be a valid RDS storage type."
+    },
+
+
+    "InstanceType" : {
+      "Description" : "Mastodon WebServer EC2 instance type",
+      "Type" : "String",
+      "Default" : "t2.small",
+      "AllowedValues" : [ "t1.micro", "t2.nano", "t2.micro", "t2.small", "t2.medium", "t2.large",
+                          "m1.small", "m1.medium", "m1.large", "m1.xlarge",
+                          "m2.xlarge", "m2.2xlarge", "m2.4xlarge", "m3.medium", "m3.large", "m3.xlarge", "m3.2xlarge",
+                          "m4.large", "m4.xlarge", "m4.2xlarge", "m4.4xlarge", "m4.10xlarge",
+                          "c1.medium", "c1.xlarge", "c3.large", "c3.xlarge", "c3.2xlarge", "c3.4xlarge", "c3.8xlarge",
+                          "c4.large", "c4.xlarge", "c4.2xlarge", "c4.4xlarge", "c4.8xlarge",
+                          "g2.2xlarge", "g2.8xlarge", "r3.large", "r3.xlarge", "r3.2xlarge", "r3.4xlarge", "r3.8xlarge",
+                          "i2.xlarge", "i2.2xlarge", "i2.4xlarge", "i2.8xlarge",
+                          "d2.xlarge", "d2.2xlarge", "d2.4xlarge", "d2.8xlarge", "hi1.4xlarge", "hs1.8xlarge",
+                          "cr1.8xlarge", "cc2.8xlarge", "cg1.4xlarge"],
+      "ConstraintDescription" : "must be a valid EC2 instance type."
+    }
+
+  },
+
+  "Mappings": {
+    "CIDR": {
+      "VPC"           : { "IP": "10.0.0.0/16" },
+      "PrivateSubnet1": { "IP": "10.0.10.0/24" },
+      "PrivateSubnet2": { "IP": "10.0.11.0/24" },
+      "PublicSubnet"  : { "IP": "10.0.20.0/24" },
+      "All"           : { "IP": "0.0.0.0/0" }
+    },
+    "RDSConfig": {
+      "Storage": { "ValueByGb": "20" },
+      "BackupRetentionPeriod": { "Value": "3" }
+    }
+  },
+
+  "Resources" : {
+    "VPC": {
+      "Type" : "AWS::EC2::VPC",
+      "Properties" : {
+        "CidrBlock" : { "Fn::FindInMap" : [ "CIDR", "VPC", "IP" ] },
+        "Tags" : [
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+        ]
+      }
+    },
+
+
+    "PrivateSubnet1": {
+      "Type" : "AWS::EC2::Subnet",
+      "Properties" : {
+        "CidrBlock" : { "Fn::FindInMap" : [ "CIDR", "PrivateSubnet1", "IP" ] },
+        "MapPublicIpOnLaunch" : false,
+        "AvailabilityZone" : { "Ref": "SubnetAvailabilityZone1" },
+        "Tags" : [
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+        ],
+        "VpcId" : { "Ref": "VPC" }
+      }
+    },
+    "PrivateSubnet2": {
+      "Type" : "AWS::EC2::Subnet",
+      "Properties" : {
+        "CidrBlock" : { "Fn::FindInMap" : [ "CIDR", "PrivateSubnet2", "IP" ] },
+        "MapPublicIpOnLaunch" : false,
+        "AvailabilityZone" : { "Ref": "SubnetAvailabilityZone2" },
+        "Tags" : [
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+        ],
+        "VpcId" : { "Ref": "VPC" }
+      }
+    },
+    "PublicSubnet": {
+      "Type" : "AWS::EC2::Subnet",
+      "Properties" : {
+        "CidrBlock" : { "Fn::FindInMap" : [ "CIDR", "PublicSubnet", "IP" ] },
+        "MapPublicIpOnLaunch" : true,
+        "Tags" : [
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+        ],
+        "VpcId" : { "Ref": "VPC" }
+      }
+    },
+
+
+    "InternatGW": {
+      "Type" : "AWS::EC2::InternetGateway",
+      "Properties" : {
+        "Tags" : [
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+        ]
+      }
+    },
+
+
+    "NetworkAcl": {
+      "Type" : "AWS::EC2::NetworkAcl",
+      "Properties" : {
+        "Tags" : [
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+        ],
+        "VpcId" : { "Ref": "VPC" }
+      }
+    },
+    "NetworkAclEntryIngressHttp": {
+      "Type" : "AWS::EC2::NetworkAclEntry",
+      "Properties" : {
+        "CidrBlock" : { "Fn::FindInMap" : [ "CIDR", "All", "IP" ] },
+        "Egress" : false,
+        "NetworkAclId" : { "Ref": "NetworkAcl" },
+        "PortRange" : {
+          "From": 80,
+          "To": 80
+        },
+        "Protocol" : 6,
+        "RuleAction" : "allow",
+        "RuleNumber" : 100
+      }
+    },
+    "NetworkAclEntryIngressHttps": {
+      "Type" : "AWS::EC2::NetworkAclEntry",
+      "Properties" : {
+        "CidrBlock" : { "Fn::FindInMap" : [ "CIDR", "All", "IP" ] },
+        "Egress" : false,
+        "NetworkAclId" : { "Ref": "NetworkAcl" },
+        "PortRange" : {
+          "From": 443,
+          "To": 443
+        },
+        "Protocol" : 6,
+        "RuleAction" : "allow",
+        "RuleNumber" : 110
+      }
+    },
+    "NetworkAclEntryIngressSSH": {
+      "Type" : "AWS::EC2::NetworkAclEntry",
+      "Properties" : {
+        "CidrBlock" : { "Fn::FindInMap" : [ "CIDR", "All", "IP" ] },
+        "Egress" : false,
+        "NetworkAclId" : { "Ref": "NetworkAcl" },
+        "PortRange" : {
+          "From": 22,
+          "To": 22
+        },
+        "Protocol" : 6,
+        "RuleAction" : "allow",
+        "RuleNumber" : 120
+      }
+    },
+    "NetworkAclEntryIngressICMP": {
+      "Type" : "AWS::EC2::NetworkAclEntry",
+      "Properties" : {
+        "CidrBlock" : { "Fn::FindInMap" : [ "CIDR", "All", "IP" ] },
+        "Egress" : false,
+        "Icmp": {
+          "Code": -1,
+          "Type": -1
+        },
+        "NetworkAclId" : { "Ref": "NetworkAcl" },
+        "Protocol" : 1,
+        "RuleAction" : "allow",
+        "RuleNumber" : 200
+      }
+    },
+    "NetworkAclEntryEgress": {
+      "Type" : "AWS::EC2::NetworkAclEntry",
+      "Properties" : {
+        "CidrBlock" : { "Fn::FindInMap" : [ "CIDR", "All", "IP" ] },
+        "Egress" : true,
+        "NetworkAclId" : { "Ref": "NetworkAcl" },
+        "Protocol" : -1,
+        "RuleAction" : "allow",
+        "RuleNumber" : 100
+      }
+    },
+
+
+    "SecurityGroupMastodonInstance": {
+      "Type" : "AWS::EC2::SecurityGroup",
+      "Properties" : {
+        "GroupDescription" : "Security Group for Mastodon Instance Host",
+        "Tags" :  [
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+        ],
+        "VpcId" : { "Ref": "VPC" }
+      }
+    },
+    "SecurityGroupMastodonInstanceIngressHttp": {
+      "Type" : "AWS::EC2::SecurityGroupIngress",
+      "Properties" : {
+        "CidrIp" : { "Fn::FindInMap" : [ "CIDR", "PublicSubnet", "IP" ] },
+        "FromPort" : 80,
+        "ToPort" : 80,
+        "GroupId" : { "Ref": "SecurityGroupMastodonInstance" },
+        "IpProtocol" : "tcp"
+      }
+    },
+    "SecurityGroupMastodonInstanceIngressHttps": {
+      "Type" : "AWS::EC2::SecurityGroupIngress",
+      "Properties" : {
+        "CidrIp" : { "Fn::FindInMap" : [ "CIDR", "PublicSubnet", "IP" ] },
+        "FromPort" : 443,
+        "ToPort" : 443,
+        "GroupId" : { "Ref": "SecurityGroupMastodonInstance" },
+        "IpProtocol" : "tcp"
+      }
+    },
+    "SecurityGroupMastodonInstanceIngressSSH": {
+      "Type" : "AWS::EC2::SecurityGroupIngress",
+      "Properties" : {
+        "CidrIp" : { "Fn::FindInMap" : [ "CIDR", "PublicSubnet", "IP" ] },
+        "FromPort" : 22,
+        "ToPort" : 22,
+        "GroupId" : { "Ref": "SecurityGroupMastodonInstance" },
+        "IpProtocol" : "tcp"
+      }
+    },
+    "SecurityGroupMastodonInstanceEgress": {
+      "Type" : "AWS::EC2::SecurityGroupEgress",
+      "Properties" : {
+        "CidrIp" : { "Fn::FindInMap" : [ "CIDR", "All", "IP" ] },
+        "FromPort" : 0,
+        "ToPort" : 65535,
+        "GroupId" : { "Ref": "SecurityGroupMastodonInstance" },
+        "IpProtocol" : "tcp"
+      }
+    },
+
+
+    "RDSSubnetGroup": {
+      "Type" : "AWS::RDS::DBSubnetGroup",
+      "Properties" : {
+        "DBSubnetGroupDescription" : "RDS Subnet Group",
+        "SubnetIds" : [ { "Ref": "PrivateSubnet1" }, { "Ref": "PrivateSubnet2" } ],
+        "Tags" : [
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+        ]
+      }
+    },
+    "RDSSecurityGroup": {
+      "Type" : "AWS::RDS::DBSecurityGroup",
+      "Properties" :
+      {
+        "EC2VpcId" : { "Ref" : "VPC" },
+        "DBSecurityGroupIngress" : [ {
+          "EC2SecurityGroupId": { "Ref": "SecurityGroupMastodonInstance" }
+        } ],
+        "GroupDescription" : "RDS Security group.",
+        "Tags" : [
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+        ]
+      }
+    },
+    "RDSInstance": {
+      "Type" : "AWS::RDS::DBInstance",
+      "Properties" :
+      {
+        "AllocatedStorage" : { "Fn::FindInMap" : [ "RDSConfig", "Storage", "ValueByGb" ] },
+        "AllowMajorVersionUpgrade" : false,
+        "AutoMinorVersionUpgrade" : true,
+        "AvailabilityZone" : { "Ref": "SubnetAvailabilityZone1" },
+        "BackupRetentionPeriod" : { "Fn::FindInMap" : [ "RDSConfig", "BackupRetentionPeriod", "Value" ] },
+        "CopyTagsToSnapshot" : true,
+        "DBInstanceClass" : { "Ref": "DBInstanceClass" },
+        "DBInstanceIdentifier" : { "Fn::Join" : [ "-", [ { "Ref": "ResourcePrefix" }, "RDS" ] ] },
+        "DBName" : { "Ref": "DBName" },
+        "DBSecurityGroups" : [
+          { "Ref": "RDSSecurityGroup" }
+        ],
+        "DBSubnetGroupName" : { "Ref": "RDSSubnetGroup" },
+        "Engine" : "postgres",
+        "EngineVersion" : { "Ref": "DBEngineVersion" },
+        "LicenseModel" : { "Ref": "DBLicenseModel" },
+        "MasterUsername" : { "Ref": "DBMasterUsername" },
+        "MasterUserPassword" : { "Ref": "DBMasterUserPassword" },
+        "MultiAZ" : false,
+        "Port" : 5432,
+        "PubliclyAccessible" : false,
+        "StorageEncrypted" : true,
+        "StorageType" : { "Ref": "DBStorageType" },
+        "Tags" : [
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+        ]
+      }
+    }
+  }
+}
