@@ -16,7 +16,8 @@
         { "ParameterKey": "DBMasterUserPassword", "ParameterValue": "" },
         { "ParameterKey": "DBStorageType", "ParameterValue": "" },
 
-        { "ParameterKey": "InstanceType", "ParameterValue": "" }
+        { "ParameterKey": "InstanceType", "ParameterValue": "" },
+        { "ParameterKey": "InstanceAMI", "ParameterValue": "" }
     ],
     "Tags": [
         {
