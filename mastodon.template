@@ -71,6 +71,25 @@
     },
 
 
+    "ElastiCacheNodeType": {
+      "Description" : "ElastiCache node type",
+      "Type": "String",
+      "Default" : "cache.t2.micro",
+      "AllowedValues": [
+        "cache.t2.micro", "cache.t2.small", "cache.t2.medium",
+        "cache.m3.medium", "cache.m3.large", "cache.m3.xlarge", "cache.m3.2xlarge",
+        "cache.m4.large", "cache.m4.xlarge", "cache.m4.2xlarge", "cache.m4.4xlarge", "cache.m4.10xlarge",
+        "cache.r3.large", "cache.r3.xlarge", "cache.r3.2xlarge", "cache.r3.4xlarge", "cache.r3.8xlarge"
+      ]
+    },
+    "ElastiCacheVersion": {
+      "Description" : "ElastiCache (Redis) engine version",
+      "Type": "String",
+      "AllowedValues" : [ "3.2.4", "2.8.24", "2.8.23", "2.8.22", "2.8.21", "2.8.19", "2.8.6", "2.6.13" ],
+      "ConstraintDescription" : "must be a valid Elasticache engine version."
+    },
+
+
     "InstanceType" : {
       "Description" : "Mastodon WebServer EC2 instance type",
       "Type" : "String",
@@ -109,8 +128,14 @@
       "All"           : { "IP": "0.0.0.0/0" }
     },
     "RDSConfig": {
+      "Port": { "Value": "5432" },
       "Storage": { "ValueByGb": "20" },
       "BackupRetentionPeriod": { "Value": "3" }
+    },
+    "ElastiCacheConfig": {
+      "Port": { "Value": "6379" },
+      "SnapshotRetentionLimit": { "Value": "3" },
+      "SnapshotWindow": { "Value": "05:00-09:00" }
     },
     "InstanceConfig": {
       "Storage": { "ValueByGb": "20" }
@@ -567,8 +592,8 @@
       "Type" : "AWS::EC2::SecurityGroupIngress",
       "Properties" : {
         "CidrIp" : { "Fn::FindInMap" : [ "CIDR", "PublicSubnet", "IP" ] },
-        "FromPort" : 5432,
-        "ToPort" : 5432,
+        "FromPort" : { "Fn::FindInMap" : [ "RDSConfig", "Port", "Value" ] },
+        "ToPort" : { "Fn::FindInMap" : [ "RDSConfig", "Port", "Value" ] },
         "GroupId" : { "Ref": "SecurityGroupRDS" },
         "IpProtocol" : "tcp"
       }
@@ -577,8 +602,8 @@
       "Type" : "AWS::EC2::SecurityGroupIngress",
       "Properties" : {
         "CidrIp" : { "Fn::FindInMap" : [ "CIDR", "PrivateSubnet1", "IP" ] },
-        "FromPort" : 5432,
-        "ToPort" : 5432,
+        "FromPort" : { "Fn::FindInMap" : [ "RDSConfig", "Port", "Value" ] },
+        "ToPort" : { "Fn::FindInMap" : [ "RDSConfig", "Port", "Value" ] },
         "GroupId" : { "Ref": "SecurityGroupRDS" },
         "IpProtocol" : "tcp"
       }
@@ -587,8 +612,8 @@
       "Type" : "AWS::EC2::SecurityGroupIngress",
       "Properties" : {
         "CidrIp" : { "Fn::FindInMap" : [ "CIDR", "PrivateSubnet2", "IP" ] },
-        "FromPort" : 5432,
-        "ToPort" : 5432,
+        "FromPort" : { "Fn::FindInMap" : [ "RDSConfig", "Port", "Value" ] },
+        "ToPort" : { "Fn::FindInMap" : [ "RDSConfig", "Port", "Value" ] },
         "GroupId" : { "Ref": "SecurityGroupRDS" },
         "IpProtocol" : "tcp"
       }
@@ -634,7 +659,7 @@
         "MasterUsername" : { "Ref": "DBMasterUsername" },
         "MasterUserPassword" : { "Ref": "DBMasterUserPassword" },
         "MultiAZ" : false,
-        "Port" : 5432,
+        "Port" : { "Fn::FindInMap" : [ "RDSConfig", "Port", "Value" ] },
         "PubliclyAccessible" : false,
         "StorageEncrypted" : false,
         "StorageType" : { "Ref": "DBStorageType" },
@@ -642,6 +667,93 @@
           { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
         ]
       }
+    },
+
+
+    "SecurityGroupElastiCache": {
+      "Type" : "AWS::EC2::SecurityGroup",
+      "Properties" : {
+        "GroupDescription" : "Security Group for ElastiCache Instance Host",
+        "Tags" :  [
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+        ],
+        "VpcId" : { "Ref": "VPC" }
+      }
+    },
+    "SecurityGroupElastiCacheIngressPublicSubnet": {
+      "Type" : "AWS::EC2::SecurityGroupIngress",
+      "Properties" : {
+        "CidrIp" : { "Fn::FindInMap" : [ "CIDR", "PublicSubnet", "IP" ] },
+        "FromPort" : { "Fn::FindInMap" : [ "ElastiCacheConfig", "Port", "Value" ] },
+        "ToPort" : { "Fn::FindInMap" : [ "ElastiCacheConfig", "Port", "Value" ] },
+        "GroupId" : { "Ref": "SecurityGroupElastiCache" },
+        "IpProtocol" : "tcp"
+      }
+    },
+    "SecurityGroupElastiCacheIngressPrivateSubnet1": {
+      "Type" : "AWS::EC2::SecurityGroupIngress",
+      "Properties" : {
+        "CidrIp" : { "Fn::FindInMap" : [ "CIDR", "PrivateSubnet1", "IP" ] },
+        "FromPort" : { "Fn::FindInMap" : [ "ElastiCacheConfig", "Port", "Value" ] },
+        "ToPort" : { "Fn::FindInMap" : [ "ElastiCacheConfig", "Port", "Value" ] },
+        "GroupId" : { "Ref": "SecurityGroupElastiCache" },
+        "IpProtocol" : "tcp"
+      }
+    },
+    "SecurityGroupElastiCacheIngressPrivateSubnet2": {
+      "Type" : "AWS::EC2::SecurityGroupIngress",
+      "Properties" : {
+        "CidrIp" : { "Fn::FindInMap" : [ "CIDR", "PrivateSubnet2", "IP" ] },
+        "FromPort" : { "Fn::FindInMap" : [ "ElastiCacheConfig", "Port", "Value" ] },
+        "ToPort" : { "Fn::FindInMap" : [ "ElastiCacheConfig", "Port", "Value" ] },
+        "GroupId" : { "Ref": "SecurityGroupElastiCache" },
+        "IpProtocol" : "tcp"
+      }
+    },
+    "SecurityGroupElastiCacheEgress": {
+      "Type" : "AWS::EC2::SecurityGroupEgress",
+      "Properties" : {
+        "CidrIp" : { "Fn::FindInMap" : [ "CIDR", "All", "IP" ] },
+        "GroupId" : { "Ref": "SecurityGroupElastiCache" },
+        "IpProtocol" : "-1"
+      }
+    },
+    "ElastiCacheSubnetGroup": {
+      "Type" : "AWS::ElastiCache::SubnetGroup",
+      "Properties" : {
+        "CacheSubnetGroupName" : "ElastiCacheSubnetGroup",
+        "Description" : "SubnetGroup for ElastiCache instance.",
+        "SubnetIds" : [ { "Ref": "PrivateSubnet1" }, { "Ref": "PrivateSubnet2" } ]
+      }
+    },
+    "ElastiCacheCluster": {
+      "Type" : "AWS::ElastiCache::CacheCluster",
+      "Properties" :
+      {
+        "AutoMinorVersionUpgrade" : true,
+        "CacheNodeType" : { "Ref": "ElastiCacheNodeType" },
+        "CacheSubnetGroupName" : { "Ref": "ElastiCacheSubnetGroup" },
+        "ClusterName" : { "Fn::Join" : [ "-", [ { "Ref": "ResourcePrefix" }, "Redis" ] ] },
+        "Engine" : "redis",
+        "EngineVersion" : { "Ref": "ElastiCacheVersion" },
+        "NumCacheNodes" : 1,
+        "Port" : { "Fn::FindInMap" : [ "ElastiCacheConfig", "Port", "Value" ] },
+        "Tags" : [
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+        ],
+        "VpcSecurityGroupIds" : [ {"Fn::GetAtt": [ "SecurityGroupElastiCache", "GroupId"]} ]
+      }
+    }
+  },
+
+  "Outputs": {
+    "ElasticacheEndPoint": {
+      "Description": "Address of Elasticache",
+      "Value": { "Fn::GetAtt": [ "ElastiCacheCluster", "RedisEndpoint.Address" ] }
+    },
+    "ElasticacheEndPointPort": {
+      "Description": "Address of Elasticache",
+      "Value": { "Fn::GetAtt": [ "ElastiCacheCluster", "RedisEndpoint.Port" ] }
     }
   }
 }
