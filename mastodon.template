@@ -139,6 +139,10 @@
     },
     "InstanceConfig": {
       "Storage": { "ValueByGb": "20" }
+    },
+    "ServicePostConfig": {
+      "Mastodon": { "Port": "3000" },
+      "Stream": { "Port": "4000" }
     }
   },
 
@@ -230,36 +234,6 @@
         "VpcId" : { "Ref": "VPC" }
       }
     },
-    "PublicSubnetNetworkAclEntryIngressHttp": {
-      "Type" : "AWS::EC2::NetworkAclEntry",
-      "Properties" : {
-        "CidrBlock" : { "Fn::FindInMap" : [ "CIDR", "All", "IP" ] },
-        "Egress" : false,
-        "NetworkAclId" : { "Ref": "PublicSubnetNetworkAcl" },
-        "PortRange" : {
-          "From": 80,
-          "To": 80
-        },
-        "Protocol" : 6,
-        "RuleAction" : "allow",
-        "RuleNumber" : 100
-      }
-    },
-    "PublicSubnetNetworkAclEntryIngressHttps": {
-      "Type" : "AWS::EC2::NetworkAclEntry",
-      "Properties" : {
-        "CidrBlock" : { "Fn::FindInMap" : [ "CIDR", "All", "IP" ] },
-        "Egress" : false,
-        "NetworkAclId" : { "Ref": "PublicSubnetNetworkAcl" },
-        "PortRange" : {
-          "From": 443,
-          "To": 443
-        },
-        "Protocol" : 6,
-        "RuleAction" : "allow",
-        "RuleNumber" : 110
-      }
-    },
     "PublicSubnetNetworkAclEntryIngressSSH": {
       "Type" : "AWS::EC2::NetworkAclEntry",
       "Properties" : {
@@ -272,10 +246,10 @@
         },
         "Protocol" : 6,
         "RuleAction" : "allow",
-        "RuleNumber" : 120
+        "RuleNumber" : 110
       }
     },
-    "PublicSubnetNetworkAclEntryIngressBackConnect": {
+    "PublicSubnetNetworkAclEntryIngressConnectBack": {
       "Type" : "AWS::EC2::NetworkAclEntry",
       "Properties" : {
         "CidrBlock" : { "Fn::FindInMap" : [ "CIDR", "All", "IP" ] },
@@ -414,22 +388,22 @@
         "VpcId" : { "Ref": "VPC" }
       }
     },
-    "SecurityGroupMastodonInstanceIngressHttp": {
+    "SecurityGroupMastodonInstanceIngressMastodon": {
       "Type" : "AWS::EC2::SecurityGroupIngress",
       "Properties" : {
         "CidrIp" : { "Fn::FindInMap" : [ "CIDR", "All", "IP" ] },
-        "FromPort" : 80,
-        "ToPort" : 80,
+        "FromPort" : { "Fn::FindInMap" : [ "ServicePostConfig", "Mastodon", "Port" ] },
+        "ToPort" : { "Fn::FindInMap" : [ "ServicePostConfig", "Mastodon", "Port" ] },
         "GroupId" : { "Ref": "SecurityGroupMastodonInstance" },
         "IpProtocol" : "tcp"
       }
     },
-    "SecurityGroupMastodonInstanceIngressHttps": {
+    "SecurityGroupMastodonInstanceIngressStream": {
       "Type" : "AWS::EC2::SecurityGroupIngress",
       "Properties" : {
         "CidrIp" : { "Fn::FindInMap" : [ "CIDR", "All", "IP" ] },
-        "FromPort" : 443,
-        "ToPort" : 443,
+        "FromPort" : { "Fn::FindInMap" : [ "ServicePostConfig", "Stream", "Port" ] },
+        "ToPort" : { "Fn::FindInMap" : [ "ServicePostConfig", "Stream", "Port" ] },
         "GroupId" : { "Ref": "SecurityGroupMastodonInstance" },
         "IpProtocol" : "tcp"
       }
