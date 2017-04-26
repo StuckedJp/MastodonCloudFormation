@@ -1,7 +1,5 @@
 {
     "Parameters": [
-        { "ParameterKey": "ResourcePrefix", "ParameterValue": "" },
-
         { "ParameterKey": "Tag1Key", "ParameterValue": "" },
         { "ParameterKey": "Tag1Value", "ParameterValue": "" },
 
