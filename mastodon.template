@@ -4,10 +4,6 @@
   "Description" : "",
 
   "Parameters": {
-    "ResourcePrefix": {
-      "Description" : "Resource prefix",
-      "Type": "String"
-    },
     "Tag1Key": {
       "Description" : "Tag key",
       "Type": "String"
@@ -540,7 +536,103 @@
         "Tags" : [
           { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
         ],
-        "UserData" : ""
+        "UserData": {"Fn::Base64": {"Fn::Join": ["", [
+          "#!/bin/bash -xe\n",
+          "apt-get update\n",
+          "apt-get -y install python-pip upstart\n",
+          "pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz \n",
+          "cp -a /usr/local/init/ubuntu/cfn-hup /etc/init.d/cfn-hup\n",
+          "chmod u+x /etc/init.d/cfn-hup\n",
+          "initctl reload-configuration  \n",
+          "chown root:root /etc/init.d/cfn-hup \n",
+          "update-rc.d cfn-hup defaults \n",
+          "update-rc.d cfn-hup enable \n",
+
+          "/usr/local/bin/cfn-init -v ",
+          "         --stack ", {"Ref": "AWS::StackName"},
+          "         --resource MastodonInstance ",
+          "         --configsets Setup ",
+          "         --region ", {"Ref": "AWS::Region"}, "\n",
+
+          "/usr/local/bin/cfn-signal -e $? ",
+          "         --stack ", {"Ref": "AWS::StackName"},
+          "         --resource MastodonInstance ",
+          "         --region ", {"Ref": "AWS::Region"}, "\n"
+        ] ] } }
+      },
+      "Metadata" : {
+        "AWS::CloudFormation::Init": {
+          "configSets" : {
+            "Setup" : [ "Initialize", "Install" ]
+          },
+          "Initialize": {
+            "files": {
+              "/etc/cfn/cfn-hup.conf": {
+                "content": {"Fn::Join": ["", [
+                  "[main]\n",
+                  "stack=", {"Ref": "AWS::StackId"}, "\n",
+                  "region=", {"Ref": "AWS::Region"}, "\n"
+                ]]},
+                "mode"  : "000400",
+                "owner": "root",
+                "group": "root"
+              },
+              "/etc/cfn/hooks.d/cfn-auto-reloader.conf": {
+                "content": {"Fn::Join": ["", [
+                  "[cfn-auto-reloader-hook]\n",
+                  "triggers=post.update\n",
+                  "path=Resources.MastodonInstance.Metadata.AWS::CloudFormation::Init\n",
+                  "action=/usr/local/bin/cfn-init -v ",
+                  "         --stack ", {"Ref": "AWS::StackName"},
+                  "         --resource MastodonInstance ",
+                  "         --configsets Setup ",
+                  "         --region ", {"Ref": "AWS::Region"}, "\n"
+                ]]},
+                "mode"  : "000400",
+                "owner": "root",
+                "group": "root"
+              }
+            },
+            "services": {
+              "sysvinit": {
+                "cfn-hup": {"enabled": "true", "ensureRunning": "true",
+                              "files": ["/etc/cfn/cfn-hup.conf", "/etc/cfn/hooks.d/cfn-auto-reloader.conf"]}
+              }
+            }
+          },
+          "Install" : {
+            "packages" : {
+              "apt-get" : {
+                "imagemagick":[],
+                "ffmpeg":[],
+                "libpq-dev":[],
+                "libxml2-dev":[],
+                "libxslt1-dev":[],
+                "nodejs":[],
+                "file":[],
+                "git":[],
+                "curl":[],
+                "gcc":[],
+                "g++":[],
+                "ruby":[],
+                "ruby-dev":[],
+                "make":[],
+                "postgresql-client":[]
+              }
+            },
+            "commands" : {
+              "01_install_node_js" : {
+                "command" : "curl -sL https://deb.nodesource.com/setup_4.x | bash -"
+              },
+              "02_install_node_js" : {
+                "command" : "apt-get install -y nodejs"
+              },
+              "03_install_yarn" : {
+                "command" : "npm install -g yarn"
+              }
+            }
+          }
+        }
       }
     },
     "MastodonInstanceEIP" : {
@@ -621,7 +713,7 @@
         "BackupRetentionPeriod" : { "Fn::FindInMap" : [ "RDSConfig", "BackupRetentionPeriod", "Value" ] },
         "CopyTagsToSnapshot" : true,
         "DBInstanceClass" : { "Ref": "DBInstanceClass" },
-        "DBInstanceIdentifier" : { "Fn::Join" : [ "-", [ { "Ref": "ResourcePrefix" }, "RDS" ] ] },
+        "DBInstanceIdentifier" : { "Fn::Join" : [ "-", [ { "Ref": "AWS::StackName" }, "RDS" ] ] },
         "DBName" : { "Ref": "DBName" },
         "VPCSecurityGroups" : [
           { "Ref": "SecurityGroupRDS" }
@@ -695,7 +787,7 @@
     "ElastiCacheSubnetGroup": {
       "Type" : "AWS::ElastiCache::SubnetGroup",
       "Properties" : {
-        "CacheSubnetGroupName" : "ElastiCacheSubnetGroup",
+        "CacheSubnetGroupName" : { "Fn::Join" : [ "-", [ { "Ref": "AWS::StackName" }, "ECSubnetGroup" ] ] },
         "Description" : "SubnetGroup for ElastiCache instance.",
         "SubnetIds" : [ { "Ref": "PrivateSubnet1" }, { "Ref": "PrivateSubnet2" } ]
       }
@@ -707,7 +799,7 @@
         "AutoMinorVersionUpgrade" : true,
         "CacheNodeType" : { "Ref": "ElastiCacheNodeType" },
         "CacheSubnetGroupName" : { "Ref": "ElastiCacheSubnetGroup" },
-        "ClusterName" : { "Fn::Join" : [ "-", [ { "Ref": "ResourcePrefix" }, "Redis" ] ] },
+        "ClusterName" : { "Fn::Join" : [ "-", [ { "Ref": "AWS::StackName" }, "Redis" ] ] },
         "Engine" : "redis",
         "EngineVersion" : { "Ref": "ElastiCacheVersion" },
         "NumCacheNodes" : 1,
@@ -721,12 +813,24 @@
   },
 
   "Outputs": {
+    "MastodonInstanceIP": {
+      "Description": "IP address of Mastodon instance",
+      "Value": { "Fn::GetAtt": [ "MastodonInstance", "PublicIp" ] }
+    },
+    "RDSInstanceEndPoint": {
+      "Description": "Address of RDS",
+      "Value": { "Fn::GetAtt": [ "RDSInstance", "Endpoint.Address" ] }
+    },
+    "RDSInstanceEndPointPort": {
+      "Description": "Port number of RDS",
+      "Value": { "Fn::GetAtt": [ "RDSInstance", "Endpoint.Port" ] }
+    },
     "ElasticacheEndPoint": {
       "Description": "Address of Elasticache",
       "Value": { "Fn::GetAtt": [ "ElastiCacheCluster", "RedisEndpoint.Address" ] }
     },
     "ElasticacheEndPointPort": {
-      "Description": "Address of Elasticache",
+      "Description": "Port number of Elasticache",
       "Value": { "Fn::GetAtt": [ "ElastiCacheCluster", "RedisEndpoint.Port" ] }
     }
   }
