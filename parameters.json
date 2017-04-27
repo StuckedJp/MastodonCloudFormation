@@ -3,6 +3,8 @@
         { "ParameterKey": "Tag1Key", "ParameterValue": "" },
         { "ParameterKey": "Tag1Value", "ParameterValue": "" },
 
+        { "ParameterKey": "MastodonFQDN", "ParameterValue": "" },
+
         { "ParameterKey": "SubnetAvailabilityZone1", "ParameterValue": "" },
         { "ParameterKey": "SubnetAvailabilityZone2", "ParameterValue": "" },
 
@@ -19,7 +21,15 @@
 
         { "ParameterKey": "InstanceType", "ParameterValue": "" },
         { "ParameterKey": "InstanceAMI", "ParameterValue": "" },
-        { "ParameterKey": "EC2KeyPair", "ParameterValue": "" }
+        { "ParameterKey": "EC2KeyPair", "ParameterValue": "" },
+
+        { "ParameterKey": "CertS3Bucket", "ParameterValue": "" },
+        { "ParameterKey": "CertS3KeyCert", "ParameterValue": "" },
+        { "ParameterKey": "CertS3KeyCertKey", "ParameterValue": "" },
+
+        { "ParameterKey": "ContentsS3Bucket", "ParameterValue": "" },
+        { "ParameterKey": "ContentsAWSAccessKey", "ParameterValue": "" },
+        { "ParameterKey": "ContentsAWSAccessSecret", "ParameterValue": "" }
     ],
     "Capabilities": [
         "CAPABILITY_IAM"
