@@ -13,6 +13,7 @@
       "Type": "String"
     },
 
+
     "MastodonFQDN": {
       "Description" : "FQDN of mastodon",
       "Type": "String"
@@ -126,12 +127,17 @@
       "Type" : "String",
       "ConstraintDescription" : "must be a valid S3 bucket name."
     },
-    "CertS3KeyCert": {
+    "CertS3Folder": {
+      "Description" : "S3 folder name of server certificate files. (ex. \"cert\")",
+      "Type" : "String",
+      "ConstraintDescription" : "must be a valid S3 folder name."
+    },
+    "CertS3CertName": {
       "Description" : "S3 key name of server certificate file.",
       "Type" : "String",
       "ConstraintDescription" : "must be a valid S3 key name."
     },
-    "CertS3KeyCertKey": {
+    "CertS3KeyName": {
       "Description" : "S3 key name of server certificate key file.",
       "Type" : "String",
       "ConstraintDescription" : "must be a valid S3 key name."
@@ -150,8 +156,33 @@
     "ContentsAWSAccessSecret": {
       "Description" : "AWSAccessSecret for S3 access.",
       "Type" : "String"
+    },
+
+
+    "SMTPHostName": {
+      "Description" : "SMTP host name.",
+      "Type" : "String"
+    },
+    "SMTPHostPort": {
+      "Description" : "SMTP host port number.",
+      "Default" : "587",
+      "Type" : "Number"
+    },
+    "SMTPUserName": {
+      "Description" : "SMTP user name.",
+      "Type" : "String"
+    },
+    "SMTPPassword": {
+      "Description" : "SMTP user password.",
+      "Type" : "String"
+    },
+    "SMTPSenderAddress": {
+      "Description" : "E-mail address of mail sender.",
+      "Type" : "String",
+      "ConstraintDescription" : "must be a valid e-mail address."
     }
   },
+
 
   "Mappings": {
     "CIDR": {
@@ -175,6 +206,12 @@
       "Storage": { "ValueByGb": "20" }
     }
   },
+
+
+  "Conditions": {
+    "IsVirginia": { "Fn::Equals" : [ { "Ref": "AWS::Region" }, "us-east-1"] }
+  },
+
 
   "Resources" : {
     "VPC": {
@@ -487,6 +524,18 @@
     },
 
 
+    "ContentsBucket": {
+      "Type" : "AWS::S3::Bucket",
+      "Properties" : {
+        "AccessControl" : "Private",
+        "BucketName" : { "Ref": "ContentsS3Bucket" },
+        "Tags" : [
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+        ]
+      }
+    },
+
+
     "VPCGatewayAttachment": {
       "Type" : "AWS::EC2::VPCGatewayAttachment",
       "Properties" : {
@@ -547,11 +596,28 @@
           "PolicyName": "root",
           "PolicyDocument": {
             "Version" : "2012-10-17",
-            "Statement": [ {
-              "Effect": "Allow",
-              "Action": "s3:*",
-              "Resource": "*"
-            } ]
+            "Statement": [ 
+              {
+                "Effect": "Allow",
+                "Action": "s3:*",
+                "Resource": { "Fn::Join" : [ "", [ "arn:aws:s3:::", { "Ref": "CertS3Bucket" } ] ] }
+              },
+              {
+                "Effect": "Allow",
+                "Action": "s3:GetObject",
+                "Resource": { "Fn::Join" : [ "", [ "arn:aws:s3:::", { "Ref": "CertS3Bucket" }, "/*" ] ] }
+              },
+              {
+                "Effect": "Allow",
+                "Action": "s3:*",
+                "Resource": { "Fn::Join" : [ "", [ "arn:aws:s3:::", { "Ref": "ContentsS3Bucket" } ] ] }
+              },
+              {
+                "Effect": "Allow",
+                "Action": "s3:*",
+                "Resource": { "Fn::Join" : [ "", [ "arn:aws:s3:::", { "Ref": "ContentsS3Bucket" }, "/*" ] ] }
+              }
+            ]
           }
         } ]
       }
@@ -630,30 +696,40 @@
 
           "bundle install --deployment --without development test \n",
           "yarn install --pure-lockfile \n",
-          "SECRET_KEY_BASE=`rake secret` \n",
-          
-          "# ********** Setup Mastodon **********\n",
-          "cat << EOSEOSEOS > .sedscript.txt\n",
-          "s/^REDIS_HOST=.*$/REDIS_HOST=", { "Fn::GetAtt": [ "ElastiCacheCluster", "RedisEndpoint.Address" ] }, "/\n",
-          "s/^REDIS_PORT=.*$/REDIS_PORT=", { "Fn::GetAtt": [ "ElastiCacheCluster", "RedisEndpoint.Port" ] }, "/\n",
-          "s/^DB_HOST=.*$/DB_HOST=", { "Fn::GetAtt": [ "RDSInstance", "Endpoint.Address" ] }, "/\n",
-          "s/^DB_USER=.*$/DB_USER=", { "Ref": "DBMasterUsername" }, "/\n",
-          "s/^DB_NAME=.*$/DB_NAME=", { "Ref": "DBName" }, "/\n",
-          "s/^DB_PASS=.*$/DB_PASS=", { "Ref": "DBMasterUserPassword" }, "/\n",
-          "s/^DB_PORT=.*$/DB_PORT=", { "Fn::GetAtt": [ "RDSInstance", "Endpoint.Port" ] }, "/\n",
-          "s/^LOCAL_DOMAIN=.*$/LOCAL_DOMAIN=", { "Ref": "MastodonFQDN" }, "/\n",
-          "s/^LOCAL_HTTPS=.*$/LOCAL_HTTPS=false/\n",
-          "s/^SECRET_KEY_BASE=.*$/SECRET_KEY_BASE=${SECRET_KEY_BASE}/\n",
-          "s/^# S3_ENABLED=.*$/#S3_ENABLED=false/\n",
-          "s/^# S3_BUCKET=.*$/#S3_BUCKET=aaaa/\n",
-          "s/^# AWS_ACCESS_KEY_ID=.*$/#AWS_ACCESS_KEY_ID=bbbb/\n",
-          "s/^# AWS_SECRET_ACCESS_KEY=.*$/#AWS_SECRET_ACCESS_KEY=cccc/\n",
-          "s/^# S3_REGION=.*$/#S3_REGION=ddddd/\n",
-          "s/^# S3_PROTOCOL=.*$/#S3_PROTOCOL=eeeee/\n",
-          "s/^# S3_HOSTNAME=.*$/#S3_HOSTNAME=fffff/\n",
-          "EOSEOSEOS\n\n",
 
-          "sed -f .sedscript.txt .env.production.sample > .env.production \n",
+          "# ********** Setup Mastodon **********\n",
+          "cat << 'EOSEOSEOS' > .env.production\n",
+          "# GENERATED BY CLOUD FORMATION TEMPLATE\n",
+          "# Redis\n",
+          "REDIS_HOST=", { "Fn::GetAtt": [ "ElastiCacheCluster", "RedisEndpoint.Address" ] }, "\n",
+          "REDIS_PORT=", { "Fn::GetAtt": [ "ElastiCacheCluster", "RedisEndpoint.Port" ] }, "\n",
+          "# Database\n",
+          "DB_HOST=", { "Fn::GetAtt": [ "RDSInstance", "Endpoint.Address" ] }, "\n",
+          "DB_USER=", { "Ref": "DBMasterUsername" }, "\n",
+          "DB_NAME=", { "Ref": "DBName" }, "\n",
+          "DB_PASS=", { "Ref": "DBMasterUserPassword" }, "\n",
+          "DB_PORT=", { "Fn::GetAtt": [ "RDSInstance", "Endpoint.Port" ] }, "\n",
+          "# Domain\n",
+          "LOCAL_DOMAIN=", { "Ref": "MastodonFQDN" }, "\n",
+          "LOCAL_HTTPS=true\n",
+          "# Mail\n",
+          "SMTP_SERVER=", { "Ref": "SMTPHostName" }, "\n",
+          "SMTP_PORT=", { "Ref": "SMTPHostPort" }, "\n",
+          "SMTP_LOGIN=", { "Ref": "SMTPUserName" }, "\n",
+          "SMTP_PASSWORD=", { "Ref": "SMTPPassword" }, "\n",
+          "SMTP_FROM_ADDRESS=", { "Ref": "SMTPSenderAddress" }, "\n",
+          "# Aws\n",
+          "S3_ENABLED=true\n",
+          "S3_BUCKET=", { "Ref": "ContentsS3Bucket" }, "\n",
+          "AWS_ACCESS_KEY_ID=", { "Ref": "ContentsAWSAccessKey" }, "\n",
+          "AWS_SECRET_ACCESS_KEY=", { "Ref": "ContentsAWSAccessSecret" }, "\n",
+          "S3_REGION=", { "Ref": "AWS::Region" }, "\n",
+          "S3_PROTOCOL=https\n",
+          "S3_HOSTNAME=", { "Fn::If": [ "IsVirginia", 
+                                        "s3.amazonaws.com", 
+                                        { "Fn::Join": [ "", [ "s3-", { "Ref": "AWS::Region" }, ".amazonaws.com" ] ] } ] }, "\n",
+          "EOSEOSEOS\n\n",
+          "echo \"SECRET_KEY_BASE=`rake secret`\" >> .env.production\n",
 
           "RAILS_ENV=production bundle exec rails db:setup\n",
           "RAILS_ENV=production bundle exec rails assets:precompile\n",
@@ -719,14 +795,12 @@
           "WantedBy=multi-user.target\n",
           "EOSEOSEOS\n\n",
 
-          "# ********** Start Mastodon !! **********\n",
           "systemctl enable /etc/systemd/system/mastodon-*.service\n",
-          "# systemctl start mastodon-web.service mastodon-sidekiq.service mastodon-streaming.service\n",
 
           "# ********** Get server certificate **********\n",
           "mkdir /etc/letsencrypt \n",
-          "aws s3 cp s3://mastodon-tokyo/cf/server.crt /etc/letsencrypt/server.crt \n",
-          "aws s3 cp s3://mastodon-tokyo/cf/server.key /etc/letsencrypt/server.key \n",
+          "aws s3 cp s3://", { "Fn::Join" : [ "/", [ { "Ref": "CertS3Bucket" }, { "Ref": "CertS3Folder" }, { "Ref": "CertS3CertName" } ] ] }, " /etc/letsencrypt/ \n",
+          "aws s3 cp s3://", { "Fn::Join" : [ "/", [ { "Ref": "CertS3Bucket" }, { "Ref": "CertS3Folder" }, { "Ref": "CertS3KeyName" } ] ] }, " /etc/letsencrypt/ \n",
 
           "# ********** Setup Nginx **********\n",
           "cat << 'EOSEOSEOS' > /etc/nginx/sites-available/", { "Ref": "MastodonFQDN" } ,"\n",
@@ -755,8 +829,8 @@
           "  ssl_prefer_server_ciphers on;\n",
           "  ssl_session_cache shared:SSL:10m;\n",
 
-          "  ssl_certificate     /etc/letsencrypt/server.crt;\n",
-          "  ssl_certificate_key /etc/letsencrypt/server.key;\n",
+          "  ssl_certificate     /etc/letsencrypt/", { "Ref": "CertS3CertName" }, ";\n",
+          "  ssl_certificate_key /etc/letsencrypt/", { "Ref": "CertS3KeyName" }, ";\n",
           "#  ssl_dhparam         /etc/ssl/certs/dhparam.pem;\n",
 
           "  keepalive_timeout    70;\n",
@@ -827,8 +901,15 @@
           "      /etc/nginx/sites-enabled/", { "Ref": "MastodonFQDN" } ," \n",
           "rm -f /etc/nginx/sites-enabled/default \n",
 
-          "# ********** Restart Nginx **********\n",
-          "# systemctl restart nginx \n",
+          "# ********** Setup daily cron **********\n",
+          "cat << EOSEOSEOS > /home/mastodon/mastodon.daily\n",
+          "cd /home/mastodon/live\n",
+          "RAILS_ENV=production /usr/local/bin/bundle exec rake mastodon:daily > /dev/null\n",
+          "EOSEOSEOS\n\n",
+
+          "chown mastodon:mastodon /home/mastodon/mastodon.daily\n",
+          "chmod +x /home/mastodon/mastodon.daily\n",
+          "echo \"0 18 * * *  mastodon    /home/mastodon/mastodon.daily\" >> /etc/crontab\n",
 
           "# ********** Restart system **********\n",
           "reboot \n",
