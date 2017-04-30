@@ -7,7 +7,7 @@ Cloud Formation Template for Mastodon
 
 ### サーバー証明書の準備
 
-正規の認証局が発行したサーバー証明書を取得します。 [Let's Encrypt](https://letsencrypt.jp/) であれば、無料でサーバー証明書を取得できます。
+正規の認証局が発行したサーバー証明書を取得します。 [Let's Encrypt](https://letsencrypt.org/) であれば、無料でサーバー証明書を取得できます。
 
 #### オレオレ証明書の作成手順
 
