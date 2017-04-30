@@ -142,6 +142,11 @@
       "Type" : "String",
       "ConstraintDescription" : "must be a valid S3 key name."
     },
+    "AcmCertificateArn": {
+      "Description" : "AWS Certificate Manager ARN.",
+      "Type" : "String",
+      "ConstraintDescription" : "must be a valid ARN of AWS Certificate Manager."
+    },
 
 
     "ContentsS3Bucket": {
@@ -155,6 +160,12 @@
     },
     "ContentsAWSAccessSecret": {
       "Description" : "AWSAccessSecret for S3 access.",
+      "Type" : "String"
+    },
+
+
+    "AccessLogS3Bucket": {
+      "Description" : "S3 Bucket domain name for Cloud Front Log.",
       "Type" : "String"
     },
 
@@ -218,6 +229,7 @@
       "Type" : "AWS::EC2::VPC",
       "Properties" : {
         "CidrBlock" : { "Fn::FindInMap" : [ "CIDR", "VPC", "IP" ] },
+        "EnableDnsHostnames": true,
         "Tags" : [
           { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
         ]
@@ -534,6 +546,16 @@
         ]
       }
     },
+    "CloudFrontAccessLogBucket": {
+      "Type" : "AWS::S3::Bucket",
+      "Properties" : {
+        "AccessControl" : "Private",
+        "BucketName" : { "Ref": "AccessLogS3Bucket" },
+        "Tags" : [
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+        ]
+      }
+    },
 
 
     "VPCGatewayAttachment": {
@@ -813,25 +835,6 @@
           "  listen 80;\n",
           "  listen [::]:80;\n",
           "  server_name ", { "Ref": "MastodonFQDN" } ,";\n",
-          "  # Useful for Let's Encrypt\n",
-          "  location /.well-known/acme-challenge/ { allow all; }\n",
-          "  location / { return 301 https://$host$request_uri; }\n",
-          "}\n",
-
-          "server {\n",
-          "  listen 443 ssl;\n",
-          "  listen [::]:443 ssl;\n",
-          "  server_name ", { "Ref": "MastodonFQDN" } ,";\n",
-
-          "  ssl_protocols TLSv1.2;\n",
-          "  ssl_ciphers EECDH+AESGCM:EECDH+AES;\n",
-          "  ssl_ecdh_curve prime256v1;\n",
-          "  ssl_prefer_server_ciphers on;\n",
-          "  ssl_session_cache shared:SSL:10m;\n",
-
-          "  ssl_certificate     /etc/letsencrypt/", { "Ref": "CertS3CertName" }, ";\n",
-          "  ssl_certificate_key /etc/letsencrypt/", { "Ref": "CertS3KeyName" }, ";\n",
-          "#  ssl_dhparam         /etc/ssl/certs/dhparam.pem;\n",
 
           "  keepalive_timeout    70;\n",
           "  sendfile             on;\n",
@@ -916,13 +919,6 @@
 
           "# ********** The End **********\n"
         ] ] } }
-      }
-    },
-    "MastodonInstanceEIP" : {
-      "Type" : "AWS::EC2::EIP",
-      "Properties" : {
-        "InstanceId" : { "Ref": "MastodonInstance" },
-        "Domain" : "vpc"
       }
     },
 
@@ -1092,13 +1088,61 @@
         ],
         "VpcSecurityGroupIds" : [ {"Fn::GetAtt": [ "SecurityGroupElastiCache", "GroupId"]} ]
       }
+    },
+
+    "CloudFrontDistribution": {
+      "Type" : "AWS::CloudFront::Distribution",
+      "Properties" : {
+        "DistributionConfig" : {
+          "Aliases" : [ { "Ref": "MastodonFQDN" } ],
+          "Comment" : "Cloud Front Distribution for Mastodon",
+          "DefaultCacheBehavior" : {
+            "AllowedMethods" :  ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"],
+            "CachedMethods" : ["GET", "HEAD", "OPTIONS"],
+            "Compress" : true,
+            "DefaultTTL" : 3600,
+            "ForwardedValues" : {
+              "QueryString" : true
+            },
+            "MaxTTL" : 3600,
+            "MinTTL" : 0,
+            "TargetOriginId" : { "Fn::Join" : [ "-", [ { "Ref": "AWS::StackName" }, "CF-Dist" ] ] },
+            "ViewerProtocolPolicy" : "redirect-to-https"
+          },
+          "Enabled" : true,
+          "HttpVersion" : "http2",
+          "Logging" : {
+            "Bucket" : { "Fn::GetAtt": [ "CloudFrontAccessLogBucket", "DomainName" ] },
+            "IncludeCookies" : true,
+            "Prefix" : { "Ref": "AWS::StackName" }
+          },
+          "Origins" : [ {
+            "CustomOriginConfig" : {
+              "HTTPPort" : 80,
+              "HTTPSPort" : 443,
+              "OriginProtocolPolicy" : "http-only"
+            },
+            "DomainName" : { "Fn::GetAtt": [ "MastodonInstance", "PublicDnsName" ] },
+            "Id" : { "Fn::Join" : [ "-", [ { "Ref": "AWS::StackName" }, "CF-Dist" ] ] }
+          } ],
+          "ViewerCertificate" : {
+            "AcmCertificateArn" : { "Ref": "AcmCertificateArn" },
+            "SslSupportMethod" : "vip"
+          }
+        }
+      }
     }
+
   },
 
   "Outputs": {
     "MastodonInstanceIP": {
       "Description": "IP address of Mastodon instance",
       "Value": { "Fn::GetAtt": [ "MastodonInstance", "PublicIp" ] }
+    },
+    "MastodonInstanceHostName": {
+      "Description": "Host name of Mastodon instance",
+      "Value": { "Fn::GetAtt": [ "MastodonInstance", "PublicDnsName" ] }
     },
     "RDSInstanceEndPoint": {
       "Description": "Address of RDS",
