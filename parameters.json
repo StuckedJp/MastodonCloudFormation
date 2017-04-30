@@ -24,12 +24,19 @@
         { "ParameterKey": "EC2KeyPair", "ParameterValue": "" },
 
         { "ParameterKey": "CertS3Bucket", "ParameterValue": "" },
-        { "ParameterKey": "CertS3KeyCert", "ParameterValue": "" },
-        { "ParameterKey": "CertS3KeyCertKey", "ParameterValue": "" },
+        { "ParameterKey": "CertS3Folder", "ParameterValue": "" },
+        { "ParameterKey": "CertS3CertName", "ParameterValue": "" },
+        { "ParameterKey": "CertS3KeyName", "ParameterValue": "" },
 
         { "ParameterKey": "ContentsS3Bucket", "ParameterValue": "" },
         { "ParameterKey": "ContentsAWSAccessKey", "ParameterValue": "" },
-        { "ParameterKey": "ContentsAWSAccessSecret", "ParameterValue": "" }
+        { "ParameterKey": "ContentsAWSAccessSecret", "ParameterValue": "" },
+
+        { "ParameterKey": "SMTPHostName", "ParameterValue": "" },
+        { "ParameterKey": "SMTPHostPort", "ParameterValue": "" },
+        { "ParameterKey": "SMTPUserName", "ParameterValue": "" },
+        { "ParameterKey": "SMTPPassword", "ParameterValue": "" },
+        { "ParameterKey": "SMTPSenderAddress", "ParameterValue": "" }
     ],
     "Capabilities": [
         "CAPABILITY_IAM"
