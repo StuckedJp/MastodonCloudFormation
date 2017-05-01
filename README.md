@@ -7,7 +7,8 @@ Cloud Formation Template for Mastodon
 
 ### サーバー証明書の準備
 
-正規の認証局が発行したサーバー証明書を取得します。 [Let's Encrypt](https://letsencrypt.org/) であれば、無料でサーバー証明書を取得できます。
+正規の認証局が発行したサーバー証明書を取得します。 [Let's Encrypt](https://letsencrypt.org/) を使う場合は「Let's Encrypt を使う」の項目を参照してください。
+
 
 #### オレオレ証明書の作成手順
 
@@ -87,7 +88,7 @@ Mastodon の構築に成功すると EC2 インスタンスを再起動します
 テンプレートパラメータに誤りがあった場合は、スタックを破棄して再作成してください。
 
 
-## Let's Encrypt を使う。
+## Let's Encrypt を使う
 
 Let's Encrypt の証明書を使うための手順を示します。
 
