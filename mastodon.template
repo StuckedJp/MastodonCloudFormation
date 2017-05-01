@@ -730,7 +730,9 @@
                                         "s3.amazonaws.com", 
                                         { "Fn::Join": [ "", [ "s3-", { "Ref": "AWS::Region" }, ".amazonaws.com" ] ] } ] }, "\n",
           "EOSEOSEOS\n\n",
+          "echo \"PAPERCLIP_SECRET=`rake secret`\" >> .env.production\n",
           "echo \"SECRET_KEY_BASE=`rake secret`\" >> .env.production\n",
+          "echo \"OTP_SECRET=`rake secret`\" >> .env.production\n",
 
           "RAILS_ENV=production bundle exec rails db:setup\n",
           "RAILS_ENV=production bundle exec rails assets:precompile\n",
@@ -920,7 +922,13 @@
         ] ] } }
       }
     },
-
+    "MastodonInstanceEIP" : {
+      "Type" : "AWS::EC2::EIP",
+      "Properties" : {
+        "InstanceId" : { "Ref": "MastodonInstance" },
+        "Domain" : "vpc"
+      }
+    },
 
     "SecurityGroupRDS": {
       "Type" : "AWS::EC2::SecurityGroup",

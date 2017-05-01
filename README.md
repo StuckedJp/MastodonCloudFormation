@@ -87,6 +87,63 @@ Mastodon の構築に成功すると EC2 インスタンスを再起動します
 テンプレートパラメータに誤りがあった場合は、スタックを破棄して再作成してください。
 
 
+## Let's Encrypt を使う。
+
+Let's Encrypt の証明書を使うための手順を示します。
+
+1. Mastodon の EC2 インスタンスの IP アドレスに、DNS の A レコードを設定します。
+1. Mastodon の EC2 インスタンスに SSH でログインします。
+1. certbot をインストールします。
+
+  ```
+  sudo su
+  add-apt-repository ppa:certbot/certbot
+  apt-get update
+  apt-get install certbot
+  ```
+
+1. Nginx を停止します。
+
+  ```
+  systemctl stop nginx
+  ```
+
+1. certbot を実行して証明書を作成します。
+
+  ```
+  certbot certonly --standalone -d [DOMAIN NAME]
+  ```
+
+1. `/etc/nginx/sites-available/[DOMAIN NAME]` を編集して Let's Encrypt の証明書を利用するように変更します。
+
+  ```
+  ssl_certificate     /etc/letsencrypt/live/[DOMAIN NAME]/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/[DOMAIN NAME]/privkey.pem;
+  ```
+
+1. Nginx を再開します。
+
+  ```
+  systemctl start nginx
+  ```
+
+1. Let's Encrypt の証明書は 90 日で期限が切れます。自動更新するようにします。`/home/mastodon/certbot-renew` という名前で以下のようなスクリプトを作成します。
+
+  ```
+  #! /bin/bash
+  systemctl stop nginx
+  certbot renew --dry-run
+  systemctl start nginx
+  ```
+
+1. `/etc/crontab` を設定します。以下の例では、2ヶ月に1回更新します。
+
+  ```
+  0 18 1 1-12/2 *      root    /home/mastodon/certbot-renew
+  ```
+
+
+
 ## スタックの削除
 
 Mastodon サービスを閉じる場合は、AWS コンソール、もしくは AWS CLI で CloudFormation スタックを削除します。
