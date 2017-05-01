@@ -275,11 +275,6 @@ TODO がぞう
 
 ## 残件
 
-* CloudFront
-  * サーバー証明書もCloudFront で持つので、Certificate Manager の設定も必要。
-  * Certificate Manager は手作業。
-
-
 * できれば
   * ELB
   * Auto Scaling
