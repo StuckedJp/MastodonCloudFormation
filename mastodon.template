@@ -545,39 +545,6 @@
       }
     },
 
-    "EIPNat" : {
-      "Type" : "AWS::EC2::EIP",
-      "Properties" : {
-        "Domain" : "vpc"
-      }
-    },
-
-    "NAT" : {
-      "DependsOn" : "VPCGatewayAttachment",
-      "Type" : "AWS::EC2::NatGateway",
-      "Properties" : {
-        "AllocationId" : { "Fn::GetAtt" : ["EIPNat", "AllocationId"] },
-        "SubnetId" : { "Ref" : "PublicSubnet" }
-      }
-    },
-
-    "NATRouteTable": {
-      "Type" : "AWS::EC2::RouteTable",
-      "Properties" : {
-        "VpcId" : { "Ref": "VPC" },
-        "Tags" : [
-          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
-        ]
-      }
-    },
-    "NATRoute" : {
-      "Type" : "AWS::EC2::Route",
-      "Properties" : {
-        "RouteTableId" : { "Ref" : "NATRouteTable" },
-        "DestinationCidrBlock" : { "Fn::FindInMap" : [ "CIDR", "All", "IP" ] },
-        "NatGatewayId" : { "Ref" : "NAT" }
-      }
-    },
 
     "MastodonInstanceIAMRole": {
       "Type": "AWS::IAM::Role",
