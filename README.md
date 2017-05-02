@@ -157,22 +157,9 @@ RDS のスナップショットやパラメータグループも残る場合が�
 
 AWS リソースの構成です。
 
-TODO がぞう
+![物理構成図](https://s3.amazonaws.com/public-nv/mastodon-github/physical-diagram.png)
 
 
-* VPC を 1つ作成する。
-* 3 つの Subnet を作成する。
-  * Private Subnet 1
-  * Private Subnet 2
-  * Public Subnet
-* RDS (PostgreSQL) を Private Subnet に作成する。
-* ElastiCache (Redis) を Private Subnet に作成する。
-* NAT Gateway を立てる。(TODO いらない?)
-* EC2 インスタンスを Public Subnet に作成する。
-  * EC2 インスタンスに Mastodon を立てる。
-  * EC2 インスタンスに固定IP を付与する。
-* S3 バケット
-  * 画像コンテンツ置き場
 
 
 ## テンプレートパラメータ
