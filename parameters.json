@@ -23,14 +23,18 @@
         { "ParameterKey": "InstanceAMI", "ParameterValue": "" },
         { "ParameterKey": "EC2KeyPair", "ParameterValue": "" },
 
-        { "ParameterKey": "CertS3Bucket", "ParameterValue": "" },
-        { "ParameterKey": "CertS3Folder", "ParameterValue": "" },
-        { "ParameterKey": "CertS3CertName", "ParameterValue": "" },
-        { "ParameterKey": "CertS3KeyName", "ParameterValue": "" },
+        { "ParameterKey": "CertArn", "ParameterValue": "" },
+
+        { "ParameterKey": "PackageS3Bucket", "ParameterValue": "" },
+        { "ParameterKey": "PackageS3Prefix", "ParameterValue": "" },
+        { "ParameterKey": "PackageName", "ParameterValue": "" },
 
         { "ParameterKey": "ContentsS3Bucket", "ParameterValue": "" },
         { "ParameterKey": "ContentsAWSAccessKey", "ParameterValue": "" },
         { "ParameterKey": "ContentsAWSAccessSecret", "ParameterValue": "" },
+
+        { "ParameterKey": "LBAccessLogS3Bucket", "ParameterValue": "" },
+        { "ParameterKey": "LBAccessLogPrefix", "ParameterValue": "" },
 
         { "ParameterKey": "SMTPHostName", "ParameterValue": "" },
         { "ParameterKey": "SMTPHostPort", "ParameterValue": "" },
