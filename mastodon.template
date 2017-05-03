@@ -122,25 +122,10 @@
     },
 
 
-    "CertS3Bucket": {
-      "Description" : "S3 bucket name of server certificate files.",
+    "CertArn": {
+      "Description" : "ARN of server certificate on ACM.",
       "Type" : "String",
-      "ConstraintDescription" : "must be a valid S3 bucket name."
-    },
-    "CertS3Folder": {
-      "Description" : "S3 folder name of server certificate files. (ex. \"cert\")",
-      "Type" : "String",
-      "ConstraintDescription" : "must be a valid S3 folder name."
-    },
-    "CertS3CertName": {
-      "Description" : "S3 key name of server certificate file.",
-      "Type" : "String",
-      "ConstraintDescription" : "must be a valid S3 key name."
-    },
-    "CertS3KeyName": {
-      "Description" : "S3 key name of server certificate key file.",
-      "Type" : "String",
-      "ConstraintDescription" : "must be a valid S3 key name."
+      "ConstraintDescription" : "must be a valid ACM ARN."
     },
 
 
@@ -158,6 +143,16 @@
       "Type" : "String"
     },
 
+
+    "LBAccessLogS3Bucket": {
+      "Description" : "S3 bucket name of access log of load balancer.",
+      "Type" : "String",
+      "ConstraintDescription" : "must be a valid S3 bucket name."
+    },
+    "LBAccessLogPrefix": {
+      "Description" : "Prefix of access log of load balancer.",
+      "Type" : "String"
+    },
 
     "SMTPHostName": {
       "Description" : "SMTP host name.",
@@ -215,6 +210,37 @@
 
 
   "Resources" : {
+    "LbAccessLogBucketPolicy": {
+      "Type" : "AWS::S3::BucketPolicy",
+      "Properties" : {
+        "Bucket" : { "Ref": "LBAccessLogS3Bucket" },
+        "PolicyDocument" : {
+          "Id": "Policy1493789607994",
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Sid": "Stmt1493789603166",
+              "Action": "s3:PutObject",
+              "Effect": "Allow",
+              "Resource": { "Fn::Join" : [ "", [ "arn:aws:s3:::",
+                                                 { "Ref": "LBAccessLogS3Bucket" },
+                                                 "/",
+                                                 { "Ref": "LBAccessLogPrefix" },
+                                                 "/AWSLogs/",
+                                                 { "Ref": "AWS::AccountId" },
+                                                 "/*" ] ] },
+              "Principal": {
+                "AWS": [
+                  "582318560864"
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+
+
     "VPC": {
       "Type" : "AWS::EC2::VPC",
       "Properties" : {
@@ -225,8 +251,6 @@
         ]
       }
     },
-
-
     "InternetGW": {
       "Type" : "AWS::EC2::InternetGateway",
       "Properties" : {
@@ -235,8 +259,6 @@
         ]
       }
     },
-
-
     "VPCRouteTable": {
       "Type" : "AWS::EC2::RouteTable",
       "Properties" : {
@@ -285,6 +307,7 @@
       "Properties" : {
         "CidrBlock" : { "Fn::FindInMap" : [ "CIDR", "PublicSubnet1", "IP" ] },
         "MapPublicIpOnLaunch" : true,
+        "AvailabilityZone" : { "Ref": "SubnetAvailabilityZone1" },
         "Tags" : [
           { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
         ],
@@ -296,6 +319,7 @@
       "Properties" : {
         "CidrBlock" : { "Fn::FindInMap" : [ "CIDR", "PublicSubnet2", "IP" ] },
         "MapPublicIpOnLaunch" : true,
+        "AvailabilityZone" : { "Ref": "SubnetAvailabilityZone2" },
         "Tags" : [
           { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
         ],
@@ -593,16 +617,6 @@
               {
                 "Effect": "Allow",
                 "Action": "s3:*",
-                "Resource": { "Fn::Join" : [ "", [ "arn:aws:s3:::", { "Ref": "CertS3Bucket" } ] ] }
-              },
-              {
-                "Effect": "Allow",
-                "Action": "s3:GetObject",
-                "Resource": { "Fn::Join" : [ "", [ "arn:aws:s3:::", { "Ref": "CertS3Bucket" }, "/*" ] ] }
-              },
-              {
-                "Effect": "Allow",
-                "Action": "s3:*",
                 "Resource": { "Fn::Join" : [ "", [ "arn:aws:s3:::", { "Ref": "ContentsS3Bucket" } ] ] }
               },
               {
@@ -633,9 +647,79 @@
         ]
       }
     },
-    "MastodonInstance": {
-      "Type" : "AWS::EC2::Instance",
+
+
+    "MastodonInstanceApplicationLoadBalancerTargetGroupHttp": {
+      "Type" : "AWS::ElasticLoadBalancingV2::TargetGroup",
       "Properties" : {
+        "HealthCheckIntervalSeconds" : 60,
+        "HealthCheckPath" : "/about",
+        "HealthCheckPort" : "80",
+        "HealthCheckProtocol" : "HTTP",
+        "HealthCheckTimeoutSeconds" : 15,
+        "HealthyThresholdCount" : 2,
+        "UnhealthyThresholdCount" : 2,
+        "Matcher" : { "HttpCode" : "200" },
+        "Name" : { "Fn::Join" : [ "-", [ { "Ref": "AWS::StackName" }, "alb", "tg" ] ] },
+        "Port" : 80,
+        "Protocol" : "HTTP",
+        "Tags" : [
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+        ],
+        "TargetGroupAttributes" : [
+          { "Key" : "stickiness.enabled", "Value" : "true" },
+          { "Key" : "stickiness.type", "Value" : "lb_cookie" }
+        ],
+        "VpcId" : { "Ref": "VPC" }
+      }
+    },
+    "MastodonInstanceApplicationLoadBalancer": {
+      "Type" : "AWS::ElasticLoadBalancingV2::LoadBalancer",
+      "Properties" : {
+        "LoadBalancerAttributes" : [
+          { "Key" : "access_logs.s3.enabled", "Value" : true },
+          { "Key" : "access_logs.s3.bucket", "Value" : { "Ref": "LBAccessLogS3Bucket" } },
+          { "Key" : "access_logs.s3.prefix", "Value" : { "Ref": "LBAccessLogPrefix" } }
+        ],
+        "Name" : { "Fn::Join" : [ "-", [ { "Ref": "AWS::StackName" }, "instance", "alb" ] ] },
+        "Scheme" : "internet-facing",
+        "SecurityGroups" : [ { "Ref": "SecurityGroupMastodonInstance" } ],
+        "Subnets" : [ { "Ref": "PublicSubnet1" }, { "Ref": "PublicSubnet2" } ],
+        "Tags" : [
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+        ],
+        "IpAddressType" : "ipv4"
+      }
+    },
+    "MastodonInstanceApplicationLoadBalancerListenerHttps": {
+      "Type" : "AWS::ElasticLoadBalancingV2::Listener",
+      "Properties" : {
+        "Certificates" : [ { "CertificateArn" : { "Ref": "CertArn" } } ],
+        "DefaultActions" : [
+          { "TargetGroupArn" : { "Ref": "MastodonInstanceApplicationLoadBalancerTargetGroupHttp" }, "Type" : "forward" }
+        ],
+        "LoadBalancerArn" : { "Ref" : "MastodonInstanceApplicationLoadBalancer" },
+        "Port" : 443,
+        "Protocol" : "HTTPS",
+        "SslPolicy": "ELBSecurityPolicy-TLS-1-2-2017-01"
+      }
+    },
+    "MastodonInstanceApplicationLoadBalancerListenerHttp": {
+      "Type" : "AWS::ElasticLoadBalancingV2::Listener",
+      "Properties" : {
+        "DefaultActions" : [
+          { "TargetGroupArn" : { "Ref": "MastodonInstanceApplicationLoadBalancerTargetGroupHttp" }, "Type" : "forward" }
+        ],
+        "LoadBalancerArn" : { "Ref" : "MastodonInstanceApplicationLoadBalancer" },
+        "Port" : 80,
+        "Protocol" : "HTTP"
+      }
+    },
+
+    "MastodonInstanceAutoScalingLaunchConfig": {
+      "Type" : "AWS::AutoScaling::LaunchConfiguration",
+      "Properties" : {
+        "AssociatePublicIpAddress" : true,
         "BlockDeviceMappings" : [ {
           "DeviceName" : "/dev/sda1",
           "Ebs" : {
@@ -643,21 +727,12 @@
             "VolumeSize" : { "Fn::FindInMap" : [ "InstanceConfig", "Storage", "ValueByGb" ] }
           }
         } ],
-        "DisableApiTermination" : false,
         "IamInstanceProfile" : { "Ref": "MastodonInstanceProfile" },
         "ImageId" : { "Ref": "InstanceAMI" },
-        "InstanceInitiatedShutdownBehavior" : "stop",
+        "InstanceMonitoring" : true,
         "InstanceType" : { "Ref": "InstanceType" },
         "KeyName" : { "Ref": "EC2KeyPair" },
-        "Monitoring" : true,
-        "NetworkInterfaces" : [ {
-          "Description" : "Mastodon Network Interface.",
-          "DeviceIndex" : "0",
-          "NetworkInterfaceId" : { "Ref": "MastodonInstanceNetworkIF" }
-        } ],
-        "Tags" : [
-          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
-        ],
+        "SecurityGroups" : [ { "Ref": "SecurityGroupMastodonInstance" } ],
         "UserData": {"Fn::Base64": {"Fn::Join": ["", [
           "#!/bin/bash -xe\n",
           "# ********** Install packages for cloud formation **********\n",
@@ -718,9 +793,9 @@
           "AWS_SECRET_ACCESS_KEY=", { "Ref": "ContentsAWSAccessSecret" }, "\n",
           "S3_REGION=", { "Ref": "AWS::Region" }, "\n",
           "S3_PROTOCOL=https\n",
-          "S3_HOSTNAME=", { "Fn::If": [ "IsVirginia", 
-                                        "s3.amazonaws.com", 
-                                        { "Fn::Join": [ "", [ "s3-", { "Ref": "AWS::Region" }, ".amazonaws.com" ] ] } ] }, "\n",
+          "S3_HOSTNAME=", { "Fn::If": [ "IsVirginia",
+            "s3.amazonaws.com",
+            { "Fn::Join": [ "", [ "s3-", { "Ref": "AWS::Region" }, ".amazonaws.com" ] ] } ] }, "\n",
           "EOSEOSEOS\n\n",
           "echo \"PAPERCLIP_SECRET=`rake secret`\" >> .env.production\n",
           "echo \"SECRET_KEY_BASE=`rake secret`\" >> .env.production\n",
@@ -792,11 +867,6 @@
 
           "systemctl enable /etc/systemd/system/mastodon-*.service\n",
 
-          "# ********** Get server certificate **********\n",
-          "mkdir /etc/letsencrypt \n",
-          "aws s3 cp s3://", { "Fn::Join" : [ "/", [ { "Ref": "CertS3Bucket" }, { "Ref": "CertS3Folder" }, { "Ref": "CertS3CertName" } ] ] }, " /etc/letsencrypt/ \n",
-          "aws s3 cp s3://", { "Fn::Join" : [ "/", [ { "Ref": "CertS3Bucket" }, { "Ref": "CertS3Folder" }, { "Ref": "CertS3KeyName" } ] ] }, " /etc/letsencrypt/ \n",
-
           "# ********** Setup Nginx **********\n",
           "cat << 'EOSEOSEOS' > /etc/nginx/sites-available/", { "Ref": "MastodonFQDN" } ,"\n",
           "map $http_upgrade $connection_upgrade {\n",
@@ -811,23 +881,6 @@
 
           "  # Useful for Let's Encrypt\n",
           "  location /.well-known/acme-challenge/ { allow all; }\n",
-          "  location / { return 301 https://$host$request_uri; }\n",
-          "}\n",
-
-          "server {\n",
-          "  listen 443 ssl;\n",
-          "  listen [::]:443 ssl;\n",
-          "  server_name ", { "Ref": "MastodonFQDN" } ,";\n",
-
-          "  ssl_protocols TLSv1.2;\n",
-          "  ssl_ciphers EECDH+AESGCM:EECDH+AES;\n",
-          "  ssl_ecdh_curve prime256v1;\n",
-          "  ssl_prefer_server_ciphers on;\n",
-          "  ssl_session_cache shared:SSL:10m;\n",
-
-          "  ssl_certificate     /etc/letsencrypt/", { "Ref": "CertS3CertName" }, ";\n",
-          "  ssl_certificate_key /etc/letsencrypt/", { "Ref": "CertS3KeyName" }, ";\n",
-          "#  ssl_dhparam         /etc/ssl/certs/dhparam.pem;\n",
 
           "  keepalive_timeout    70;\n",
           "  sendfile             on;\n",
@@ -914,13 +967,28 @@
         ] ] } }
       }
     },
-    "MastodonInstanceEIP" : {
-      "Type" : "AWS::EC2::EIP",
+    "MastodonInstanceAutoScalingGroup": {
+      "Type" : "AWS::AutoScaling::AutoScalingGroup",
       "Properties" : {
-        "InstanceId" : { "Ref": "MastodonInstance" },
-        "Domain" : "vpc"
+        "AvailabilityZones" : [ { "Ref": "SubnetAvailabilityZone1" }, { "Ref": "SubnetAvailabilityZone2" } ],
+        "Cooldown" : 300,
+        "DesiredCapacity": 1,
+        "HealthCheckGracePeriod" : 600,
+        "HealthCheckType" : "ELB",
+        "LaunchConfigurationName" : { "Ref": "MastodonInstanceAutoScalingLaunchConfig" },
+        "MaxSize" : 12,
+        "MinSize" : 1,
+        "Tags" : [
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value" }, "PropagateAtLaunch" : true }
+        ],
+        "TargetGroupARNs" : [
+          { "Ref": "MastodonInstanceApplicationLoadBalancerTargetGroupHttp" }
+        ],
+        "TerminationPolicies" : [ "Default" ],
+        "VPCZoneIdentifier" : [ { "Ref": "PublicSubnet1" }, { "Ref": "PublicSubnet2" } ]
       }
     },
+
 
     "SecurityGroupRDS": {
       "Type" : "AWS::EC2::SecurityGroup",
@@ -1111,13 +1179,9 @@
   },
 
   "Outputs": {
-    "MastodonInstanceIP": {
-      "Description": "IP address of Mastodon instance",
-      "Value": { "Fn::GetAtt": [ "MastodonInstance", "PublicIp" ] }
-    },
     "MastodonInstanceHostName": {
       "Description": "Host name of Mastodon instance",
-      "Value": { "Fn::GetAtt": [ "MastodonInstance", "PublicDnsName" ] }
+      "Value": { "Fn::GetAtt": [ "MastodonInstanceApplicationLoadBalancer", "DNSName" ] }
     },
     "RDSInstanceEndPoint": {
       "Description": "Address of RDS",
