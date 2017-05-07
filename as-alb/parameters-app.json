@@ -1,0 +1,23 @@
+{
+    "Parameters": [
+        { "ParameterKey": "Tag1Key", "ParameterValue": "" },
+        { "ParameterKey": "Tag1Value", "ParameterValue": "" },
+
+        { "ParameterKey": "InfraStackName", "ParameterValue": "" },
+
+        { "ParameterKey": "InstanceType", "ParameterValue": "" },
+        { "ParameterKey": "InstanceAMI", "ParameterValue": "" },
+        { "ParameterKey": "EC2KeyPair", "ParameterValue": "" },
+
+        { "ParameterKey": "CertArn", "ParameterValue": "" }
+    ],
+    "Capabilities": [
+        "CAPABILITY_IAM"
+    ],
+    "Tags": [
+        {
+            "Key": "class",
+            "Value": "mastodon"
+        }
+    ]
+}

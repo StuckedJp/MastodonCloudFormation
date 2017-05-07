@@ -1,0 +1,447 @@
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",
+
+  "Description" : "",
+
+  "Parameters": {
+    "Tag1Key": {
+      "Description" : "Tag key",
+      "Type": "String"
+    },
+    "Tag1Value": {
+      "Description" : "Tag value",
+      "Type": "String"
+    },
+
+
+    "InfraStackName": {
+      "Description" : "Stack name of infrastructure.",
+      "Type": "String"
+    },
+
+    "InstanceType" : {
+      "Description" : "Mastodon WebServer EC2 instance type",
+      "Type" : "String",
+      "Default" : "t2.micro",
+      "AllowedValues" : [ "t1.micro", "t2.nano", "t2.micro", "t2.small", "t2.medium", "t2.large",
+                          "m1.small", "m1.medium", "m1.large", "m1.xlarge",
+                          "m2.xlarge", "m2.2xlarge", "m2.4xlarge", "m3.medium", "m3.large", "m3.xlarge", "m3.2xlarge",
+                          "m4.large", "m4.xlarge", "m4.2xlarge", "m4.4xlarge", "m4.10xlarge",
+                          "c1.medium", "c1.xlarge", "c3.large", "c3.xlarge", "c3.2xlarge", "c3.4xlarge", "c3.8xlarge",
+                          "c4.large", "c4.xlarge", "c4.2xlarge", "c4.4xlarge", "c4.8xlarge",
+                          "g2.2xlarge", "g2.8xlarge", "r3.large", "r3.xlarge", "r3.2xlarge", "r3.4xlarge", "r3.8xlarge",
+                          "i2.xlarge", "i2.2xlarge", "i2.4xlarge", "i2.8xlarge",
+                          "d2.xlarge", "d2.2xlarge", "d2.4xlarge", "d2.8xlarge", "hi1.4xlarge", "hs1.8xlarge",
+                          "cr1.8xlarge", "cc2.8xlarge", "cg1.4xlarge"],
+      "ConstraintDescription" : "must be a valid EC2 instance type."
+    },
+    "InstanceAMI": {
+      "Description" : "Mastodon WebServer EC2 instance AMI ID",
+      "Type" : "String",
+      "ConstraintDescription" : "must be a valid EC2 AMI ID."
+    },
+    "EC2KeyPair": {
+      "Description" : "Mastodon WebServer EC2 Key Pair Name",
+      "Type" : "String",
+      "ConstraintDescription" : "must be a valid EC2 Key Pair Name."
+    },
+
+
+    "CertArn": {
+      "Description" : "ARN of server certificate on ACM.",
+      "Type" : "String",
+      "ConstraintDescription" : "must be a valid ACM ARN."
+    }
+  },
+
+
+  "Mappings": {
+    "CIDR": {
+      "VPC"           : { "IP": "10.0.0.0/16" },
+      "PrivateSubnet1": { "IP": "10.0.10.0/24" },
+      "PrivateSubnet2": { "IP": "10.0.11.0/24" },
+      "PublicSubnet1" : { "IP": "10.0.20.0/24" },
+      "PublicSubnet2" : { "IP": "10.0.21.0/24" },
+      "All"           : { "IP": "0.0.0.0/0" }
+    },
+    "InstanceConfig": {
+      "Storage": { "ValueByGb": "20" }
+    }
+  },
+
+
+  "Conditions": {
+    "IsVirginia": { "Fn::Equals" : [ { "Ref": "AWS::Region" }, "us-east-1"] }
+  },
+
+
+  "Resources" : {
+
+    "MastodonInstanceIAMRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version" : "2012-10-17",
+          "Statement": [ {
+            "Effect": "Allow",
+            "Principal": {
+              "Service": [ "ec2.amazonaws.com" ]
+            },
+            "Action": [ "sts:AssumeRole" ]
+          } ]
+        },
+        "Path": "/",
+        "Policies": [ {
+          "PolicyName": "root",
+          "PolicyDocument": {
+            "Version" : "2012-10-17",
+            "Statement": [ 
+              {
+                "Effect": "Allow",
+                "Action": "s3:*",
+                "Resource": { "Fn::Join" : [ "", [ "arn:aws:s3:::", { "Fn::ImportValue": { "Fn::Sub": "${InfraStackName}-ContentsS3Bucket" } } ] ] }
+              },
+              {
+                "Effect": "Allow",
+                "Action": "s3:*",
+                "Resource": { "Fn::Join" : [ "", [ "arn:aws:s3:::", { "Fn::ImportValue": { "Fn::Sub": "${InfraStackName}-ContentsS3Bucket" } }, "/*" ] ] }
+              },
+              {
+                "Effect": "Allow",
+                "Action": "s3:*",
+                "Resource": { "Fn::Join" : [ "", [ "arn:aws:s3:::", { "Fn::ImportValue": { "Fn::Sub": "${InfraStackName}-PackageS3Bucket" } } ] ] }
+              },
+              {
+                "Effect": "Allow",
+                "Action": "s3:*",
+                "Resource": { "Fn::Join" : [ "", [ "arn:aws:s3:::", { "Fn::ImportValue": { "Fn::Sub": "${InfraStackName}-PackageS3Bucket" } }, "/*" ] ] }
+              }
+            ]
+          }
+        } ]
+      }
+    },
+    "MastodonInstanceProfile": {
+      "Type": "AWS::IAM::InstanceProfile",
+      "Properties": {
+        "Roles": [ { "Ref": "MastodonInstanceIAMRole" } ]
+      }
+    },
+
+
+    "MastodonInstanceApplicationLoadBalancerTargetGroupHttp": {
+      "Type" : "AWS::ElasticLoadBalancingV2::TargetGroup",
+      "Properties" : {
+        "HealthCheckIntervalSeconds" : 60,
+        "HealthCheckPath" : "/about",
+        "HealthCheckPort" : "80",
+        "HealthCheckProtocol" : "HTTP",
+        "HealthCheckTimeoutSeconds" : 15,
+        "HealthyThresholdCount" : 2,
+        "UnhealthyThresholdCount" : 2,
+        "Matcher" : { "HttpCode" : "200" },
+        "Name" : { "Fn::Join" : [ "-", [ { "Ref": "AWS::StackName" }, "alb", "tg" ] ] },
+        "Port" : 80,
+        "Protocol" : "HTTP",
+        "Tags" : [
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+        ],
+        "TargetGroupAttributes" : [
+          { "Key" : "stickiness.enabled", "Value" : "true" },
+          { "Key" : "stickiness.type", "Value" : "lb_cookie" }
+        ],
+        "VpcId" : { "Fn::ImportValue": { "Fn::Sub": "${InfraStackName}-VPC" } }
+      }
+    },
+    "MastodonInstanceApplicationLoadBalancer": {
+      "Type" : "AWS::ElasticLoadBalancingV2::LoadBalancer",
+      "Properties" : {
+        "LoadBalancerAttributes" : [
+          { "Key" : "access_logs.s3.enabled", "Value" : true },
+          { "Key" : "access_logs.s3.bucket", "Value" : { "Fn::ImportValue": { "Fn::Sub": "${InfraStackName}-LBAccessLogS3Bucket" } } },
+          { "Key" : "access_logs.s3.prefix", "Value" : { "Fn::ImportValue": { "Fn::Sub": "${InfraStackName}-LBAccessLogPrefix" } } }
+        ],
+        "Name" : { "Fn::Join" : [ "-", [ { "Ref": "AWS::StackName" }, "instance", "alb" ] ] },
+        "Scheme" : "internet-facing",
+        "SecurityGroups" : [ { "Fn::ImportValue": { "Fn::Sub": "${InfraStackName}-SecurityGroupMastodonInstance" } } ],
+        "Subnets" : [
+          { "Fn::ImportValue": { "Fn::Sub": "${InfraStackName}-PublicSubnet1" } },
+          { "Fn::ImportValue": { "Fn::Sub": "${InfraStackName}-PublicSubnet2" } }
+        ],
+        "Tags" : [
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+        ],
+        "IpAddressType" : "ipv4"
+      }
+    },
+    "MastodonInstanceApplicationLoadBalancerListenerHttps": {
+      "Type" : "AWS::ElasticLoadBalancingV2::Listener",
+      "Properties" : {
+        "Certificates" : [ { "CertificateArn" : { "Ref": "CertArn" } } ],
+        "DefaultActions" : [
+          { "TargetGroupArn" : { "Ref": "MastodonInstanceApplicationLoadBalancerTargetGroupHttp" }, "Type" : "forward" }
+        ],
+        "LoadBalancerArn" : { "Ref" : "MastodonInstanceApplicationLoadBalancer" },
+        "Port" : 443,
+        "Protocol" : "HTTPS",
+        "SslPolicy": "ELBSecurityPolicy-2016-08"
+      }
+    },
+    "MastodonInstanceApplicationLoadBalancerListenerHttp": {
+      "Type" : "AWS::ElasticLoadBalancingV2::Listener",
+      "Properties" : {
+        "DefaultActions" : [
+          { "TargetGroupArn" : { "Ref": "MastodonInstanceApplicationLoadBalancerTargetGroupHttp" }, "Type" : "forward" }
+        ],
+        "LoadBalancerArn" : { "Ref" : "MastodonInstanceApplicationLoadBalancer" },
+        "Port" : 80,
+        "Protocol" : "HTTP"
+      }
+    },
+
+    "MastodonInstanceAutoScalingLaunchConfig": {
+      "Type" : "AWS::AutoScaling::LaunchConfiguration",
+      "Properties" : {
+        "AssociatePublicIpAddress" : true,
+        "BlockDeviceMappings" : [ {
+          "DeviceName" : "/dev/sda1",
+          "Ebs" : {
+            "DeleteOnTermination" : true,
+            "VolumeSize" : { "Fn::FindInMap" : [ "InstanceConfig", "Storage", "ValueByGb" ] }
+          }
+        } ],
+        "IamInstanceProfile" : { "Ref": "MastodonInstanceProfile" },
+        "ImageId" : { "Ref": "InstanceAMI" },
+        "InstanceMonitoring" : true,
+        "InstanceType" : { "Ref": "InstanceType" },
+        "KeyName" : { "Ref": "EC2KeyPair" },
+        "SecurityGroups" : [ { "Fn::ImportValue": { "Fn::Sub": "${InfraStackName}-SecurityGroupMastodonInstance" } } ],
+        "UserData": {"Fn::Base64": {"Fn::Join": ["", [
+          "#!/bin/bash -xe\n",
+          "# ********** Install packages for cloud formation **********\n",
+          "apt-get update \n",
+          "apt-get -y install python-pip \n",
+          "pip install --upgrade pip \n",
+          "pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz \n",
+          "cp -a /usr/local/bin/cfn-hup /etc/init.d/cfn-hup\n",
+          "chmod u+x /etc/init.d/cfn-hup\n",
+          "update-rc.d cfn-hup defaults \n",
+
+          "# ********** Install required packages **********\n",
+          "apt-get install -y ",
+          "  imagemagick ffmpeg libpq-dev libxml2-dev libxslt1-dev nodejs file git",
+          "   curl gcc g++ ruby ruby-dev make postgresql-client nginx awscli\n",
+          "curl -sL https://deb.nodesource.com/setup_4.x | bash - \n",
+          "apt-get install -y nodejs \n",
+          "npm install -g yarn \n",
+          "gem install bundler \n",
+
+          "# ********** Add user **********\n",
+          "useradd -d /home/mastodon --create-home --user-group mastodon\n",
+
+          "# ********** Download pre-builded Mastodon **********\n",
+          "cd /home/mastodon \n",
+          "aws s3 cp s3://", { "Fn::ImportValue": { "Fn::Sub": "${InfraStackName}-PackageS3Bucket" } },
+            "/", { "Fn::ImportValue": { "Fn::Sub": "${InfraStackName}-PackageS3Prefix" } },
+            "/", { "Fn::ImportValue": { "Fn::Sub": "${InfraStackName}-PackageName" } },
+            " ", { "Fn::ImportValue": { "Fn::Sub": "${InfraStackName}-PackageName" } }, " \n",
+          "tar xfz ", { "Fn::ImportValue": { "Fn::Sub": "${InfraStackName}-PackageName" } }, " \n",
+          "chown -R mastodon:mastodon live \n",
+
+          "# ********** Configure systemd for mastodon **********\n",
+          "cat << EOSEOSEOS > /etc/systemd/system/mastodon-web.service\n",
+          "[Unit]\n",
+          "Description=mastodon-web\n",
+          "After=network.target\n",
+
+          "[Service]\n",
+          "Type=simple\n",
+          "User=mastodon\n",
+          "WorkingDirectory=/home/mastodon/live\n",
+          "Environment=\"RAILS_ENV=production\"\n",
+          "Environment=\"PORT=3000\"\n",
+          "ExecStart=/usr/local/bin/bundle exec puma -C config/puma.rb\n",
+          "TimeoutSec=15\n",
+          "Restart=always\n",
+
+          "[Install]\n",
+          "WantedBy=multi-user.target\n",
+          "EOSEOSEOS\n\n",
+
+          "cat << EOSEOSEOS > /etc/systemd/system/mastodon-sidekiq.service\n",
+          "[Unit]\n",
+          "Description=mastodon-sidekiq\n",
+          "After=network.target\n",
+
+          "[Service]\n",
+          "Type=simple\n",
+          "User=mastodon\n",
+          "WorkingDirectory=/home/mastodon/live\n",
+          "Environment=\"RAILS_ENV=production\"\n",
+          "Environment=\"DB_POOL=5\"\n",
+          "ExecStart=/usr/local/bin/bundle exec sidekiq -c 5 -q default -q mailers -q pull -q push\n",
+          "TimeoutSec=15\n",
+          "Restart=always\n",
+
+          "[Install]\n",
+          "WantedBy=multi-user.target\n",
+          "EOSEOSEOS\n\n",
+
+          "cat << EOSEOSEOS > /etc/systemd/system/mastodon-streaming.service\n",
+          "[Unit]\n",
+          "Description=mastodon-streaming\n",
+          "After=network.target\n",
+
+          "[Service]\n",
+          "Type=simple\n",
+          "User=mastodon\n",
+          "WorkingDirectory=/home/mastodon/live\n",
+          "Environment=\"NODE_ENV=production\"\n",
+          "Environment=\"PORT=4000\"\n",
+          "ExecStart=/usr/bin/npm run start\n",
+          "TimeoutSec=15\n",
+          "Restart=always\n",
+
+          "[Install]\n",
+          "WantedBy=multi-user.target\n",
+          "EOSEOSEOS\n\n",
+
+          "systemctl enable /etc/systemd/system/mastodon-*.service\n",
+
+          "# ********** Setup Nginx **********\n",
+          "cat << 'EOSEOSEOS' > /etc/nginx/sites-available/", { "Fn::ImportValue": { "Fn::Sub": "${InfraStackName}-MastodonFQDN" } },"\n",
+          "map $http_upgrade $connection_upgrade {\n",
+          "  default upgrade;\n",
+          "  ''      close;\n",
+          "}\n",
+
+          "server {\n",
+          "  listen 80;\n",
+          "  listen [::]:80;\n",
+          "  server_name ", { "Fn::ImportValue": { "Fn::Sub": "${InfraStackName}-MastodonFQDN" } },";\n",
+
+          "  # Useful for Let's Encrypt\n",
+          "  location /.well-known/acme-challenge/ { allow all; }\n",
+
+          "  keepalive_timeout    70;\n",
+          "  sendfile             on;\n",
+          "  client_max_body_size 0;\n",
+
+          "  root /home/mastodon/live/public;\n",
+
+          "  gzip on;\n",
+          "  gzip_disable \"msie6\";\n",
+          "  gzip_vary on;\n",
+          "  gzip_proxied any;\n",
+          "  gzip_comp_level 6;\n",
+          "  gzip_buffers 16 8k;\n",
+          "  gzip_http_version 1.1;\n",
+          "  gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;\n",
+
+          "  add_header Strict-Transport-Security \"max-age=31536000\";\n",
+
+          "  location / {\n",
+          "    try_files $uri @proxy;\n",
+          "  }\n",
+
+          "  location /assets {\n",
+          "    add_header Cache-Control \"public, max-age=31536000, immutable\";\n",
+          "  }\n",
+
+          "  location @proxy {\n",
+          "    proxy_set_header Host $host;\n",
+          "    proxy_set_header X-Real-IP $remote_addr;\n",
+          "    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n",
+          "    proxy_set_header X-Forwarded-Proto https;\n",
+          "    proxy_set_header Proxy \"\";\n",
+          "    proxy_pass_header Server;\n",
+
+          "    proxy_pass http://127.0.0.1:3000;\n",
+          "    proxy_buffering off;\n",
+          "    proxy_redirect off;\n",
+          "    proxy_http_version 1.1;\n",
+          "    proxy_set_header Upgrade $http_upgrade;\n",
+          "    proxy_set_header Connection $connection_upgrade;\n",
+
+          "    tcp_nodelay on;\n",
+          "  }\n",
+
+          "  location /api/v1/streaming {\n",
+          "    proxy_set_header Host $host;\n",
+          "    proxy_set_header X-Real-IP $remote_addr;\n",
+          "    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n",
+          "    proxy_set_header X-Forwarded-Proto https;\n",
+          "    proxy_set_header Proxy \"\";\n",
+
+          "    proxy_pass http://localhost:4000;\n",
+          "    proxy_buffering off;\n",
+          "    proxy_redirect off;\n",
+          "    proxy_http_version 1.1;\n",
+          "    proxy_set_header Upgrade $http_upgrade;\n",
+          "    proxy_set_header Connection $connection_upgrade;\n",
+
+          "    tcp_nodelay on;\n",
+          "  }\n",
+
+          "  error_page 500 501 502 503 504 /500.html;\n",
+          "}\n",
+          "EOSEOSEOS\n\n",
+
+          "ln -s /etc/nginx/sites-available/", { "Fn::ImportValue": { "Fn::Sub": "${InfraStackName}-MastodonFQDN" } },
+          "      /etc/nginx/sites-enabled/", { "Fn::ImportValue": { "Fn::Sub": "${InfraStackName}-MastodonFQDN" } }, " \n",
+          "rm -f /etc/nginx/sites-enabled/default \n",
+
+          "# ********** Setup daily cron **********\n",
+          "cat << EOSEOSEOS > /home/mastodon/mastodon.daily\n",
+          "cd /home/mastodon/live\n",
+          "RAILS_ENV=production /usr/local/bin/bundle exec rake mastodon:daily > /dev/null\n",
+          "EOSEOSEOS\n\n",
+
+          "chown mastodon:mastodon /home/mastodon/mastodon.daily\n",
+          "chmod +x /home/mastodon/mastodon.daily\n",
+          "echo \"0 18 * * *  mastodon    /home/mastodon/mastodon.daily\" >> /etc/crontab\n",
+
+          "# ********** Restart system **********\n",
+          "reboot \n",
+
+          "# ********** The End **********\n"
+        ] ] } }
+      }
+    },
+    "MastodonInstanceAutoScalingGroup": {
+      "Type" : "AWS::AutoScaling::AutoScalingGroup",
+      "Properties" : {
+        "AvailabilityZones" : [
+          { "Fn::ImportValue": { "Fn::Sub": "${InfraStackName}-SubnetAvailabilityZone1" } },
+          { "Fn::ImportValue": { "Fn::Sub": "${InfraStackName}-SubnetAvailabilityZone2" } }
+        ],
+        "Cooldown" : 300,
+        "DesiredCapacity": 1,
+        "HealthCheckGracePeriod" : 300,
+        "HealthCheckType" : "ELB",
+        "LaunchConfigurationName" : { "Ref": "MastodonInstanceAutoScalingLaunchConfig" },
+        "MaxSize" : 12,
+        "MinSize" : 1,
+        "Tags" : [
+          { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-Mastodon" }, "PropagateAtLaunch" : true },
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value" }, "PropagateAtLaunch" : true }
+        ],
+        "TargetGroupARNs" : [
+          { "Ref": "MastodonInstanceApplicationLoadBalancerTargetGroupHttp" }
+        ],
+        "TerminationPolicies" : [ "Default" ],
+        "VPCZoneIdentifier" : [
+          { "Fn::ImportValue": { "Fn::Sub": "${InfraStackName}-PublicSubnet1" } },
+          { "Fn::ImportValue": { "Fn::Sub": "${InfraStackName}-PublicSubnet2" } }
+        ]
+      }
+    }
+  },
+
+  "Outputs": {
+    "MastodonInstanceHostName": {
+      "Description": "Host name of Mastodon instance",
+      "Value": { "Fn::GetAtt": [ "MastodonInstanceApplicationLoadBalancer", "DNSName" ] },
+    }
+  }
+}
