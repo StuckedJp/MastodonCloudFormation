@@ -139,7 +139,7 @@
         "HealthCheckTimeoutSeconds" : 15,
         "HealthyThresholdCount" : 2,
         "UnhealthyThresholdCount" : 2,
-        "Matcher" : { "HttpCode" : "200" },
+        "Matcher" : { "HttpCode" : "200-399" },
         "Name" : { "Fn::Join" : [ "-", [ { "Ref": "AWS::StackName" }, "alb", "tg" ] ] },
         "Port" : 80,
         "Protocol" : "HTTP",
@@ -202,7 +202,6 @@
     "MastodonInstanceAutoScalingLaunchConfig": {
       "Type" : "AWS::AutoScaling::LaunchConfiguration",
       "Properties" : {
-        "AssociatePublicIpAddress" : true,
         "BlockDeviceMappings" : [ {
           "DeviceName" : "/dev/sda1",
           "Ebs" : {
@@ -431,8 +430,8 @@
         ],
         "TerminationPolicies" : [ "Default" ],
         "VPCZoneIdentifier" : [
-          { "Fn::ImportValue": { "Fn::Sub": "${InfraStackName}-PublicSubnet1" } },
-          { "Fn::ImportValue": { "Fn::Sub": "${InfraStackName}-PublicSubnet2" } }
+          { "Fn::ImportValue": { "Fn::Sub": "${InfraStackName}-PrivateSubnet1" } },
+          { "Fn::ImportValue": { "Fn::Sub": "${InfraStackName}-PrivateSubnet2" } }
         ]
       }
     }
@@ -441,7 +440,7 @@
   "Outputs": {
     "MastodonInstanceHostName": {
       "Description": "Host name of Mastodon instance",
-      "Value": { "Fn::GetAtt": [ "MastodonInstanceApplicationLoadBalancer", "DNSName" ] },
+      "Value": { "Fn::GetAtt": [ "MastodonInstanceApplicationLoadBalancer", "DNSName" ] }
     }
   }
 }
