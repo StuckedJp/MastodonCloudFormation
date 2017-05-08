@@ -515,6 +515,21 @@
         "RuleNumber" : 110
       }
     },
+    "PrivateSubnetNetworkAclEntryIngressConnectBack": {
+      "Type" : "AWS::EC2::NetworkAclEntry",
+      "Properties" : {
+        "CidrBlock" : { "Fn::FindInMap" : [ "CIDR", "All", "IP" ] },
+        "Egress" : false,
+        "NetworkAclId" : { "Ref": "PrivateSubnetNetworkAcl" },
+        "PortRange" : {
+          "From": 1024,
+          "To": 65535
+        },
+        "Protocol" : 6,
+        "RuleAction" : "allow",
+        "RuleNumber" : 190
+      }
+    },
     "PrivateSubnetNetworkAclEntryEgress": {
       "Type" : "AWS::EC2::NetworkAclEntry",
       "Properties" : {
@@ -643,6 +658,53 @@
       "Properties" : {
         "InternetGatewayId" : { "Ref": "InternetGW" },
         "VpcId" : { "Ref": "VPC" }
+      }
+    },
+
+
+    "EIPNat" : {
+      "Type" : "AWS::EC2::EIP",
+      "Properties" : {
+        "Domain" : "vpc"
+      }
+    },
+    "NAT" : {
+      "DependsOn" : "VPCGatewayAttachment",
+      "Type" : "AWS::EC2::NatGateway",
+      "Properties" : {
+        "AllocationId" : { "Fn::GetAtt" : ["EIPNat", "AllocationId"] },
+        "SubnetId" : { "Ref" : "PublicSubnet1" }
+      }
+    },
+    "NATRouteTable": {
+      "Type" : "AWS::EC2::RouteTable",
+      "Properties" : {
+        "VpcId" : { "Ref": "VPC" },
+        "Tags" : [
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+        ]
+      }
+    },
+    "NATRoute" : {
+      "Type" : "AWS::EC2::Route",
+      "Properties" : {
+        "RouteTableId" : { "Ref" : "NATRouteTable" },
+        "DestinationCidrBlock" : { "Fn::FindInMap" : [ "CIDR", "All", "IP" ] },
+        "NatGatewayId" : { "Ref" : "NAT" }
+      }
+    },
+    "PrivateSubnet1RouteTableAssociation": {
+      "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties" : {
+        "RouteTableId" : { "Ref": "NATRouteTable" },
+        "SubnetId" : { "Ref": "PrivateSubnet1" }
+      }
+    },
+    "PrivateSubnet2RouteTableAssociation": {
+      "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties" : {
+        "RouteTableId" : { "Ref": "NATRouteTable" },
+        "SubnetId" : { "Ref": "PrivateSubnet2" }
       }
     },
 
@@ -1029,6 +1091,17 @@
       "Description": "AZ 2",
       "Value": { "Ref": "SubnetAvailabilityZone2" },
       "Export": { "Name" : {"Fn::Sub": "${AWS::StackName}-SubnetAvailabilityZone2" }}
+    },
+
+    "PrivateSubnet1": {
+      "Description": "Private Subnet",
+      "Value": { "Ref": "PrivateSubnet1" },
+      "Export": { "Name" : {"Fn::Sub": "${AWS::StackName}-PrivateSubnet1" }}
+    },
+    "PrivateSubnet2": {
+      "Description": "Private Subnet",
+      "Value": { "Ref": "PrivateSubnet2" },
+      "Export": { "Name" : {"Fn::Sub": "${AWS::StackName}-PrivateSubnet2" }}
     },
 
     "PublicSubnet1": {
