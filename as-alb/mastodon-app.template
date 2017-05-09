@@ -414,9 +414,9 @@
           { "Fn::ImportValue": { "Fn::Sub": "${InfraStackName}-SubnetAvailabilityZone1" } },
           { "Fn::ImportValue": { "Fn::Sub": "${InfraStackName}-SubnetAvailabilityZone2" } }
         ],
-        "Cooldown" : 300,
+        "Cooldown" : 600,
         "DesiredCapacity": 1,
-        "HealthCheckGracePeriod" : 300,
+        "HealthCheckGracePeriod" : 600,
         "HealthCheckType" : "ELB",
         "LaunchConfigurationName" : { "Ref": "MastodonInstanceAutoScalingLaunchConfig" },
         "MaxSize" : 12,
