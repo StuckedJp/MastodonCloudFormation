@@ -688,6 +688,26 @@
         "IpProtocol" : "tcp"
       }
     },
+    "SecurityGroupNATInstanceIngressPrivateSubnet1Smtp": {
+      "Type" : "AWS::EC2::SecurityGroupIngress",
+      "Properties" : {
+        "CidrIp" : { "Fn::FindInMap" : [ "CIDR", "PrivateSubnet1", "IP" ] },
+        "FromPort" : { "Ref": "SMTPHostPort" },
+        "ToPort" : { "Ref": "SMTPHostPort" },
+        "GroupId" : { "Ref": "SecurityGroupNATInstance" },
+        "IpProtocol" : "tcp"
+      }
+    },
+    "SecurityGroupNATInstanceIngressPrivateSubnet2Smtp": {
+      "Type" : "AWS::EC2::SecurityGroupIngress",
+      "Properties" : {
+        "CidrIp" : { "Fn::FindInMap" : [ "CIDR", "PrivateSubnet2", "IP" ] },
+        "FromPort" : { "Ref": "SMTPHostPort" },
+        "ToPort" : { "Ref": "SMTPHostPort" },
+        "GroupId" : { "Ref": "SecurityGroupNATInstance" },
+        "IpProtocol" : "tcp"
+      }
+    },
     "SecurityGroupNATInstanceIngressSSH": {
       "Type" : "AWS::EC2::SecurityGroupIngress",
       "Properties" : {
