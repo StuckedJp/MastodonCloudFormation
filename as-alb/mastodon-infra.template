@@ -95,7 +95,7 @@
 
 
     "BastionInstanceType" : {
-      "Description" : "Mastodon WebServer EC2 instance type",
+      "Description" : "EC2 instance type of bastion server",
       "Type" : "String",
       "Default" : "t2.micro",
       "AllowedValues" : [ "t1.micro", "t2.nano", "t2.micro", "t2.small", "t2.medium", "t2.large",
@@ -111,16 +111,32 @@
       "ConstraintDescription" : "must be a valid EC2 instance type."
     },
     "BastionInstanceAMI": {
-      "Description" : "Mastodon WebServer EC2 instance AMI ID",
+      "Description" : "EC2 instance AMI ID of bastion server.",
       "Type" : "String",
       "ConstraintDescription" : "must be a valid EC2 AMI ID."
     },
     "EC2KeyPair": {
-      "Description" : "Mastodon WebServer EC2 Key Pair Name",
+      "Description" : "EC2 Key Pair Name",
       "Type" : "String",
       "ConstraintDescription" : "must be a valid EC2 Key Pair Name."
     },
 
+    "NATInstanceType" : {
+      "Description" : "EC2 instance type of NAT instance.",
+      "Type" : "String",
+      "Default" : "t2.micro",
+      "AllowedValues" : [ "t1.micro", "t2.nano", "t2.micro", "t2.small", "t2.medium", "t2.large",
+                          "m1.small", "m1.medium", "m1.large", "m1.xlarge",
+                          "m2.xlarge", "m2.2xlarge", "m2.4xlarge", "m3.medium", "m3.large", "m3.xlarge", "m3.2xlarge",
+                          "m4.large", "m4.xlarge", "m4.2xlarge", "m4.4xlarge", "m4.10xlarge",
+                          "c1.medium", "c1.xlarge", "c3.large", "c3.xlarge", "c3.2xlarge", "c3.4xlarge", "c3.8xlarge",
+                          "c4.large", "c4.xlarge", "c4.2xlarge", "c4.4xlarge", "c4.8xlarge",
+                          "g2.2xlarge", "g2.8xlarge", "r3.large", "r3.xlarge", "r3.2xlarge", "r3.4xlarge", "r3.8xlarge",
+                          "i2.xlarge", "i2.2xlarge", "i2.4xlarge", "i2.8xlarge",
+                          "d2.xlarge", "d2.2xlarge", "d2.4xlarge", "d2.8xlarge", "hi1.4xlarge", "hs1.8xlarge",
+                          "cr1.8xlarge", "cc2.8xlarge", "cg1.4xlarge"],
+      "ConstraintDescription" : "must be a valid EC2 instance type."
+    },
 
     "PackageS3Bucket": {
       "Description" : "S3 bucket name for Mastodon pre-build package.",
@@ -211,23 +227,23 @@
     "InstanceConfig": {
       "Storage": { "ValueByGb": "20" }
     },
-    "LbAccessLogBucketPolicy": {
-      "us-east-1": { "Principal": "127311923021" },
-      "us-east-2": { "Principal": "033677994240" },
-      "us-west-1": { "Principal": "027434742980" },
-      "us-west-2": { "Principal": "797873946194" },
-      "ca-central-1": { "Principal": "985666609251" },
-      "eu-west-1": { "Principal": "156460612806" },
-      "eu-central-1": { "Principal": "054676820928" },
-      "eu-west-2": { "Principal": "652711504416" },
-      "ap-northeast-1": { "Principal": "582318560864" },
-      "ap-northeast-2": { "Principal": "600734575887" },
-      "ap-southeast-1": { "Principal": "114774131450" },
-      "ap-southeast-2": { "Principal": "783225319266" },
-      "ap-south-1": { "Principal": "718504428378" },
-      "sa-east-1": { "Principal": "507241528517" },
-      "us-gov-west-1": { "Principal": "048591011584" },
-      "cn-north-1": { "Principal": "638102146993" }
+    "RegionConfig": {
+      "us-east-1"     : { "Principal": "127311923021", "NATAMI": "ami-258e1f33" },
+      "us-east-2"     : { "Principal": "033677994240", "NATAMI": "ami-6793b702" },
+      "us-west-1"     : { "Principal": "027434742980", "NATAMI": "ami-8437a5e4" },
+      "us-west-2"     : { "Principal": "797873946194", "NATAMI": "ami-eeba9f8e" },
+      "ca-central-1"  : { "Principal": "985666609251", "NATAMI": "ami-c8db67ac" },
+      "eu-west-1"     : { "Principal": "156460612806", "NATAMI": "ami-5bc6c23d" },
+      "eu-central-1"  : { "Principal": "054676820928", "NATAMI": "ami-17c4d073" },
+      "eu-west-2"     : { "Principal": "652711504416", "NATAMI": "ami-0469bb6b" },
+      "ap-northeast-1": { "Principal": "582318560864", "NATAMI": "ami-6c3c130b" },
+      "ap-northeast-2": { "Principal": "600734575887", "NATAMI": "ami-2e15c740" },
+      "ap-southeast-1": { "Principal": "114774131450", "NATAMI": "ami-ae5ce5cd" },
+      "ap-southeast-2": { "Principal": "783225319266", "NATAMI": "ami-85c1b2ea" },
+      "ap-south-1"    : { "Principal": "718504428378", "NATAMI": "ami-242f2647" },
+      "sa-east-1"     : { "Principal": "507241528517", "NATAMI": "ami-93ccaeff" },
+      "us-gov-west-1" : { "Principal": "048591011584", "NATAMI": "ami-6ae2660b" },
+      "cn-north-1"    : { "Principal": "638102146993", "NATAMI": "ami-c1e036ac" }
     }
   },
 
@@ -253,7 +269,7 @@
               "Resource": { "Fn::Sub": "arn:aws:s3:::${LBAccessLogS3Bucket}/${LBAccessLogPrefix}/AWSLogs/${AWS::AccountId}/*" },
               "Principal": {
                 "AWS": [
-                  { "Fn::FindInMap": [ "LbAccessLogBucketPolicy", { "Ref": "AWS::Region" }, "Principal" ] }
+                  { "Fn::FindInMap": [ "RegionConfig", { "Ref": "AWS::Region" }, "Principal" ] }
                 ]
               }
             }
@@ -269,6 +285,7 @@
         "CidrBlock" : { "Fn::FindInMap" : [ "CIDR", "VPC", "IP" ] },
         "EnableDnsHostnames": true,
         "Tags" : [
+          { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-VPC" } },
           { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
         ]
       }
@@ -277,8 +294,16 @@
       "Type" : "AWS::EC2::InternetGateway",
       "Properties" : {
         "Tags" : [
+          { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-INetGW" } },
           { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
         ]
+      }
+    },
+    "VPCGatewayAttachment": {
+      "Type" : "AWS::EC2::VPCGatewayAttachment",
+      "Properties" : {
+        "InternetGatewayId" : { "Ref": "InternetGW" },
+        "VpcId" : { "Ref": "VPC" }
       }
     },
     "VPCRouteTable": {
@@ -286,12 +311,14 @@
       "Properties" : {
         "VpcId" : { "Ref": "VPC" },
         "Tags" : [
+          { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-VPCRouteTable" } },
           { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
         ]
       }
     },
     "VPCRouteTableRoute": {
       "Type" : "AWS::EC2::Route",
+      "DependsOn": "VPCGatewayAttachment",
       "Properties" : {
         "DestinationCidrBlock" : { "Fn::FindInMap" : [ "CIDR", "All", "IP" ] },
         "GatewayId" : { "Ref": "InternetGW" },
@@ -307,6 +334,7 @@
         "MapPublicIpOnLaunch" : false,
         "AvailabilityZone" : { "Ref": "SubnetAvailabilityZone1" },
         "Tags" : [
+          { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-PrivateSubnet1" } },
           { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
         ],
         "VpcId" : { "Ref": "VPC" }
@@ -319,6 +347,7 @@
         "MapPublicIpOnLaunch" : false,
         "AvailabilityZone" : { "Ref": "SubnetAvailabilityZone2" },
         "Tags" : [
+          { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-PrivateSubnet2" } },
           { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
         ],
         "VpcId" : { "Ref": "VPC" }
@@ -331,6 +360,7 @@
         "MapPublicIpOnLaunch" : true,
         "AvailabilityZone" : { "Ref": "SubnetAvailabilityZone1" },
         "Tags" : [
+          { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-PublicSubnet1" } },
           { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
         ],
         "VpcId" : { "Ref": "VPC" }
@@ -343,6 +373,7 @@
         "MapPublicIpOnLaunch" : true,
         "AvailabilityZone" : { "Ref": "SubnetAvailabilityZone2" },
         "Tags" : [
+          { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-PublicSubnet2" } },
           { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
         ],
         "VpcId" : { "Ref": "VPC" }
@@ -354,6 +385,7 @@
       "Type" : "AWS::EC2::NetworkAcl",
       "Properties" : {
         "Tags" : [
+          { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-PublicSubnetNetworkAcl" } },
           { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
         ],
         "VpcId" : { "Ref": "VPC" }
@@ -488,6 +520,7 @@
       "Type" : "AWS::EC2::NetworkAcl",
       "Properties" : {
         "Tags" : [
+          { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-PrivateSubnetNetworkAcl" } },
           { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
         ],
         "VpcId" : { "Ref": "VPC" }
@@ -578,6 +611,7 @@
       "Properties" : {
         "GroupDescription" : "Security Group for bastion Instance Host",
         "Tags" :  [
+          { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-SecurityGroupBastion" } },
           { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
         ],
         "VpcId" : { "Ref": "VPC" }
@@ -603,11 +637,82 @@
     },
 
 
+    "SecurityGroupNATInstance": {
+      "Type" : "AWS::EC2::SecurityGroup",
+      "Properties" : {
+        "GroupDescription" : "Security Group for NAT instance.",
+        "Tags" :  [
+          { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-SecurityGroupNAT" } },
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+        ],
+        "VpcId" : { "Ref": "VPC" }
+      }
+    },
+    "SecurityGroupNATInstanceIngressPrivateSubnet1Http": {
+      "Type" : "AWS::EC2::SecurityGroupIngress",
+      "Properties" : {
+        "CidrIp" : { "Fn::FindInMap" : [ "CIDR", "PrivateSubnet1", "IP" ] },
+        "FromPort" : 80,
+        "ToPort" : 80,
+        "GroupId" : { "Ref": "SecurityGroupNATInstance" },
+        "IpProtocol" : "tcp"
+      }
+    },
+    "SecurityGroupNATInstanceIngressPrivateSubnet2Http": {
+      "Type" : "AWS::EC2::SecurityGroupIngress",
+      "Properties" : {
+        "CidrIp" : { "Fn::FindInMap" : [ "CIDR", "PrivateSubnet2", "IP" ] },
+        "FromPort" : 80,
+        "ToPort" : 80,
+        "GroupId" : { "Ref": "SecurityGroupNATInstance" },
+        "IpProtocol" : "tcp"
+      }
+    },
+    "SecurityGroupNATInstanceIngressPrivateSubnet1Https": {
+      "Type" : "AWS::EC2::SecurityGroupIngress",
+      "Properties" : {
+        "CidrIp" : { "Fn::FindInMap" : [ "CIDR", "PrivateSubnet1", "IP" ] },
+        "FromPort" : 443,
+        "ToPort" : 443,
+        "GroupId" : { "Ref": "SecurityGroupNATInstance" },
+        "IpProtocol" : "tcp"
+      }
+    },
+    "SecurityGroupNATInstanceIngressPrivateSubnet2Https": {
+      "Type" : "AWS::EC2::SecurityGroupIngress",
+      "Properties" : {
+        "CidrIp" : { "Fn::FindInMap" : [ "CIDR", "PrivateSubnet2", "IP" ] },
+        "FromPort" : 443,
+        "ToPort" : 443,
+        "GroupId" : { "Ref": "SecurityGroupNATInstance" },
+        "IpProtocol" : "tcp"
+      }
+    },
+    "SecurityGroupNATInstanceIngressSSH": {
+      "Type" : "AWS::EC2::SecurityGroupIngress",
+      "Properties" : {
+        "CidrIp" : { "Fn::FindInMap" : [ "CIDR", "All", "IP" ] },
+        "FromPort" : 22,
+        "ToPort" : 22,
+        "GroupId" : { "Ref": "SecurityGroupNATInstance" },
+        "IpProtocol" : "tcp"
+      }
+    },
+    "SecurityGroupNATInstanceEgress": {
+      "Type" : "AWS::EC2::SecurityGroupEgress",
+      "Properties" : {
+        "CidrIp" : { "Fn::FindInMap" : [ "CIDR", "All", "IP" ] },
+        "GroupId" : { "Ref": "SecurityGroupNATInstance" },
+        "IpProtocol" : "-1"
+      }
+    },
+
     "SecurityGroupMastodonInstance": {
       "Type" : "AWS::EC2::SecurityGroup",
       "Properties" : {
         "GroupDescription" : "Security Group for Mastodon Instance Host",
         "Tags" :  [
+          { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-SecurityGroupMastodon" } },
           { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
         ],
         "VpcId" : { "Ref": "VPC" }
@@ -653,27 +758,37 @@
     },
 
 
-    "VPCGatewayAttachment": {
-      "Type" : "AWS::EC2::VPCGatewayAttachment",
+    "NATInstanceNetworkIF": {
+      "Type" : "AWS::EC2::NetworkInterface",
       "Properties" : {
-        "InternetGatewayId" : { "Ref": "InternetGW" },
-        "VpcId" : { "Ref": "VPC" }
+        "Description" : "NAT Instance Network Interface.",
+        "GroupSet" : [ { "Ref": "SecurityGroupNATInstance" } ],
+        "SourceDestCheck" : false,
+        "SubnetId" : { "Ref": "PublicSubnet1" },
+        "Tags" : [
+          { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-NATNetworkIF" } },
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+        ]
       }
     },
-
-
-    "EIPNat" : {
-      "Type" : "AWS::EC2::EIP",
+    "NATInstance": {
+      "Type" : "AWS::EC2::Instance",
+      "DependsOn": "VPCGatewayAttachment",
       "Properties" : {
-        "Domain" : "vpc"
-      }
-    },
-    "NAT" : {
-      "DependsOn" : "VPCGatewayAttachment",
-      "Type" : "AWS::EC2::NatGateway",
-      "Properties" : {
-        "AllocationId" : { "Fn::GetAtt" : ["EIPNat", "AllocationId"] },
-        "SubnetId" : { "Ref" : "PublicSubnet1" }
+        "DisableApiTermination" : false,
+        "ImageId" : { "Fn::FindInMap": [ "RegionConfig", { "Ref": "AWS::Region" }, "NATAMI" ] },
+        "InstanceInitiatedShutdownBehavior" : "stop",
+        "InstanceType" : { "Ref": "NATInstanceType" },
+        "KeyName" : { "Ref": "EC2KeyPair" },
+        "Monitoring" : false,
+        "NetworkInterfaces" : [ {
+          "DeviceIndex" : "0",
+          "NetworkInterfaceId" : { "Ref": "NATInstanceNetworkIF" }
+        } ],
+        "Tags" : [
+          { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-NAT" } },
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+        ]
       }
     },
     "NATRouteTable": {
@@ -681,6 +796,7 @@
       "Properties" : {
         "VpcId" : { "Ref": "VPC" },
         "Tags" : [
+          { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-NATRouteTable" } },
           { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
         ]
       }
@@ -690,7 +806,7 @@
       "Properties" : {
         "RouteTableId" : { "Ref" : "NATRouteTable" },
         "DestinationCidrBlock" : { "Fn::FindInMap" : [ "CIDR", "All", "IP" ] },
-        "NatGatewayId" : { "Ref" : "NAT" }
+        "InstanceId": { "Ref": "NATInstance" }
       }
     },
     "PrivateSubnet1RouteTableAssociation": {
@@ -762,18 +878,19 @@
     "BastionInstanceNetworkIF": {
       "Type" : "AWS::EC2::NetworkInterface",
       "Properties" : {
-        "Description" : "Mastodon Instance Network Interface.",
+        "Description" : "Bastion instance network interface.",
         "GroupSet" : [ { "Ref": "SecurityGroupBastionInstance" } ],
         "SourceDestCheck" : true,
         "SubnetId" : { "Ref": "PublicSubnet1" },
         "Tags" : [
+          { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-BastionNetworkIF" } },
           { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
         ]
       }
     },
-
     "BastionInstance": {
       "Type" : "AWS::EC2::Instance",
+      "DependsOn": "VPCGatewayAttachment",
       "Properties" : {
         "BlockDeviceMappings" : [ {
           "DeviceName" : "/dev/sda1",
@@ -880,12 +997,12 @@
     },
 
 
-
     "SecurityGroupRDS": {
       "Type" : "AWS::EC2::SecurityGroup",
       "Properties" : {
         "GroupDescription" : "Security Group for RDS Instance Host",
         "Tags" :  [
+          { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-SecurityGroupRDS" } },
           { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
         ],
         "VpcId" : { "Ref": "VPC" }
@@ -945,14 +1062,15 @@
         "DBSubnetGroupDescription" : "RDS Subnet Group",
         "SubnetIds" : [ { "Ref": "PrivateSubnet1" }, { "Ref": "PrivateSubnet2" } ],
         "Tags" : [
+          { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-RDSSubnetGroup" } },
           { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
         ]
       }
     },
     "RDSInstance": {
       "Type" : "AWS::RDS::DBInstance",
-      "Properties" :
-      {
+      "DependsOn": "VPCGatewayAttachment",
+      "Properties" : {
         "AllocatedStorage" : { "Fn::FindInMap" : [ "RDSConfig", "Storage", "ValueByGb" ] },
         "AllowMajorVersionUpgrade" : false,
         "AutoMinorVersionUpgrade" : true,
@@ -977,6 +1095,7 @@
         "StorageEncrypted" : false,
         "StorageType" : { "Ref": "DBStorageType" },
         "Tags" : [
+          { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-Postgresql" } },
           { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
         ]
       }
@@ -988,6 +1107,7 @@
       "Properties" : {
         "GroupDescription" : "Security Group for ElastiCache Instance Host",
         "Tags" :  [
+          { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-SecurityGroupElastiCache" } },
           { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
         ],
         "VpcId" : { "Ref": "VPC" }
@@ -1062,6 +1182,7 @@
         "NumCacheNodes" : 1,
         "Port" : { "Fn::FindInMap" : [ "ElastiCacheConfig", "Port", "Value" ] },
         "Tags" : [
+          { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-RedisCache" } },
           { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
         ],
         "VpcSecurityGroupIds" : [ {"Fn::GetAtt": [ "SecurityGroupElastiCache", "GroupId"]} ]
@@ -1138,12 +1259,12 @@
     },
 
     "LBAccessLogS3Bucket": {
-      "Description": "S3 bucket name for Application Load Balancer.",
+      "Description": "S3 bucket name for Application Load Balancer log.",
       "Value": { "Ref": "LBAccessLogS3Bucket" },
       "Export": { "Name" : {"Fn::Sub": "${AWS::StackName}-LBAccessLogS3Bucket" }}
     },
     "LBAccessLogPrefix": {
-      "Description": "S3 folder name for Application Load Balancer.",
+      "Description": "S3 folder name for Application Load Balancer log.",
       "Value": { "Ref": "LBAccessLogPrefix" },
       "Export": { "Name" : {"Fn::Sub": "${AWS::StackName}-LBAccessLogPrefix" }}
     },

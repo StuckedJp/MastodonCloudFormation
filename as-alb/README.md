@@ -299,6 +299,9 @@ RDS のスナップショットやパラメータグループが残る場合が�
 * BastionInstanceType
   * 踏み台サーバの EC2 インスタンスのインスタンスタイプを指定します。
     * デフォルト: "t2.micro"
+* NATInstanceType
+  * NAT インスタンスのインスタンスタイプを指定します。
+    * デフォルト: "t2.micro"
 
 
 #### Mastodon 関係の設定
