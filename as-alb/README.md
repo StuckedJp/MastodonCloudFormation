@@ -8,7 +8,7 @@ Auto Scaling と Application Load Balancer を組み込んだ、Mastodon の Clo
 
 本テンプレートで構築される AWS リソースの構成です。
 
-![構成図](https://s3.amazonaws.com/public-nv/mastodon-github/as-alb/diagram.png)
+![構成図](https://s3.amazonaws.com/public-nv/mastodon-github/as-alb.png)
 
 
 

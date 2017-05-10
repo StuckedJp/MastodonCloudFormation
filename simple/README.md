@@ -3,6 +3,15 @@
 Cloud Formation Template for Mastodon
 
 
+## 構成
+
+AWS リソースの構成です。
+
+![構成図](https://s3.amazonaws.com/public-nv/mastodon-github/simple.png)
+
+
+
+
 ## 使い方
 
 ### サーバー証明書の準備
@@ -153,15 +162,6 @@ RDS のスナップショットやパラメータグループも残る場合が�
 
 
 
-## 構成
-
-AWS リソースの構成です。
-
-![物理構成図](https://s3.amazonaws.com/public-nv/mastodon-github/physical-diagram.png)
-
-
-
-
 ## テンプレートパラメータ
 
 テンプレートファイルの設定項目について説明します。
@@ -257,12 +257,3 @@ AWS リソースの構成です。
   * AWS リソースに付与するタグのキーです。
 * Tag1Value
   * AWS リソースに付与するタグの値です。コストの算出に利用できます。
-
-
-
-## 残件
-
-* できれば
-  * ELB
-  * Auto Scaling
-  * ElasticBeanstalk
