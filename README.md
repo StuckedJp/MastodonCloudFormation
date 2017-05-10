@@ -13,7 +13,7 @@ EC2 インスタンスと RDS(Postgresql) と ElastiCache(Redis) で構築され
 * サブネットを分割し、インターネットにデータベースサーバを晒さないセキュアな構成です。
 * Mastodon が稼動している EC2 インスタンスが直接インターネットからのアクセスを受け付けます。
 
-![構成図](https://s3.amazonaws.com/public-nv/mastodon-github/simple/diagram.png)
+![構成図](https://s3.amazonaws.com/public-nv/mastodon-github/simple.png)
 
 
 
@@ -27,6 +27,6 @@ EC2 インスタンスと RDS(Postgresql) と ElastiCache(Redis) で構築され
 * EC2 側の問題でサービスが死んだ場合、AutoScaling で自動復旧します。
 * 負荷状況に応じて EC2 インスタンスを増減できます。
 
-![構成図](https://s3.amazonaws.com/public-nv/mastodon-github/as-alb/diagram.png)
+![構成図](https://s3.amazonaws.com/public-nv/mastodon-github/as-alb.png)
 
 
