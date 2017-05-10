@@ -23,6 +23,8 @@
         { "ParameterKey": "BastionInstanceAMI", "ParameterValue": "" },
         { "ParameterKey": "EC2KeyPair", "ParameterValue": "" },
 
+        { "ParameterKey": "NATInstanceType", "ParameterValue": "" },
+
         { "ParameterKey": "PackageS3Bucket", "ParameterValue": "" },
         { "ParameterKey": "PackageS3Prefix", "ParameterValue": "" },
         { "ParameterKey": "PackageName", "ParameterValue": "" },
