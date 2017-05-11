@@ -845,6 +845,33 @@
     },
 
 
+    "VPCEndpoint": {
+      "Type" : "AWS::EC2::VPCEndpoint",
+      "Properties" : {
+        "PolicyDocument" : {
+          "Version":"2012-10-17",
+          "Statement":[ {
+            "Effect":"Allow",
+            "Principal": "*",
+            "Action":[ "s3:*" ],
+            "Resource":[
+              "arn:aws:s3:::cloudformation-examples/*",
+              { "Fn::Sub": "arn:aws:s3:::${LBAccessLogS3Bucket}/*" },
+              { "Fn::Sub": "arn:aws:s3:::${ContentsS3Bucket}/*" },
+              { "Fn::Sub": "arn:aws:s3:::${PackageS3Bucket}/*" }
+            ]
+          } ]
+        },
+        "RouteTableIds" : [ 
+          { "Ref": "VPCRouteTable" },
+          { "Ref": "NATRouteTable" }
+        ],
+        "ServiceName" : { "Fn::Sub": "com.amazonaws.${AWS::Region}.s3" },
+        "VpcId" : { "Ref": "VPC" }
+      }
+    },
+
+
     "BastionInstanceIAMRole": {
       "Type": "AWS::IAM::Role",
       "Properties": {
@@ -998,6 +1025,12 @@
           "S3_HOSTNAME=", { "Fn::If": [ "IsVirginia",
             "s3.amazonaws.com",
             { "Fn::Join": [ "", [ "s3-", { "Ref": "AWS::Region" }, ".amazonaws.com" ] ] } ] }, "\n",
+          "# Option\n",
+          "# SINGLE_USER_MODE=true\n",
+          "# Cluster number setting for streaming API server.\n",
+          "# If you comment out following line, cluster number will be `numOfCpuCores - 1`.\n",
+          "STREAMING_CLUSTER_NUM=1\n",
+          "# Secrets\n",
           "EOSEOSEOS\n\n",
           "echo \"PAPERCLIP_SECRET=`rake secret`\" >> .env.production\n",
           "echo \"SECRET_KEY_BASE=`rake secret`\" >> .env.production\n",
@@ -1191,8 +1224,7 @@
     },
     "ElastiCacheCluster": {
       "Type" : "AWS::ElastiCache::CacheCluster",
-      "Properties" :
-      {
+      "Properties" : {
         "AutoMinorVersionUpgrade" : true,
         "CacheNodeType" : { "Ref": "ElastiCacheNodeType" },
         "CacheSubnetGroupName" : { "Ref": "ElastiCacheSubnetGroup" },
