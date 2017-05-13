@@ -30,6 +30,13 @@
     },
 
 
+    "CIDRForSSH": {
+      "Description" : "CIDR for SSH connection",
+      "Type": "String",
+      "Default" : "127.0.0.1/32"
+    },
+
+
     "DBInstanceClass": {
       "Description" : "RDS instance type",
       "Type": "String",
@@ -186,11 +193,10 @@
 
   "Mappings": {
     "CIDR": {
-      "VPC"           : { "IP": "10.0.0.0/16" },
-      "PrivateSubnet1": { "IP": "10.0.10.0/24" },
-      "PrivateSubnet2": { "IP": "10.0.11.0/24" },
-      "PublicSubnet"  : { "IP": "10.0.20.0/24" },
-      "All"           : { "IP": "0.0.0.0/0" }
+      "VPC"    : { "IP": "10.0.0.0/16" },
+      "Subnet1": { "IP": "10.0.10.0/24" },
+      "Subnet2": { "IP": "10.0.11.0/24" },
+      "All"    : { "IP": "0.0.0.0/0" }
     },
     "RDSConfig": {
       "Port": { "Value": "5432" },
@@ -220,27 +226,26 @@
         "CidrBlock" : { "Fn::FindInMap" : [ "CIDR", "VPC", "IP" ] },
         "EnableDnsHostnames": true,
         "Tags" : [
+          { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-VPC"} },
           { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
         ]
       }
     },
-
-
     "InternetGW": {
       "Type" : "AWS::EC2::InternetGateway",
       "Properties" : {
         "Tags" : [
+          { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-INetGW"} },
           { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
         ]
       }
     },
-
-
     "VPCRouteTable": {
       "Type" : "AWS::EC2::RouteTable",
       "Properties" : {
         "VpcId" : { "Ref": "VPC" },
         "Tags" : [
+          { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-VPCRouteTable"} },
           { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
         ]
       }
@@ -253,38 +258,59 @@
         "RouteTableId" : { "Ref": "VPCRouteTable" }
       }
     },
+    "VPCGatewayAttachment": {
+      "Type" : "AWS::EC2::VPCGatewayAttachment",
+      "Properties" : {
+        "InternetGatewayId" : { "Ref": "InternetGW" },
+        "VpcId" : { "Ref": "VPC" }
+      }
+    },
 
 
-    "PrivateSubnet1": {
+    "VPCEndpoint": {
+      "Type" : "AWS::EC2::VPCEndpoint",
+      "Properties" : {
+        "PolicyDocument" : {
+          "Version":"2012-10-17",
+          "Statement":[ {
+            "Effect":"Allow",
+            "Principal": "*",
+            "Action":[ "s3:*" ],
+            "Resource":[
+              "arn:aws:s3:::cloudformation-examples/*",
+              { "Fn::Sub": "arn:aws:s3:::${ContentsS3Bucket}/*" },
+              { "Fn::Sub": "arn:aws:s3:::${CertS3Bucket}/*" }
+            ]
+          } ]
+        },
+        "RouteTableIds" : [ { "Ref": "VPCRouteTable" } ],
+        "ServiceName" : { "Fn::Sub": "com.amazonaws.${AWS::Region}.s3" },
+        "VpcId" : { "Ref": "VPC" }
+      }
+    },
+
+
+    "Subnet1": {
       "Type" : "AWS::EC2::Subnet",
       "Properties" : {
-        "CidrBlock" : { "Fn::FindInMap" : [ "CIDR", "PrivateSubnet1", "IP" ] },
+        "CidrBlock" : { "Fn::FindInMap" : [ "CIDR", "Subnet1", "IP" ] },
         "MapPublicIpOnLaunch" : false,
         "AvailabilityZone" : { "Ref": "SubnetAvailabilityZone1" },
         "Tags" : [
+          { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-Subnet1"} },
           { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
         ],
         "VpcId" : { "Ref": "VPC" }
       }
     },
-    "PrivateSubnet2": {
+    "Subnet2": {
       "Type" : "AWS::EC2::Subnet",
       "Properties" : {
-        "CidrBlock" : { "Fn::FindInMap" : [ "CIDR", "PrivateSubnet2", "IP" ] },
+        "CidrBlock" : { "Fn::FindInMap" : [ "CIDR", "Subnet2", "IP" ] },
         "MapPublicIpOnLaunch" : false,
         "AvailabilityZone" : { "Ref": "SubnetAvailabilityZone2" },
         "Tags" : [
-          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
-        ],
-        "VpcId" : { "Ref": "VPC" }
-      }
-    },
-    "PublicSubnet": {
-      "Type" : "AWS::EC2::Subnet",
-      "Properties" : {
-        "CidrBlock" : { "Fn::FindInMap" : [ "CIDR", "PublicSubnet", "IP" ] },
-        "MapPublicIpOnLaunch" : true,
-        "Tags" : [
+          { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-Subnet2"} },
           { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
         ],
         "VpcId" : { "Ref": "VPC" }
@@ -292,21 +318,22 @@
     },
 
 
-    "PublicSubnetNetworkAcl": {
+    "SubnetNetworkAcl": {
       "Type" : "AWS::EC2::NetworkAcl",
       "Properties" : {
         "Tags" : [
+          { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-NetworkAcl"} },
           { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
         ],
         "VpcId" : { "Ref": "VPC" }
       }
     },
-    "PublicSubnetNetworkAclEntryIngressHttp": {
+    "SubnetNetworkAclEntryIngressHttp": {
       "Type" : "AWS::EC2::NetworkAclEntry",
       "Properties" : {
         "CidrBlock" : { "Fn::FindInMap" : [ "CIDR", "All", "IP" ] },
         "Egress" : false,
-        "NetworkAclId" : { "Ref": "PublicSubnetNetworkAcl" },
+        "NetworkAclId" : { "Ref": "SubnetNetworkAcl" },
         "PortRange" : {
           "From": 80,
           "To": 80
@@ -316,12 +343,12 @@
         "RuleNumber" : 110
       }
     },
-    "PublicSubnetNetworkAclEntryIngressHttps": {
+    "SubnetNetworkAclEntryIngressHttps": {
       "Type" : "AWS::EC2::NetworkAclEntry",
       "Properties" : {
         "CidrBlock" : { "Fn::FindInMap" : [ "CIDR", "All", "IP" ] },
         "Egress" : false,
-        "NetworkAclId" : { "Ref": "PublicSubnetNetworkAcl" },
+        "NetworkAclId" : { "Ref": "SubnetNetworkAcl" },
         "PortRange" : {
           "From": 443,
           "To": 443
@@ -331,12 +358,12 @@
         "RuleNumber" : 120
       }
     },
-    "PublicSubnetNetworkAclEntryIngressSSH": {
+    "SubnetNetworkAclEntryIngressSSH": {
       "Type" : "AWS::EC2::NetworkAclEntry",
       "Properties" : {
-        "CidrBlock" : { "Fn::FindInMap" : [ "CIDR", "All", "IP" ] },
+        "CidrBlock" : { "Ref" : "CIDRForSSH" },
         "Egress" : false,
-        "NetworkAclId" : { "Ref": "PublicSubnetNetworkAcl" },
+        "NetworkAclId" : { "Ref": "SubnetNetworkAcl" },
         "PortRange" : {
           "From": 22,
           "To": 22
@@ -346,12 +373,12 @@
         "RuleNumber" : 130
       }
     },
-    "PublicSubnetNetworkAclEntryIngressConnectBack": {
+    "SubnetNetworkAclEntryIngressConnectBack": {
       "Type" : "AWS::EC2::NetworkAclEntry",
       "Properties" : {
         "CidrBlock" : { "Fn::FindInMap" : [ "CIDR", "All", "IP" ] },
         "Egress" : false,
-        "NetworkAclId" : { "Ref": "PublicSubnetNetworkAcl" },
+        "NetworkAclId" : { "Ref": "SubnetNetworkAcl" },
         "PortRange" : {
           "From": 1024,
           "To": 65535
@@ -361,7 +388,7 @@
         "RuleNumber" : 190
       }
     },
-    "PublicSubnetNetworkAclEntryIngressICMP": {
+    "SubnetNetworkAclEntryIngressICMP": {
       "Type" : "AWS::EC2::NetworkAclEntry",
       "Properties" : {
         "CidrBlock" : { "Fn::FindInMap" : [ "CIDR", "All", "IP" ] },
@@ -370,107 +397,52 @@
           "Code": -1,
           "Type": -1
         },
-        "NetworkAclId" : { "Ref": "PublicSubnetNetworkAcl" },
+        "NetworkAclId" : { "Ref": "SubnetNetworkAcl" },
         "Protocol" : 1,
         "RuleAction" : "allow",
         "RuleNumber" : 200
       }
     },
-    "PublicSubnetNetworkAclEntryIngressPrivateSubnet1": {
-      "Type" : "AWS::EC2::NetworkAclEntry",
-      "Properties" : {
-        "CidrBlock" : { "Fn::FindInMap" : [ "CIDR", "PrivateSubnet1", "IP" ] },
-        "Egress" : false,
-        "NetworkAclId" : { "Ref": "PublicSubnetNetworkAcl" },
-        "Protocol" : -1,
-        "RuleAction" : "allow",
-        "RuleNumber" : 300
-      }
-    },
-    "PublicSubnetNetworkAclEntryIngressPrivateSubnet2": {
-      "Type" : "AWS::EC2::NetworkAclEntry",
-      "Properties" : {
-        "CidrBlock" : { "Fn::FindInMap" : [ "CIDR", "PrivateSubnet2", "IP" ] },
-        "Egress" : false,
-        "NetworkAclId" : { "Ref": "PublicSubnetNetworkAcl" },
-        "Protocol" : -1,
-        "RuleAction" : "allow",
-        "RuleNumber" : 310
-      }
-    },
-    "PublicSubnetNetworkAclEntryEgress": {
+    "SubnetNetworkAclEntryEgress": {
       "Type" : "AWS::EC2::NetworkAclEntry",
       "Properties" : {
         "CidrBlock" : { "Fn::FindInMap" : [ "CIDR", "All", "IP" ] },
         "Egress" : true,
-        "NetworkAclId" : { "Ref": "PublicSubnetNetworkAcl" },
+        "NetworkAclId" : { "Ref": "SubnetNetworkAcl" },
         "Protocol" : -1,
         "RuleAction" : "allow",
         "RuleNumber" : 100
       }
     },
 
-    "PublicSubnetRouteTableAssociation": {
+    "Subnet1RouteTableAssociation": {
       "Type" : "AWS::EC2::SubnetRouteTableAssociation",
       "Properties" : {
         "RouteTableId" : { "Ref": "VPCRouteTable" },
-        "SubnetId" : { "Ref": "PublicSubnet" }
+        "SubnetId" : { "Ref": "Subnet1" }
       }
     },
-
-
-    "PrivateSubnetNetworkAcl": {
-      "Type" : "AWS::EC2::NetworkAcl",
+    "Subnet2RouteTableAssociation": {
+      "Type" : "AWS::EC2::SubnetRouteTableAssociation",
       "Properties" : {
-        "Tags" : [
-          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
-        ],
-        "VpcId" : { "Ref": "VPC" }
-      }
-    },
-    "PrivateSubnetNetworkAclEntryIngress": {
-      "Type" : "AWS::EC2::NetworkAclEntry",
-      "Properties" : {
-        "CidrBlock" : { "Fn::FindInMap" : [ "CIDR", "PublicSubnet", "IP" ] },
-        "Egress" : false,
-        "NetworkAclId" : { "Ref": "PrivateSubnetNetworkAcl" },
-        "Protocol" : -1,
-        "RuleAction" : "allow",
-        "RuleNumber" : 100
-      }
-    },
-    "PrivateSubnetNetworkAclEntryEgress": {
-      "Type" : "AWS::EC2::NetworkAclEntry",
-      "Properties" : {
-        "CidrBlock" : { "Fn::FindInMap" : [ "CIDR", "All", "IP" ] },
-        "Egress" : true,
-        "NetworkAclId" : { "Ref": "PrivateSubnetNetworkAcl" },
-        "Protocol" : -1,
-        "RuleAction" : "allow",
-        "RuleNumber" : 100
+        "RouteTableId" : { "Ref": "VPCRouteTable" },
+        "SubnetId" : { "Ref": "Subnet2" }
       }
     },
 
 
-    "PrivateSubnet1ToNetworkACL": {
+    "Subnet1ToNetworkACL": {
       "Type" : "AWS::EC2::SubnetNetworkAclAssociation",
       "Properties" : {
-        "SubnetId" : { "Ref": "PrivateSubnet1" },
-        "NetworkAclId" : { "Ref": "PrivateSubnetNetworkAcl" }
+        "SubnetId" : { "Ref": "Subnet1" },
+        "NetworkAclId" : { "Ref": "SubnetNetworkAcl" }
       }
     },
-    "PrivateSubnet2ToNetworkACL": {
+    "Subnet2ToNetworkACL": {
       "Type" : "AWS::EC2::SubnetNetworkAclAssociation",
       "Properties" : {
-        "SubnetId" : { "Ref": "PrivateSubnet2" },
-        "NetworkAclId" : { "Ref": "PrivateSubnetNetworkAcl" }
-      }
-    },
-    "PublicSubnetToNetworkACL": {
-      "Type" : "AWS::EC2::SubnetNetworkAclAssociation",
-      "Properties" : {
-        "SubnetId" : { "Ref": "PublicSubnet" },
-        "NetworkAclId" : { "Ref": "PublicSubnetNetworkAcl" }
+        "SubnetId" : { "Ref": "Subnet2" },
+        "NetworkAclId" : { "Ref": "SubnetNetworkAcl" }
       }
     },
 
@@ -480,6 +452,7 @@
       "Properties" : {
         "GroupDescription" : "Security Group for Mastodon Instance Host",
         "Tags" :  [
+          { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-MastodonInstance"} },
           { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
         ],
         "VpcId" : { "Ref": "VPC" }
@@ -508,7 +481,7 @@
     "SecurityGroupMastodonInstanceIngressSSH": {
       "Type" : "AWS::EC2::SecurityGroupIngress",
       "Properties" : {
-        "CidrIp" : { "Fn::FindInMap" : [ "CIDR", "All", "IP" ] },
+        "CidrIp" : { "Ref" : "CIDRForSSH" },
         "FromPort" : 22,
         "ToPort" : 22,
         "GroupId" : { "Ref": "SecurityGroupMastodonInstance" },
@@ -521,27 +494,6 @@
         "CidrIp" : { "Fn::FindInMap" : [ "CIDR", "All", "IP" ] },
         "GroupId" : { "Ref": "SecurityGroupMastodonInstance" },
         "IpProtocol" : "-1"
-      }
-    },
-
-
-    "ContentsBucket": {
-      "Type" : "AWS::S3::Bucket",
-      "Properties" : {
-        "AccessControl" : "Private",
-        "BucketName" : { "Ref": "ContentsS3Bucket" },
-        "Tags" : [
-          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
-        ]
-      }
-    },
-
-
-    "VPCGatewayAttachment": {
-      "Type" : "AWS::EC2::VPCGatewayAttachment",
-      "Properties" : {
-        "InternetGatewayId" : { "Ref": "InternetGW" },
-        "VpcId" : { "Ref": "VPC" }
       }
     },
 
@@ -596,20 +548,9 @@
         "Roles": [ { "Ref": "MastodonInstanceIAMRole" } ]
       }
     },
-    "MastodonInstanceNetworkIF": {
-      "Type" : "AWS::EC2::NetworkInterface",
-      "Properties" : {
-        "Description" : "Mastodon Instance Network Interface.",
-        "GroupSet" : [ { "Ref": "SecurityGroupMastodonInstance" } ],
-        "SourceDestCheck" : true,
-        "SubnetId" : { "Ref": "PublicSubnet" },
-        "Tags" : [
-          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
-        ]
-      }
-    },
     "MastodonInstance": {
       "Type" : "AWS::EC2::Instance",
+      "DependsOn": "VPCGatewayAttachment",
       "Properties" : {
         "BlockDeviceMappings" : [ {
           "DeviceName" : "/dev/sda1",
@@ -626,11 +567,15 @@
         "KeyName" : { "Ref": "EC2KeyPair" },
         "Monitoring" : true,
         "NetworkInterfaces" : [ {
-          "Description" : "Mastodon Network Interface.",
+          "AssociatePublicIpAddress" : true,
+          "DeleteOnTermination": true,
+          "Description" : "Mastodon Instance Network Interface.",
           "DeviceIndex" : "0",
-          "NetworkInterfaceId" : { "Ref": "MastodonInstanceNetworkIF" }
+          "GroupSet": [ { "Ref": "SecurityGroupMastodonInstance" } ],
+          "SubnetId" : { "Ref": "Subnet1" }
         } ],
         "Tags" : [
+          { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-Mastodon"} },
           { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
         ],
         "UserData": {"Fn::Base64": {"Fn::Join": ["", [
@@ -696,6 +641,12 @@
           "S3_HOSTNAME=", { "Fn::If": [ "IsVirginia", 
                                         "s3.amazonaws.com", 
                                         { "Fn::Join": [ "", [ "s3-", { "Ref": "AWS::Region" }, ".amazonaws.com" ] ] } ] }, "\n",
+          "# Registrations\n",
+          "# Single user mode will disable registrations and redirect frontpage to the first profile\n",
+          "# SINGLE_USER_MODE=true\n",
+          "# Cluster number setting for streaming API server.\n",
+          "# If you comment out following line, cluster number will be `numOfCpuCores - 1`.\n",
+          "STREAMING_CLUSTER_NUM=1\n",
           "EOSEOSEOS\n\n",
           "echo \"PAPERCLIP_SECRET=`rake secret`\" >> .env.production\n",
           "echo \"SECRET_KEY_BASE=`rake secret`\" >> .env.production\n",
@@ -769,8 +720,8 @@
 
           "# ********** Get server certificate **********\n",
           "mkdir /etc/letsencrypt \n",
-          "aws s3 cp s3://", { "Fn::Join" : [ "/", [ { "Ref": "CertS3Bucket" }, { "Ref": "CertS3Folder" }, { "Ref": "CertS3CertName" } ] ] }, " /etc/letsencrypt/ \n",
-          "aws s3 cp s3://", { "Fn::Join" : [ "/", [ { "Ref": "CertS3Bucket" }, { "Ref": "CertS3Folder" }, { "Ref": "CertS3KeyName" } ] ] }, " /etc/letsencrypt/ \n",
+          "aws s3 cp ", { "Fn::Sub": "s3://${CertS3Bucket}/${CertS3Folder}/${CertS3CertName}" }, " /etc/letsencrypt/ \n",
+          "aws s3 cp ", { "Fn::Sub": "s3://${CertS3Bucket}/${CertS3Folder}/${CertS3KeyName}" }, " /etc/letsencrypt/ \n",
 
           "# ********** Setup Nginx **********\n",
           "cat << 'EOSEOSEOS' > /etc/nginx/sites-available/", { "Ref": "MastodonFQDN" } ,"\n",
@@ -889,13 +840,6 @@
         ] ] } }
       }
     },
-    "MastodonInstanceEIP" : {
-      "Type" : "AWS::EC2::EIP",
-      "Properties" : {
-        "InstanceId" : { "Ref": "MastodonInstance" },
-        "Domain" : "vpc"
-      }
-    },
 
     "SecurityGroupRDS": {
       "Type" : "AWS::EC2::SecurityGroup",
@@ -907,20 +851,10 @@
         "VpcId" : { "Ref": "VPC" }
       }
     },
-    "SecurityGroupRDSIngressPublicSubnet": {
-      "Type" : "AWS::EC2::SecurityGroupIngress",
-      "Properties" : {
-        "CidrIp" : { "Fn::FindInMap" : [ "CIDR", "PublicSubnet", "IP" ] },
-        "FromPort" : { "Fn::FindInMap" : [ "RDSConfig", "Port", "Value" ] },
-        "ToPort" : { "Fn::FindInMap" : [ "RDSConfig", "Port", "Value" ] },
-        "GroupId" : { "Ref": "SecurityGroupRDS" },
-        "IpProtocol" : "tcp"
-      }
-    },
     "SecurityGroupRDSIngressPrivateSubnet1": {
       "Type" : "AWS::EC2::SecurityGroupIngress",
       "Properties" : {
-        "CidrIp" : { "Fn::FindInMap" : [ "CIDR", "PrivateSubnet1", "IP" ] },
+        "CidrIp" : { "Fn::FindInMap" : [ "CIDR", "Subnet1", "IP" ] },
         "FromPort" : { "Fn::FindInMap" : [ "RDSConfig", "Port", "Value" ] },
         "ToPort" : { "Fn::FindInMap" : [ "RDSConfig", "Port", "Value" ] },
         "GroupId" : { "Ref": "SecurityGroupRDS" },
@@ -930,7 +864,7 @@
     "SecurityGroupRDSIngressPrivateSubnet2": {
       "Type" : "AWS::EC2::SecurityGroupIngress",
       "Properties" : {
-        "CidrIp" : { "Fn::FindInMap" : [ "CIDR", "PrivateSubnet2", "IP" ] },
+        "CidrIp" : { "Fn::FindInMap" : [ "CIDR", "Subnet2", "IP" ] },
         "FromPort" : { "Fn::FindInMap" : [ "RDSConfig", "Port", "Value" ] },
         "ToPort" : { "Fn::FindInMap" : [ "RDSConfig", "Port", "Value" ] },
         "GroupId" : { "Ref": "SecurityGroupRDS" },
@@ -949,7 +883,7 @@
       "Type" : "AWS::RDS::DBSubnetGroup",
       "Properties" : {
         "DBSubnetGroupDescription" : "RDS Subnet Group",
-        "SubnetIds" : [ { "Ref": "PrivateSubnet1" }, { "Ref": "PrivateSubnet2" } ],
+        "SubnetIds" : [ { "Ref": "Subnet1" }, { "Ref": "Subnet2" } ],
         "Tags" : [
           { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
         ]
@@ -999,20 +933,10 @@
         "VpcId" : { "Ref": "VPC" }
       }
     },
-    "SecurityGroupElastiCacheIngressPublicSubnet": {
-      "Type" : "AWS::EC2::SecurityGroupIngress",
-      "Properties" : {
-        "CidrIp" : { "Fn::FindInMap" : [ "CIDR", "PublicSubnet", "IP" ] },
-        "FromPort" : { "Fn::FindInMap" : [ "ElastiCacheConfig", "Port", "Value" ] },
-        "ToPort" : { "Fn::FindInMap" : [ "ElastiCacheConfig", "Port", "Value" ] },
-        "GroupId" : { "Ref": "SecurityGroupElastiCache" },
-        "IpProtocol" : "tcp"
-      }
-    },
     "SecurityGroupElastiCacheIngressPrivateSubnet1": {
       "Type" : "AWS::EC2::SecurityGroupIngress",
       "Properties" : {
-        "CidrIp" : { "Fn::FindInMap" : [ "CIDR", "PrivateSubnet1", "IP" ] },
+        "CidrIp" : { "Fn::FindInMap" : [ "CIDR", "Subnet1", "IP" ] },
         "FromPort" : { "Fn::FindInMap" : [ "ElastiCacheConfig", "Port", "Value" ] },
         "ToPort" : { "Fn::FindInMap" : [ "ElastiCacheConfig", "Port", "Value" ] },
         "GroupId" : { "Ref": "SecurityGroupElastiCache" },
@@ -1022,7 +946,7 @@
     "SecurityGroupElastiCacheIngressPrivateSubnet2": {
       "Type" : "AWS::EC2::SecurityGroupIngress",
       "Properties" : {
-        "CidrIp" : { "Fn::FindInMap" : [ "CIDR", "PrivateSubnet2", "IP" ] },
+        "CidrIp" : { "Fn::FindInMap" : [ "CIDR", "Subnet2", "IP" ] },
         "FromPort" : { "Fn::FindInMap" : [ "ElastiCacheConfig", "Port", "Value" ] },
         "ToPort" : { "Fn::FindInMap" : [ "ElastiCacheConfig", "Port", "Value" ] },
         "GroupId" : { "Ref": "SecurityGroupElastiCache" },
@@ -1042,7 +966,7 @@
       "Properties" : {
         "CacheSubnetGroupName" : { "Fn::Join" : [ "-", [ { "Ref": "AWS::StackName" }, "ECSubnetGroup" ] ] },
         "Description" : "SubnetGroup for ElastiCache instance.",
-        "SubnetIds" : [ { "Ref": "PrivateSubnet1" }, { "Ref": "PrivateSubnet2" } ]
+        "SubnetIds" : [ { "Ref": "Subnet1" }, { "Ref": "Subnet2" } ]
       }
     },
     "ElastiCacheCluster": {
