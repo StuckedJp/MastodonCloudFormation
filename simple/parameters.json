@@ -7,6 +7,7 @@
 
         { "ParameterKey": "SubnetAvailabilityZone1", "ParameterValue": "" },
         { "ParameterKey": "SubnetAvailabilityZone2", "ParameterValue": "" },
+        { "ParameterKey": "CIDRForSSH", "ParameterValue": "" },
 
         { "ParameterKey": "DBInstanceClass", "ParameterValue": "" },
         { "ParameterKey": "DBName", "ParameterValue": "" },
