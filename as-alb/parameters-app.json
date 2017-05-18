@@ -5,9 +5,17 @@
 
         { "ParameterKey": "InfraStackName", "ParameterValue": "" },
 
+        { "ParameterKey": "MastodonFQDN", "ParameterValue": "" },
+
         { "ParameterKey": "InstanceType", "ParameterValue": "" },
         { "ParameterKey": "InstanceAMI", "ParameterValue": "" },
         { "ParameterKey": "EC2KeyPair", "ParameterValue": "" },
+
+        { "ParameterKey": "PackageS3Bucket", "ParameterValue": "" },
+        { "ParameterKey": "PackageS3Prefix", "ParameterValue": "" },
+        { "ParameterKey": "PackageName", "ParameterValue": "" },
+
+        { "ParameterKey": "ContentsS3Bucket", "ParameterValue": "" },
 
         { "ParameterKey": "CertArn", "ParameterValue": "" }
     ],

@@ -19,6 +19,12 @@
       "Type": "String"
     },
 
+    "MastodonFQDN": {
+      "Description" : "FQDN of mastodon",
+      "Type": "String"
+    },
+
+
     "InstanceType" : {
       "Description" : "Mastodon WebServer EC2 instance type",
       "Type" : "String",
@@ -44,6 +50,30 @@
       "Description" : "Mastodon WebServer EC2 Key Pair Name",
       "Type" : "String",
       "ConstraintDescription" : "must be a valid EC2 Key Pair Name."
+    },
+
+
+    "PackageS3Bucket": {
+      "Description" : "S3 bucket name for Mastodon pre-build package.",
+      "Type" : "String",
+      "ConstraintDescription" : "must be a valid S3 bucket name."
+    },
+    "PackageS3Prefix": {
+      "Description" : "S3 folder name for Mastodon pre-build package.",
+      "Type" : "String",
+      "ConstraintDescription" : "must be a valid S3 key name."
+    },
+    "PackageName": {
+      "Description" : "File name for Mastodon pre-build package.",
+      "Type" : "String",
+      "ConstraintDescription" : "must be a valid file name."
+    },
+
+
+    "ContentsS3Bucket": {
+      "Description" : "S3 bucket name of content cache.",
+      "Type" : "String",
+      "ConstraintDescription" : "must be a valid S3 bucket name."
     },
 
 
@@ -99,22 +129,22 @@
               {
                 "Effect": "Allow",
                 "Action": "s3:*",
-                "Resource": { "Fn::Join" : [ "", [ "arn:aws:s3:::", { "Fn::ImportValue": { "Fn::Sub": "${InfraStackName}-ContentsS3Bucket" } } ] ] }
+                "Resource": { "Fn::Join" : [ "", [ "arn:aws:s3:::", { "Ref": "ContentsS3Bucket" } ] ] }
               },
               {
                 "Effect": "Allow",
                 "Action": "s3:*",
-                "Resource": { "Fn::Join" : [ "", [ "arn:aws:s3:::", { "Fn::ImportValue": { "Fn::Sub": "${InfraStackName}-ContentsS3Bucket" } }, "/*" ] ] }
+                "Resource": { "Fn::Join" : [ "", [ "arn:aws:s3:::", { "Ref": "ContentsS3Bucket" }, "/*" ] ] }
               },
               {
                 "Effect": "Allow",
                 "Action": "s3:*",
-                "Resource": { "Fn::Join" : [ "", [ "arn:aws:s3:::", { "Fn::ImportValue": { "Fn::Sub": "${InfraStackName}-PackageS3Bucket" } } ] ] }
+                "Resource": { "Fn::Join" : [ "", [ "arn:aws:s3:::", { "Ref": "PackageS3Bucket" } ] ] }
               },
               {
                 "Effect": "Allow",
                 "Action": "s3:*",
-                "Resource": { "Fn::Join" : [ "", [ "arn:aws:s3:::", { "Fn::ImportValue": { "Fn::Sub": "${InfraStackName}-PackageS3Bucket" } }, "/*" ] ] }
+                "Resource": { "Fn::Join" : [ "", [ "arn:aws:s3:::", { "Ref": "PackageS3Bucket" }, "/*" ] ] }
               }
             ]
           }
@@ -240,11 +270,8 @@
 
           "# ********** Download pre-builded Mastodon **********\n",
           "cd /home/mastodon \n",
-          "aws s3 cp s3://", { "Fn::ImportValue": { "Fn::Sub": "${InfraStackName}-PackageS3Bucket" } },
-            "/", { "Fn::ImportValue": { "Fn::Sub": "${InfraStackName}-PackageS3Prefix" } },
-            "/", { "Fn::ImportValue": { "Fn::Sub": "${InfraStackName}-PackageName" } },
-            " ", { "Fn::ImportValue": { "Fn::Sub": "${InfraStackName}-PackageName" } }, " \n",
-          "tar xfz ", { "Fn::ImportValue": { "Fn::Sub": "${InfraStackName}-PackageName" } }, " \n",
+          { "Fn::Sub": "aws s3 cp s3://${PackageS3Bucket}/${PackageS3Prefix}/${PackageName} ${PackageName} \n" },
+          { "Fn::Sub": "tar xfz ${PackageName} \n" },
           "chown -R mastodon:mastodon live \n",
 
           "# ********** Configure systemd for mastodon **********\n",
@@ -308,7 +335,7 @@
           "systemctl enable /etc/systemd/system/mastodon-*.service\n",
 
           "# ********** Setup Nginx **********\n",
-          "cat << 'EOSEOSEOS' > /etc/nginx/sites-available/", { "Fn::ImportValue": { "Fn::Sub": "${InfraStackName}-MastodonFQDN" } },"\n",
+          "cat << 'EOSEOSEOS' > /etc/nginx/sites-available/", { "Ref": "MastodonFQDN" },"\n",
           "map $http_upgrade $connection_upgrade {\n",
           "  default upgrade;\n",
           "  ''      close;\n",
@@ -317,7 +344,7 @@
           "server {\n",
           "  listen 80;\n",
           "  listen [::]:80;\n",
-          "  server_name ", { "Fn::ImportValue": { "Fn::Sub": "${InfraStackName}-MastodonFQDN" } },";\n",
+          "  server_name ", { "Ref": "MastodonFQDN" },";\n",
 
           "  # Useful for Let's Encrypt\n",
           "  location /.well-known/acme-challenge/ { allow all; }\n",
@@ -386,8 +413,8 @@
           "}\n",
           "EOSEOSEOS\n\n",
 
-          "ln -s /etc/nginx/sites-available/", { "Fn::ImportValue": { "Fn::Sub": "${InfraStackName}-MastodonFQDN" } },
-          "      /etc/nginx/sites-enabled/", { "Fn::ImportValue": { "Fn::Sub": "${InfraStackName}-MastodonFQDN" } }, " \n",
+          "ln -s /etc/nginx/sites-available/", { "Ref": "MastodonFQDN" },
+          "      /etc/nginx/sites-enabled/", { "Ref": "MastodonFQDN" }, " \n",
           "rm -f /etc/nginx/sites-enabled/default \n",
 
           "# ********** Setup daily cron **********\n",
