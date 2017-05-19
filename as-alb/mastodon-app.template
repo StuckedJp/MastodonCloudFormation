@@ -12,6 +12,14 @@
       "Description" : "Tag value",
       "Type": "String"
     },
+    "Tag2Key": {
+      "Description" : "Tag key",
+      "Type": "String"
+    },
+    "Tag2Value": {
+      "Description" : "Tag value",
+      "Type": "String"
+    },
 
 
     "InfraStackName": {
@@ -174,7 +182,8 @@
         "Port" : 80,
         "Protocol" : "HTTP",
         "Tags" : [
-          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} },
+          { "Key": { "Ref": "Tag2Key" }, "Value": { "Ref": "Tag2Value"} }
         ],
         "TargetGroupAttributes" : [
           { "Key" : "stickiness.enabled", "Value" : "true" },
@@ -199,7 +208,8 @@
           { "Fn::ImportValue": { "Fn::Sub": "${InfraStackName}-PublicSubnet2" } }
         ],
         "Tags" : [
-          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} },
+          { "Key": { "Ref": "Tag2Key" }, "Value": { "Ref": "Tag2Value"} }
         ],
         "IpAddressType" : "ipv4"
       }
@@ -248,19 +258,23 @@
         "UserData": {"Fn::Base64": {"Fn::Join": ["", [
           "#!/bin/bash -xe\n",
           "# ********** Install packages for cloud formation **********\n",
+          "export HOME=/root \n",
           "apt-get update \n",
-          "apt-get -y install python-pip \n",
+          "apt-get -y install python-pip python-setuptools \n",
           "pip install --upgrade pip \n",
-          "pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz \n",
-          "cp -a /usr/local/bin/cfn-hup /etc/init.d/cfn-hup\n",
-          "chmod u+x /etc/init.d/cfn-hup\n",
-          "update-rc.d cfn-hup defaults \n",
+          "cd /root \n",
+          "mkdir aws-cfn-bootstrap-latest\n",
+          "curl https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz |",
+          "  tar xz -C aws-cfn-bootstrap-latest --strip-components 1 \n",
+          "easy_install aws-cfn-bootstrap-latest\n",
+          "ln -s /root/aws-cfn-bootstrap-latest/init/ubuntu/cfn-hup /etc/init.d/cfn-hup \n",
 
           "# ********** Install required packages **********\n",
           "apt-get install -y ",
-          "  imagemagick ffmpeg libpq-dev libxml2-dev libxslt1-dev nodejs file git",
-          "   curl gcc g++ ruby ruby-dev make postgresql-client nginx awscli\n",
-          "curl -sL https://deb.nodesource.com/setup_4.x | bash - \n",
+          "  imagemagick ffmpeg libpq-dev libxml2-dev libxslt1-dev file git",
+          "  curl gcc g++ libprotobuf-dev protobuf-compiler ruby ruby-dev",
+          "  make postgresql-client redis-tools nginx awscli\n",
+          "curl -sL https://deb.nodesource.com/setup_6.x | bash - \n",
           "apt-get install -y nodejs \n",
           "npm install -g yarn \n",
           "gem install bundler \n",
@@ -272,7 +286,7 @@
           "cd /home/mastodon \n",
           { "Fn::Sub": "aws s3 cp s3://${PackageS3Bucket}/${PackageS3Prefix}/${PackageName} ${PackageName} \n" },
           { "Fn::Sub": "tar xfz ${PackageName} \n" },
-          "chown -R mastodon:mastodon live \n",
+          "chown -R mastodon:mastodon ", { "Ref": "MastodonFQDN" }, " \n",
 
           "# ********** Configure systemd for mastodon **********\n",
           "cat << EOSEOSEOS > /etc/systemd/system/mastodon-web.service\n",
@@ -283,7 +297,7 @@
           "[Service]\n",
           "Type=simple\n",
           "User=mastodon\n",
-          "WorkingDirectory=/home/mastodon/live\n",
+          "WorkingDirectory=/home/mastodon/", { "Ref": "MastodonFQDN" }, "\n",
           "Environment=\"RAILS_ENV=production\"\n",
           "Environment=\"PORT=3000\"\n",
           "ExecStart=/usr/local/bin/bundle exec puma -C config/puma.rb\n",
@@ -302,7 +316,7 @@
           "[Service]\n",
           "Type=simple\n",
           "User=mastodon\n",
-          "WorkingDirectory=/home/mastodon/live\n",
+          "WorkingDirectory=/home/mastodon/", { "Ref": "MastodonFQDN" }, "\n",
           "Environment=\"RAILS_ENV=production\"\n",
           "Environment=\"DB_POOL=5\"\n",
           "ExecStart=/usr/local/bin/bundle exec sidekiq -c 5 -q default -q mailers -q pull -q push\n",
@@ -321,7 +335,7 @@
           "[Service]\n",
           "Type=simple\n",
           "User=mastodon\n",
-          "WorkingDirectory=/home/mastodon/live\n",
+          "WorkingDirectory=/home/mastodon/", { "Ref": "MastodonFQDN" }, "\n",
           "Environment=\"NODE_ENV=production\"\n",
           "Environment=\"PORT=4000\"\n",
           "ExecStart=/usr/bin/npm run start\n",
@@ -353,7 +367,7 @@
           "  sendfile             on;\n",
           "  client_max_body_size 0;\n",
 
-          "  root /home/mastodon/live/public;\n",
+          "  root /home/mastodon/", { "Ref": "MastodonFQDN" }, "/public;\n",
 
           "  gzip on;\n",
           "  gzip_disable \"msie6\";\n",
@@ -419,7 +433,7 @@
 
           "# ********** Setup daily cron **********\n",
           "cat << EOSEOSEOS > /home/mastodon/mastodon.daily\n",
-          "cd /home/mastodon/live\n",
+          "cd /home/mastodon/", { "Ref": "MastodonFQDN" }, "\n",
           "RAILS_ENV=production /usr/local/bin/bundle exec rake mastodon:daily > /dev/null\n",
           "EOSEOSEOS\n\n",
 
@@ -450,7 +464,8 @@
         "MinSize" : 1,
         "Tags" : [
           { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-Mastodon" }, "PropagateAtLaunch" : true },
-          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value" }, "PropagateAtLaunch" : true }
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value" }, "PropagateAtLaunch" : true },
+          { "Key": { "Ref": "Tag2Key" }, "Value": { "Ref": "Tag2Value"}, "PropagateAtLaunch" : true }
         ],
         "TargetGroupARNs" : [
           { "Ref": "MastodonInstanceApplicationLoadBalancerTargetGroupHttp" }

@@ -12,6 +12,14 @@
       "Description" : "Tag value",
       "Type": "String"
     },
+    "Tag2Key": {
+      "Description" : "Tag key",
+      "Type": "String"
+    },
+    "Tag2Value": {
+      "Description" : "Tag value",
+      "Type": "String"
+    },
 
 
     "MastodonFQDN": {
@@ -34,10 +42,11 @@
       "Description" : "RDS instance type",
       "Type": "String",
       "Default" : "db.t2.micro",
-      "AllowedValues" : [ "db.m4.large", "db.m4.xlarge", "db.m4.2xlarge", "db.m4.4xlarge",
-                          "db.m4.10xlarge", "db.m3.medium", "db.m3.large", "db.m3.xlarge", "db.m3.2xlarge",
-                          "db.r3.large", "db.r3.xlarge", "db.r3.2xlarge", "db.r3.4xlarge", "db.r3.8xlarge",
-                          "db.t2.micro","db.t2.small", "db.t2.medium", "db.t2.large"
+      "AllowedValues" : [
+        "db.m4.large", "db.m4.xlarge", "db.m4.2xlarge", "db.m4.4xlarge",
+        "db.m4.10xlarge", "db.m3.medium", "db.m3.large", "db.m3.xlarge", "db.m3.2xlarge",
+        "db.r3.large", "db.r3.xlarge", "db.r3.2xlarge", "db.r3.4xlarge", "db.r3.8xlarge",
+        "db.t2.micro","db.t2.small", "db.t2.medium", "db.t2.large"
       ],
       "ConstraintDescription" : "must be a valid RDS instance type."
     },
@@ -48,7 +57,9 @@
     "DBEngineVersion": {
       "Description" : "RDS (Postgresql) engine version",
       "Type": "String",
-      "AllowedValues" : [ "9.6.1", "9.5.4", "9.5.2", "9.4.9", "9.4.7", "9.3.14", "9.3.12" ],
+      "AllowedValues" : [
+        "9.6.2", "9.6.1", "9.5.6", "9.5.4", "9.5.2", "9.4.9", "9.4.7", "9.3.14", "9.3.12"
+      ],
       "ConstraintDescription" : "must be a valid RDS engine version."
     },
     "DBLicenseModel": {
@@ -89,7 +100,9 @@
     "ElastiCacheVersion": {
       "Description" : "ElastiCache (Redis) engine version",
       "Type": "String",
-      "AllowedValues" : [ "3.2.4", "2.8.24", "2.8.23", "2.8.22", "2.8.21", "2.8.19", "2.8.6", "2.6.13" ],
+      "AllowedValues" : [
+        "3.2.4", "2.8.24", "2.8.23", "2.8.22", "2.8.21", "2.8.19", "2.8.6", "2.6.13"
+      ],
       "ConstraintDescription" : "must be a valid Elasticache engine version."
     },
 
@@ -98,16 +111,18 @@
       "Description" : "EC2 instance type of bastion server",
       "Type" : "String",
       "Default" : "t2.micro",
-      "AllowedValues" : [ "t1.micro", "t2.nano", "t2.micro", "t2.small", "t2.medium", "t2.large",
-                          "m1.small", "m1.medium", "m1.large", "m1.xlarge",
-                          "m2.xlarge", "m2.2xlarge", "m2.4xlarge", "m3.medium", "m3.large", "m3.xlarge", "m3.2xlarge",
-                          "m4.large", "m4.xlarge", "m4.2xlarge", "m4.4xlarge", "m4.10xlarge",
-                          "c1.medium", "c1.xlarge", "c3.large", "c3.xlarge", "c3.2xlarge", "c3.4xlarge", "c3.8xlarge",
-                          "c4.large", "c4.xlarge", "c4.2xlarge", "c4.4xlarge", "c4.8xlarge",
-                          "g2.2xlarge", "g2.8xlarge", "r3.large", "r3.xlarge", "r3.2xlarge", "r3.4xlarge", "r3.8xlarge",
-                          "i2.xlarge", "i2.2xlarge", "i2.4xlarge", "i2.8xlarge",
-                          "d2.xlarge", "d2.2xlarge", "d2.4xlarge", "d2.8xlarge", "hi1.4xlarge", "hs1.8xlarge",
-                          "cr1.8xlarge", "cc2.8xlarge", "cg1.4xlarge"],
+      "AllowedValues" : [
+        "t1.micro", "t2.nano", "t2.micro", "t2.small", "t2.medium", "t2.large",
+        "m1.small", "m1.medium", "m1.large", "m1.xlarge",
+        "m2.xlarge", "m2.2xlarge", "m2.4xlarge", "m3.medium", "m3.large", "m3.xlarge", "m3.2xlarge",
+        "m4.large", "m4.xlarge", "m4.2xlarge", "m4.4xlarge", "m4.10xlarge",
+        "c1.medium", "c1.xlarge", "c3.large", "c3.xlarge", "c3.2xlarge", "c3.4xlarge", "c3.8xlarge",
+        "c4.large", "c4.xlarge", "c4.2xlarge", "c4.4xlarge", "c4.8xlarge",
+        "g2.2xlarge", "g2.8xlarge", "r3.large", "r3.xlarge", "r3.2xlarge", "r3.4xlarge", "r3.8xlarge",
+        "i2.xlarge", "i2.2xlarge", "i2.4xlarge", "i2.8xlarge",
+        "d2.xlarge", "d2.2xlarge", "d2.4xlarge", "d2.8xlarge", "hi1.4xlarge", "hs1.8xlarge",
+        "cr1.8xlarge", "cc2.8xlarge", "cg1.4xlarge"
+      ],
       "ConstraintDescription" : "must be a valid EC2 instance type."
     },
     "BastionInstanceAMI": {
@@ -125,16 +140,18 @@
       "Description" : "EC2 instance type of NAT instance.",
       "Type" : "String",
       "Default" : "t2.micro",
-      "AllowedValues" : [ "t1.micro", "t2.nano", "t2.micro", "t2.small", "t2.medium", "t2.large",
-                          "m1.small", "m1.medium", "m1.large", "m1.xlarge",
-                          "m2.xlarge", "m2.2xlarge", "m2.4xlarge", "m3.medium", "m3.large", "m3.xlarge", "m3.2xlarge",
-                          "m4.large", "m4.xlarge", "m4.2xlarge", "m4.4xlarge", "m4.10xlarge",
-                          "c1.medium", "c1.xlarge", "c3.large", "c3.xlarge", "c3.2xlarge", "c3.4xlarge", "c3.8xlarge",
-                          "c4.large", "c4.xlarge", "c4.2xlarge", "c4.4xlarge", "c4.8xlarge",
-                          "g2.2xlarge", "g2.8xlarge", "r3.large", "r3.xlarge", "r3.2xlarge", "r3.4xlarge", "r3.8xlarge",
-                          "i2.xlarge", "i2.2xlarge", "i2.4xlarge", "i2.8xlarge",
-                          "d2.xlarge", "d2.2xlarge", "d2.4xlarge", "d2.8xlarge", "hi1.4xlarge", "hs1.8xlarge",
-                          "cr1.8xlarge", "cc2.8xlarge", "cg1.4xlarge"],
+      "AllowedValues" : [ 
+        "t1.micro", "t2.nano", "t2.micro", "t2.small", "t2.medium", "t2.large",
+        "m1.small", "m1.medium", "m1.large", "m1.xlarge",
+        "m2.xlarge", "m2.2xlarge", "m2.4xlarge", "m3.medium", "m3.large", "m3.xlarge", "m3.2xlarge",
+        "m4.large", "m4.xlarge", "m4.2xlarge", "m4.4xlarge", "m4.10xlarge",
+        "c1.medium", "c1.xlarge", "c3.large", "c3.xlarge", "c3.2xlarge", "c3.4xlarge", "c3.8xlarge",
+        "c4.large", "c4.xlarge", "c4.2xlarge", "c4.4xlarge", "c4.8xlarge",
+        "g2.2xlarge", "g2.8xlarge", "r3.large", "r3.xlarge", "r3.2xlarge", "r3.4xlarge", "r3.8xlarge",
+        "i2.xlarge", "i2.2xlarge", "i2.4xlarge", "i2.8xlarge",
+        "d2.xlarge", "d2.2xlarge", "d2.4xlarge", "d2.8xlarge", "hi1.4xlarge", "hs1.8xlarge",
+        "cr1.8xlarge", "cc2.8xlarge", "cg1.4xlarge"
+      ],
       "ConstraintDescription" : "must be a valid EC2 instance type."
     },
 
@@ -286,7 +303,8 @@
         "EnableDnsHostnames": true,
         "Tags" : [
           { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-VPC" } },
-          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} },
+          { "Key": { "Ref": "Tag2Key" }, "Value": { "Ref": "Tag2Value"} }
         ]
       }
     },
@@ -295,7 +313,8 @@
       "Properties" : {
         "Tags" : [
           { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-INetGW" } },
-          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} },
+          { "Key": { "Ref": "Tag2Key" }, "Value": { "Ref": "Tag2Value"} }
         ]
       }
     },
@@ -312,7 +331,8 @@
         "VpcId" : { "Ref": "VPC" },
         "Tags" : [
           { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-VPCRouteTable" } },
-          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} },
+          { "Key": { "Ref": "Tag2Key" }, "Value": { "Ref": "Tag2Value"} }
         ]
       }
     },
@@ -335,7 +355,8 @@
         "AvailabilityZone" : { "Ref": "SubnetAvailabilityZone1" },
         "Tags" : [
           { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-PrivateSubnet1" } },
-          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} },
+          { "Key": { "Ref": "Tag2Key" }, "Value": { "Ref": "Tag2Value"} }
         ],
         "VpcId" : { "Ref": "VPC" }
       }
@@ -348,7 +369,8 @@
         "AvailabilityZone" : { "Ref": "SubnetAvailabilityZone2" },
         "Tags" : [
           { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-PrivateSubnet2" } },
-          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} },
+          { "Key": { "Ref": "Tag2Key" }, "Value": { "Ref": "Tag2Value"} }
         ],
         "VpcId" : { "Ref": "VPC" }
       }
@@ -361,7 +383,8 @@
         "AvailabilityZone" : { "Ref": "SubnetAvailabilityZone1" },
         "Tags" : [
           { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-PublicSubnet1" } },
-          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} },
+          { "Key": { "Ref": "Tag2Key" }, "Value": { "Ref": "Tag2Value"} }
         ],
         "VpcId" : { "Ref": "VPC" }
       }
@@ -374,7 +397,8 @@
         "AvailabilityZone" : { "Ref": "SubnetAvailabilityZone2" },
         "Tags" : [
           { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-PublicSubnet2" } },
-          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} },
+          { "Key": { "Ref": "Tag2Key" }, "Value": { "Ref": "Tag2Value"} }
         ],
         "VpcId" : { "Ref": "VPC" }
       }
@@ -386,7 +410,8 @@
       "Properties" : {
         "Tags" : [
           { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-PublicSubnetNetworkAcl" } },
-          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} },
+          { "Key": { "Ref": "Tag2Key" }, "Value": { "Ref": "Tag2Value"} }
         ],
         "VpcId" : { "Ref": "VPC" }
       }
@@ -521,7 +546,8 @@
       "Properties" : {
         "Tags" : [
           { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-PrivateSubnetNetworkAcl" } },
-          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} },
+          { "Key": { "Ref": "Tag2Key" }, "Value": { "Ref": "Tag2Value"} }
         ],
         "VpcId" : { "Ref": "VPC" }
       }
@@ -612,7 +638,8 @@
         "GroupDescription" : "Security Group for bastion Instance Host",
         "Tags" :  [
           { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-SecurityGroupBastion" } },
-          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} },
+          { "Key": { "Ref": "Tag2Key" }, "Value": { "Ref": "Tag2Value"} }
         ],
         "VpcId" : { "Ref": "VPC" }
       }
@@ -643,7 +670,8 @@
         "GroupDescription" : "Security Group for NAT instance.",
         "Tags" :  [
           { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-SecurityGroupNAT" } },
-          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} },
+          { "Key": { "Ref": "Tag2Key" }, "Value": { "Ref": "Tag2Value"} }
         ],
         "VpcId" : { "Ref": "VPC" }
       }
@@ -733,7 +761,8 @@
         "GroupDescription" : "Security Group for Mastodon Instance Host",
         "Tags" :  [
           { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-SecurityGroupMastodon" } },
-          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} },
+          { "Key": { "Ref": "Tag2Key" }, "Value": { "Ref": "Tag2Value"} }
         ],
         "VpcId" : { "Ref": "VPC" }
       }
@@ -787,7 +816,8 @@
         "SubnetId" : { "Ref": "PublicSubnet1" },
         "Tags" : [
           { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-NATNetworkIF" } },
-          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} },
+          { "Key": { "Ref": "Tag2Key" }, "Value": { "Ref": "Tag2Value"} }
         ]
       }
     },
@@ -807,7 +837,8 @@
         } ],
         "Tags" : [
           { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-NAT" } },
-          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} },
+          { "Key": { "Ref": "Tag2Key" }, "Value": { "Ref": "Tag2Value"} }
         ]
       }
     },
@@ -817,7 +848,8 @@
         "VpcId" : { "Ref": "VPC" },
         "Tags" : [
           { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-NATRouteTable" } },
-          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} },
+          { "Key": { "Ref": "Tag2Key" }, "Value": { "Ref": "Tag2Value"} }
         ]
       }
     },
@@ -931,7 +963,8 @@
         "SubnetId" : { "Ref": "PublicSubnet1" },
         "Tags" : [
           { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-BastionNetworkIF" } },
-          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} },
+          { "Key": { "Ref": "Tag2Key" }, "Value": { "Ref": "Tag2Value"} }
         ]
       }
     },
@@ -960,37 +993,42 @@
         } ],
         "Tags" : [
           { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-Bastion" } },
-          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} },
+          { "Key": { "Ref": "Tag2Key" }, "Value": { "Ref": "Tag2Value"} }
         ],
         "UserData": {"Fn::Base64": {"Fn::Join": ["", [
           "#!/bin/bash -xe\n",
           "# ********** Install packages for cloud formation **********\n",
+          "export HOME=/root \n",
           "apt-get update \n",
-          "apt-get -y install python-pip \n",
+          "apt-get -y install python-pip python-setuptools \n",
           "pip install --upgrade pip \n",
-          "pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz \n",
-          "cp -a /usr/local/bin/cfn-hup /etc/init.d/cfn-hup\n",
-          "chmod u+x /etc/init.d/cfn-hup\n",
-          "update-rc.d cfn-hup defaults \n",
+          "cd /root \n",
+          "mkdir aws-cfn-bootstrap-latest\n",
+          "curl https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz |",
+          "  tar xz -C aws-cfn-bootstrap-latest --strip-components 1 \n",
+          "easy_install aws-cfn-bootstrap-latest\n",
+          "ln -s /root/aws-cfn-bootstrap-latest/init/ubuntu/cfn-hup /etc/init.d/cfn-hup \n",
 
           "# ********** Install required packages **********\n",
           "apt-get install -y ",
-          "  imagemagick ffmpeg libpq-dev libxml2-dev libxslt1-dev nodejs file git",
-          "   curl gcc g++ ruby ruby-dev make postgresql-client nginx awscli\n",
-          "curl -sL https://deb.nodesource.com/setup_4.x | bash - \n",
+          "  imagemagick ffmpeg libpq-dev libxml2-dev libxslt1-dev file git",
+          "  curl gcc g++ libprotobuf-dev protobuf-compiler ruby ruby-dev",
+          "  make postgresql-client redis-tools nginx awscli\n",
+          "curl -sL https://deb.nodesource.com/setup_6.x | bash - \n",
           "apt-get install -y nodejs \n",
           "npm install -g yarn \n",
-          "gem install bundler \n",
 
           "# ********** Add user **********\n",
           "useradd -d /home/mastodon --create-home --user-group mastodon\n",
 
           "# ********** Build Mastodon **********\n",
           "cd /home/mastodon \n",
-          "git clone https://github.com/tootsuite/mastodon.git live \n",
-          "cd live \n",
+          "git clone https://github.com/tootsuite/mastodon.git ", { "Ref": "MastodonFQDN" }, " \n",
+          "cd ", { "Ref": "MastodonFQDN" }, " \n",
           "git checkout $(git tag | tail -n 1) \n",
 
+          "gem install bundler \n",
           "bundle install --deployment --without development test \n",
           "yarn install --pure-lockfile \n",
 
@@ -1042,7 +1080,7 @@
 
           "cd .. \n",
 
-          "tar cfz ", { "Ref": "PackageName" }, " live \n",
+          "tar cfz ", { "Ref": "PackageName" }, " ", { "Ref": "MastodonFQDN" }, " \n",
           { "Fn::Sub": "aws s3 cp ${PackageName} s3://${PackageS3Bucket}/${PackageS3Prefix}/${PackageName} \n" },
 
           "# ********** The End **********\n"
@@ -1057,7 +1095,8 @@
         "GroupDescription" : "Security Group for RDS Instance Host",
         "Tags" :  [
           { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-SecurityGroupRDS" } },
-          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} },
+          { "Key": { "Ref": "Tag2Key" }, "Value": { "Ref": "Tag2Value"} }
         ],
         "VpcId" : { "Ref": "VPC" }
       }
@@ -1117,7 +1156,8 @@
         "SubnetIds" : [ { "Ref": "PrivateSubnet1" }, { "Ref": "PrivateSubnet2" } ],
         "Tags" : [
           { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-RDSSubnetGroup" } },
-          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} },
+          { "Key": { "Ref": "Tag2Key" }, "Value": { "Ref": "Tag2Value"} }
         ]
       }
     },
@@ -1150,7 +1190,8 @@
         "StorageType" : { "Ref": "DBStorageType" },
         "Tags" : [
           { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-Postgresql" } },
-          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} },
+          { "Key": { "Ref": "Tag2Key" }, "Value": { "Ref": "Tag2Value"} }
         ]
       }
     },
@@ -1162,7 +1203,8 @@
         "GroupDescription" : "Security Group for ElastiCache Instance Host",
         "Tags" :  [
           { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-SecurityGroupElastiCache" } },
-          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} },
+          { "Key": { "Ref": "Tag2Key" }, "Value": { "Ref": "Tag2Value"} }
         ],
         "VpcId" : { "Ref": "VPC" }
       }
@@ -1236,7 +1278,8 @@
         "Port" : { "Fn::FindInMap" : [ "ElastiCacheConfig", "Port", "Value" ] },
         "Tags" : [
           { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-RedisCache" } },
-          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} },
+          { "Key": { "Ref": "Tag2Key" }, "Value": { "Ref": "Tag2Value"} }
         ],
         "VpcSecurityGroupIds" : [ {"Fn::GetAtt": [ "SecurityGroupElastiCache", "GroupId"]} ]
       }
@@ -1289,28 +1332,6 @@
       "Export": { "Name" : {"Fn::Sub": "${AWS::StackName}-PublicSubnet2" }}
     },
 
-    "ContentsS3Bucket": {
-      "Description": "S3 Bucket name for contents.",
-      "Value": { "Ref": "ContentsS3Bucket" },
-      "Export": { "Name" : {"Fn::Sub": "${AWS::StackName}-ContentsS3Bucket" }}
-    },
-
-    "PackageS3Bucket": {
-      "Description": "S3 bucket name for pre-builded Mastodon package file name.",
-      "Value": { "Ref": "PackageS3Bucket" },
-      "Export": { "Name" : {"Fn::Sub": "${AWS::StackName}-PackageS3Bucket" }}
-    },
-    "PackageS3Prefix": {
-      "Description": "S3 folder name for pre-builded Mastodon package file name.",
-      "Value": { "Ref": "PackageS3Prefix" },
-      "Export": { "Name" : {"Fn::Sub": "${AWS::StackName}-PackageS3Prefix" }}
-    },
-    "PackageName": {
-      "Description": "Pre-builded Mastodon package file name.",
-      "Value": { "Ref": "PackageName" },
-      "Export": { "Name" : {"Fn::Sub": "${AWS::StackName}-PackageName" }}
-    },
-
     "LBAccessLogS3Bucket": {
       "Description": "S3 bucket name for Application Load Balancer log.",
       "Value": { "Ref": "LBAccessLogS3Bucket" },
@@ -1348,12 +1369,6 @@
       "Description": "Port number of Elasticache",
       "Value": { "Fn::GetAtt": [ "ElastiCacheCluster", "RedisEndpoint.Port" ] },
       "Export": { "Name" : {"Fn::Sub": "${AWS::StackName}-ElasticacheEndPointPort" }}
-    },
-
-    "MastodonFQDN": {
-      "Description": "Full Query Domain Name for Mastodon",
-      "Value": { "Ref": "MastodonFQDN" },
-      "Export": { "Name" : {"Fn::Sub": "${AWS::StackName}-MastodonFQDN" }}
     }
   }
 }
