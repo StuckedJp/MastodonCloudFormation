@@ -2,6 +2,8 @@
     "Parameters": [
         { "ParameterKey": "Tag1Key", "ParameterValue": "" },
         { "ParameterKey": "Tag1Value", "ParameterValue": "" },
+        { "ParameterKey": "Tag2Key", "ParameterValue": "" },
+        { "ParameterKey": "Tag2Value", "ParameterValue": "" },
 
         { "ParameterKey": "InfraStackName", "ParameterValue": "" },
 
