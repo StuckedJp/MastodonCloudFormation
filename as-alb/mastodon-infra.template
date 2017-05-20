@@ -1038,7 +1038,7 @@
           "# Redis\n",
           "REDIS_HOST=", { "Fn::GetAtt": [ "ElastiCacheCluster", "RedisEndpoint.Address" ] }, "\n",
           "REDIS_PORT=", { "Fn::GetAtt": [ "ElastiCacheCluster", "RedisEndpoint.Port" ] }, "\n",
-          "REDIS_NAMESPACE=", { "Ref": "MastodonFQDN" }, "\n",
+          "# You may set DB_URL instead for more advanced options\n",
           "# Database\n",
           "DB_HOST=", { "Fn::GetAtt": [ "RDSInstance", "Endpoint.Address" ] }, "\n",
           "DB_USER=", { "Ref": "DBMasterUsername" }, "\n",
