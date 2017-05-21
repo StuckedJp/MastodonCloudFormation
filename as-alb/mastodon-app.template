@@ -272,7 +272,7 @@
           "# ********** Install required packages **********\n",
           "apt-get install -y ",
           "  imagemagick ffmpeg libpq-dev libxml2-dev libxslt1-dev file git",
-          "  curl gcc g++ libprotobuf-dev protobuf-compiler ruby ruby-dev",
+          "  curl gcc g++ pkg-config libprotobuf-dev protobuf-compiler ruby ruby-dev",
           "  make postgresql-client redis-tools nginx awscli\n",
           "curl -sL https://deb.nodesource.com/setup_6.x | bash - \n",
           "apt-get install -y nodejs \n",

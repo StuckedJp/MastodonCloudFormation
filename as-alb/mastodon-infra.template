@@ -23,8 +23,13 @@
 
 
     "MastodonFQDN": {
-      "Description" : "FQDN of mastodon",
+      "Description" : "FQDN of Mastodon instance",
       "Type": "String"
+    },
+    "MastodonVersion": {
+      "Description" : "Release tag name of Mastodon",
+      "Type": "String",
+      "Default" : "v1.3.3"
     },
 
 
@@ -1013,8 +1018,8 @@
           "# ********** Install required packages **********\n",
           "apt-get install -y ",
           "  imagemagick ffmpeg libpq-dev libxml2-dev libxslt1-dev file git",
-          "  curl gcc g++ libprotobuf-dev protobuf-compiler ruby ruby-dev",
-          "  make postgresql-client redis-tools nginx awscli\n",
+          "  curl gcc g++ pkg-config libprotobuf-dev protobuf-compiler ruby ruby-dev",
+          "  make postgresql-client redis-tools awscli\n",
           "curl -sL https://deb.nodesource.com/setup_6.x | bash - \n",
           "apt-get install -y nodejs \n",
           "npm install -g yarn \n",
@@ -1026,7 +1031,7 @@
           "cd /home/mastodon \n",
           "git clone https://github.com/tootsuite/mastodon.git ", { "Ref": "MastodonFQDN" }, " \n",
           "cd ", { "Ref": "MastodonFQDN" }, " \n",
-          "git checkout $(git tag | tail -n 1) \n",
+          "git checkout ", { "Ref": "MastodonVersion" }, " \n",
 
           "gem install bundler \n",
           "bundle install --deployment --without development test \n",

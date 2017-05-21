@@ -6,6 +6,7 @@
         { "ParameterKey": "Tag2Value", "ParameterValue": "" },
 
         { "ParameterKey": "MastodonFQDN", "ParameterValue": "" },
+        { "ParameterKey": "MastodonVersion", "ParameterValue": "" },
 
         { "ParameterKey": "SubnetAvailabilityZone1", "ParameterValue": "" },
         { "ParameterKey": "SubnetAvailabilityZone2", "ParameterValue": "" },
