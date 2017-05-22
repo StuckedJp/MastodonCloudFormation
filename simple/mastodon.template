@@ -12,11 +12,24 @@
       "Description" : "Tag value",
       "Type": "String"
     },
+    "Tag2Key": {
+      "Description" : "Tag key",
+      "Type": "String"
+    },
+    "Tag2Value": {
+      "Description" : "Tag value",
+      "Type": "String"
+    },
 
 
     "MastodonFQDN": {
-      "Description" : "FQDN of mastodon",
+      "Description" : "FQDN of Mastodon instance",
       "Type": "String"
+    },
+    "MastodonVersion": {
+      "Description" : "Release tag name of Mastodon",
+      "Type": "String",
+      "Default" : "v1.3.3"
     },
 
 
@@ -227,7 +240,8 @@
         "EnableDnsHostnames": true,
         "Tags" : [
           { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-VPC"} },
-          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} },
+          { "Key": { "Ref": "Tag2Key" }, "Value": { "Ref": "Tag2Value"} }
         ]
       }
     },
@@ -236,7 +250,8 @@
       "Properties" : {
         "Tags" : [
           { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-INetGW"} },
-          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} },
+          { "Key": { "Ref": "Tag2Key" }, "Value": { "Ref": "Tag2Value"} }
         ]
       }
     },
@@ -246,7 +261,8 @@
         "VpcId" : { "Ref": "VPC" },
         "Tags" : [
           { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-VPCRouteTable"} },
-          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} },
+          { "Key": { "Ref": "Tag2Key" }, "Value": { "Ref": "Tag2Value"} }
         ]
       }
     },
@@ -298,7 +314,8 @@
         "AvailabilityZone" : { "Ref": "SubnetAvailabilityZone1" },
         "Tags" : [
           { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-Subnet1"} },
-          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} },
+          { "Key": { "Ref": "Tag2Key" }, "Value": { "Ref": "Tag2Value"} }
         ],
         "VpcId" : { "Ref": "VPC" }
       }
@@ -311,7 +328,8 @@
         "AvailabilityZone" : { "Ref": "SubnetAvailabilityZone2" },
         "Tags" : [
           { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-Subnet2"} },
-          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} },
+          { "Key": { "Ref": "Tag2Key" }, "Value": { "Ref": "Tag2Value"} }
         ],
         "VpcId" : { "Ref": "VPC" }
       }
@@ -323,7 +341,8 @@
       "Properties" : {
         "Tags" : [
           { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-NetworkAcl"} },
-          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} },
+          { "Key": { "Ref": "Tag2Key" }, "Value": { "Ref": "Tag2Value"} }
         ],
         "VpcId" : { "Ref": "VPC" }
       }
@@ -453,7 +472,8 @@
         "GroupDescription" : "Security Group for Mastodon Instance Host",
         "Tags" :  [
           { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-MastodonInstance"} },
-          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} },
+          { "Key": { "Ref": "Tag2Key" }, "Value": { "Ref": "Tag2Value"} }
         ],
         "VpcId" : { "Ref": "VPC" }
       }
@@ -576,27 +596,31 @@
         } ],
         "Tags" : [
           { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-Mastodon"} },
-          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} },
+          { "Key": { "Ref": "Tag2Key" }, "Value": { "Ref": "Tag2Value"} }
         ],
         "UserData": {"Fn::Base64": {"Fn::Join": ["", [
           "#!/bin/bash -xe\n",
           "# ********** Install packages for cloud formation **********\n",
+          "export HOME=/root \n",
           "apt-get update \n",
-          "apt-get -y install python-pip \n",
+          "apt-get -y install python-pip python-setuptools \n",
           "pip install --upgrade pip \n",
-          "pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz \n",
-          "cp -a /usr/local/bin/cfn-hup /etc/init.d/cfn-hup\n",
-          "chmod u+x /etc/init.d/cfn-hup\n",
-          "update-rc.d cfn-hup defaults \n",
+          "cd /root \n",
+          "mkdir aws-cfn-bootstrap-latest\n",
+          "curl https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz |",
+          "  tar xz -C aws-cfn-bootstrap-latest --strip-components 1 \n",
+          "easy_install aws-cfn-bootstrap-latest\n",
+          "ln -s /root/aws-cfn-bootstrap-latest/init/ubuntu/cfn-hup /etc/init.d/cfn-hup \n",
 
           "# ********** Install required packages **********\n",
           "apt-get install -y ",
-          "  imagemagick ffmpeg libpq-dev libxml2-dev libxslt1-dev nodejs file git",
-          "   curl gcc g++ ruby ruby-dev make postgresql-client nginx awscli\n",
-          "curl -sL https://deb.nodesource.com/setup_4.x | bash - \n",
+          "  imagemagick ffmpeg libpq-dev libxml2-dev libxslt1-dev file git",
+          "  curl gcc g++ pkg-config libprotobuf-dev protobuf-compiler ruby ruby-dev",
+          "  make postgresql-client redis-tools awscli nginx\n",
+          "curl -sL https://deb.nodesource.com/setup_6.x | bash - \n",
           "apt-get install -y nodejs \n",
           "npm install -g yarn \n",
-          "gem install bundler \n",
 
           "# ********** Add user **********\n",
           "useradd -d /home/mastodon --create-home --user-group mastodon\n",
@@ -605,8 +629,9 @@
           "cd /home/mastodon \n",
           "git clone https://github.com/tootsuite/mastodon.git live \n",
           "cd live \n",
-          "git checkout $(git tag | tail -n 1) \n",
+          "git checkout ", { "Ref": "MastodonVersion" }, " \n",
 
+          "gem install bundler \n",
           "bundle install --deployment --without development test \n",
           "yarn install --pure-lockfile \n",
 
@@ -648,12 +673,13 @@
           "# If you comment out following line, cluster number will be `numOfCpuCores - 1`.\n",
           "STREAMING_CLUSTER_NUM=1\n",
           "EOSEOSEOS\n\n",
-          "echo \"PAPERCLIP_SECRET=`rake secret`\" >> .env.production\n",
-          "echo \"SECRET_KEY_BASE=`rake secret`\" >> .env.production\n",
-          "echo \"OTP_SECRET=`rake secret`\" >> .env.production\n",
+          "export RAILS_ENV=production \n",
+          "echo \"PAPERCLIP_SECRET=`bundle exec rake secret`\" >> .env.production\n",
+          "echo \"SECRET_KEY_BASE=`bundle exec rake secret`\" >> .env.production\n",
+          "echo \"OTP_SECRET=`bundle exec rake secret`\" >> .env.production\n",
 
-          "RAILS_ENV=production bundle exec rails db:setup\n",
-          "RAILS_ENV=production bundle exec rails assets:precompile\n",
+          "bundle exec rails db:setup\n",
+          "bundle exec rails assets:precompile\n",
 
           "cd .. \n",
           "chown -R mastodon:mastodon live \n",
@@ -846,7 +872,8 @@
       "Properties" : {
         "GroupDescription" : "Security Group for RDS Instance Host",
         "Tags" :  [
-          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} },
+          { "Key": { "Ref": "Tag2Key" }, "Value": { "Ref": "Tag2Value"} }
         ],
         "VpcId" : { "Ref": "VPC" }
       }
@@ -885,7 +912,8 @@
         "DBSubnetGroupDescription" : "RDS Subnet Group",
         "SubnetIds" : [ { "Ref": "Subnet1" }, { "Ref": "Subnet2" } ],
         "Tags" : [
-          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} },
+          { "Key": { "Ref": "Tag2Key" }, "Value": { "Ref": "Tag2Value"} }
         ]
       }
     },
@@ -917,7 +945,8 @@
         "StorageEncrypted" : false,
         "StorageType" : { "Ref": "DBStorageType" },
         "Tags" : [
-          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} },
+          { "Key": { "Ref": "Tag2Key" }, "Value": { "Ref": "Tag2Value"} }
         ]
       }
     },
@@ -928,7 +957,8 @@
       "Properties" : {
         "GroupDescription" : "Security Group for ElastiCache Instance Host",
         "Tags" :  [
-          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} },
+          { "Key": { "Ref": "Tag2Key" }, "Value": { "Ref": "Tag2Value"} }
         ],
         "VpcId" : { "Ref": "VPC" }
       }
@@ -982,7 +1012,8 @@
         "NumCacheNodes" : 1,
         "Port" : { "Fn::FindInMap" : [ "ElastiCacheConfig", "Port", "Value" ] },
         "Tags" : [
-          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} }
+          { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} },
+          { "Key": { "Ref": "Tag2Key" }, "Value": { "Ref": "Tag2Value"} }
         ],
         "VpcSecurityGroupIds" : [ {"Fn::GetAtt": [ "SecurityGroupElastiCache", "GroupId"]} ]
       }
