@@ -1076,12 +1076,14 @@
           "STREAMING_CLUSTER_NUM=1\n",
           "# Secrets\n",
           "EOSEOSEOS\n\n",
-          "echo \"PAPERCLIP_SECRET=`rake secret`\" >> .env.production\n",
-          "echo \"SECRET_KEY_BASE=`rake secret`\" >> .env.production\n",
-          "echo \"OTP_SECRET=`rake secret`\" >> .env.production\n",
 
-          "RAILS_ENV=production bundle exec rails db:setup\n",
-          "RAILS_ENV=production bundle exec rails assets:precompile\n",
+          "export RAILS_ENV=production\n",
+          "echo \"PAPERCLIP_SECRET=`bundle exec rake secret`\" >> .env.production\n",
+          "echo \"SECRET_KEY_BASE=`bundle exec rake secret`\" >> .env.production\n",
+          "echo \"OTP_SECRET=`bundle exec rake secret`\" >> .env.production\n",
+
+          "bundle exec rails db:setup\n",
+          "bundle exec rails assets:precompile\n",
 
           "cd .. \n",
 
