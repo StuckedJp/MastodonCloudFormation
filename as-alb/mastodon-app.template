@@ -294,7 +294,7 @@
           "/usr/local/bin/cfn-init -v ",
           " --stack ", { "Ref" : "AWS::StackName" },
           " --resource MastodonInstanceAutoScalingLaunchConfig ",
-          " --configsets installConfigFiles ",
+          " --configsets createConfigFiles ",
           " --region ", { "Ref" : "AWS::Region" }, "\n",
 
           "# ********** Configure systemd for mastodon **********\n",
@@ -320,7 +320,7 @@
             "installPackages": [
               "aptPackages"
             ],
-            "installConfigFiles": [
+            "createConfigFiles": [
               "systemd-mastodon-web",
               "systemd-mastodon-sidekiq",
               "systemd-mastodon-stream" , 
@@ -469,13 +469,18 @@
                   "  gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;\n",
                   "\n",
                   "  add_header Strict-Transport-Security \"max-age=31536000\";\n",
+                  "  add_header Content-Security-Policy \"style-src 'self' 'unsafe-inline'; ",
+                  "script-src 'self'; object-src 'self'; img-src data: https:; media-src data: https:; ",
+                  "connect-src 'self' wss://", { "Ref": "MastodonFQDN" },
+                  "; upgrade-insecure-requests\";\n",
                   "\n",
                   "  location / {\n",
                   "    try_files $uri @proxy;\n",
                   "  }\n",
                   "\n",
-                  "  location /assets {\n",
+                  "  location ~ ^/(assets|system/media_attachments/files|system/accounts/avatars) {\n",
                   "    add_header Cache-Control \"public, max-age=31536000, immutable\";\n",
+                  "    try_files $uri @proxy;\n",
                   "  }\n",
                   "\n",
                   "  location @proxy {\n",

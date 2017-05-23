@@ -271,7 +271,8 @@
 
 
   "Conditions": {
-    "IsVirginia": { "Fn::Equals" : [ { "Ref": "AWS::Region" }, "us-east-1"] }
+    "IsVirginia": { "Fn::Equals" : [ { "Ref": "AWS::Region" }, "us-east-1"] },
+    "IsMaster": { "Fn::Equals" : [ { "Ref": "MastodonVersion" }, ""] }
   },
 
 
@@ -1031,7 +1032,9 @@
           "cd /home/mastodon \n",
           "git clone https://github.com/tootsuite/mastodon.git ", { "Ref": "MastodonFQDN" }, " \n",
           "cd ", { "Ref": "MastodonFQDN" }, " \n",
-          "git checkout ", { "Ref": "MastodonVersion" }, " \n",
+          { "Fn::If": [ "IsMaster", 
+            "",
+            { "Fn::Sub": "git checkout ${MastodonVersion} \n" } ] },
 
           "gem install bundler \n",
           "bundle install --deployment --without development test \n",
@@ -1043,7 +1046,6 @@
           " --resource BastionInstance ",
           " --configsets createMastodonConfig ",
           " --region ", { "Ref" : "AWS::Region" }, "\n",
-          "mv ../.env.production .\n",
 
           "export RAILS_ENV=production\n",
           "echo \"PAPERCLIP_SECRET=`bundle exec rake secret`\" >> .env.production\n",
@@ -1058,14 +1060,26 @@
           "tar cfz ", { "Ref": "PackageName" }, " ", { "Ref": "MastodonFQDN" }, " \n",
           { "Fn::Sub": "aws s3 cp ${PackageName} s3://${PackageS3Bucket}/${PackageS3Prefix}/${PackageName} \n" },
 
+          "# ********** Notify **********\n",
+          "/usr/local/bin/cfn-signal ",
+          " -e 0",
+          " --stack ", { "Ref" : "AWS::StackName" },
+          " --resource BastionInstance",
+          " --region ", { "Ref" : "AWS::Region" }, "\n",
+
           "# ********** The End **********\n"
         ] ] } }
+      },
+      "CreationPolicy" : {
+        "ResourceSignal" : {
+          "Timeout" : "PT30M"
+        }
       },
       "Metadata": {
         "AWS::CloudFormation::Init": {
           "configSets": {
             "installPackages": [ "aptPackages" ],
-            "createMastodonConfig": [ "mastodonConfig" ]
+            "createMastodonConfig": [ "createMastodonConfig", "moveMastodonConfig" ]
           },
           "aptPackages": {
             "packages" : {
@@ -1094,7 +1108,7 @@
               }
             }
           },
-          "mastodonConfig": {
+          "createMastodonConfig": {
             "files": {
               "/home/mastodon/.env.production": {
                 "content": { "Fn::Join": ["", [
@@ -1138,6 +1152,14 @@
                 "mode"  : "000644",
                 "owner" : "root",
                 "group" : "root"
+              }
+            }
+          },
+          "moveMastodonConfig": {
+            "commands": {
+              "001_moveFile": {
+                "command": { "Fn::Sub": "mv .env.production ${MastodonFQDN}/.env.production"},
+                "cwd": "/home/mastodon"
               }
             }
           }
