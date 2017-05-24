@@ -1,4 +1,4 @@
-# MastodonCloudFormation (Auto Scaling & Application Load Balancing)
+# CloudFormation template for Mastodon (Auto Scaling & Application Load Balancing)
 
 Auto Scaling と Application Load Balancer を組み込んだ、Mastodon の Cloud Formation テンプレートです。
 
@@ -63,26 +63,26 @@ CloudFormation テンプレートは、インフラ部分 (mastodon-infra.templa
 
 1. `parameters-infra.json` をコピーして編集します。設定内容は「テンプレートパラメータ」の項目を参照してください。
   
-  ```
-  cp parameters-infra.json ,parameters-infra.json
-  # ,parameters-infra.json を編集
-  ```
+    ```
+    cp parameters-infra.json ,parameters-infra.json
+    # ,parameters-infra.json を編集
+    ```
   
 1. S3 の適当な場所に `mastodon-infra.template` をアップロードします。
 1. インフラスタックを作成します。いくつかのリソースにはスタック名を先頭に付与します。同じリージョンに複数の Mastodon を起動することができます。
   
-  ```
-  aws cloudformation create-stack --stack-name [INFRASTRUCTURE STACK NAME] --region [REGION] --template-url [URL OF mastodon-infra.template] --cli-input-json file://,parameters-infra.json
-  ```
+    ```
+    aws cloudformation create-stack --stack-name [INFRASTRUCTURE STACK NAME] --region [REGION] --template-url [URL OF mastodon-infra.template] --cli-input-json file://,parameters-infra.json
+    ```
   
 1. S3 のビルド済み Mastodon パッケージ置き場に、パッケージがアップロードされるのを待ちます。約 30 分かかります。
-  * Mastodon のビルドは、踏み台サーバで行われます。踏み台サーバは「[STACK NAME]-Bastion」という名前のインスタンスです。状況を確認したい場合は踏み台サーバに SSH でログインして `/var/log/cloud-init-output.log` を確認します。`/var/log/cloud-init-output.log` に以下のような行がある場合、構築は失敗しています。
+    * Mastodon のビルドは、踏み台サーバで行われます。踏み台サーバは「[STACK NAME]-Bastion」という名前のインスタンスです。状況を確認したい場合は踏み台サーバに SSH でログインして `/var/log/cloud-init-output.log` を確認します。`/var/log/cloud-init-output.log` に以下のような行がある場合、構築は失敗しています。
     
-    ```
-    2017-04-28 04:08:13,525 - util.py[WARNING]: Failed running /var/lib/cloud/instance/scripts/part-001 [2]
-    ```
+        ```
+        2017-04-28 04:08:13,525 - util.py[WARNING]: Failed running /var/lib/cloud/instance/scripts/part-001 [2]
+        ```
 
-    `pip install` で失敗するケースが多いため、リトライすれば成功する場合があります。リトライする場合はログに書かれているスクリプト (上記の例であれば `/var/lib/cloud/instance/scripts/part-001`) をスーパーユーザーで実行してください。
+    リトライすれば成功する場合があります。リトライする場合はログに書かれているスクリプト (上記の例であれば `/var/lib/cloud/instance/scripts/part-001`) をスーパーユーザーで実行してください。Mastodon ユーザーの作成や`git clone`するところは、再実行するとエラーになりますので、エラー発生箇所に応じてスクリプトの一部をコメントアウトする必要があります。
 
 
 #### 踏み台サーバの扱い
@@ -98,21 +98,21 @@ CloudFormation テンプレートは、インフラ部分 (mastodon-infra.templa
 
 1. `parameters-app.json` をコピーして編集します。設定内容は「テンプレートパラメータ」の項目を参照してください。
 
-  ```
-  cp parameters-app.json ,parameters-app.json
-  # ,parameters-app.json を編集
-  ```
+    ```
+    cp parameters-app.json ,parameters-app.json
+    # ,parameters-app.json を編集
+    ```
   
 1. S3 の適当な場所に `mastodon-app.template` をアップロードします。
 1. アプリケーションスタックを作成します。いくつかのリソースにはスタック名を先頭に付与します。同じリージョンに複数の Mastodon を起動することができます。インフラスタックとアプリケーションスタックは 1対1で作成するようにしてください。
-  
-  ```
-  aws cloudformation create-stack --stack-name [APPLICATION STACK NAME] --region [REGION] --template-url [URL OF mastodon-app.template] --cli-input-json file://,parameters-app.json
-  ```
-  
+
+    ```
+    aws cloudformation create-stack --stack-name [APPLICATION STACK NAME] --region [REGION] --template-url [URL OF mastodon-app.template] --cli-input-json file://,parameters-app.json
+    ```
+
 1. 構築が完了するとアプリケーションスタックの Output に Load Balancer のホスト名が出力されます。このホスト名にアクセスして動作確認してください。
-  * Mastodon の構築に成功すると EC2 インスタンスを再起動します。アクセスできるようになるまで 3分程度時間がかかります。
-  * ドメインをお持ちの場合は、このホスト名をDNS の CNAME レコードに設定します。
+    * Mastodon の構築に成功すると EC2 インスタンスを再起動します。アクセスできるようになるまで 3分程度時間がかかります。
+    * ドメインをお持ちの場合は、このホスト名をDNS の CNAME レコードに設定します。
 
 
 #### Mastodon EC2 インスタンスへのログイン
@@ -120,17 +120,17 @@ CloudFormation テンプレートは、インフラ部分 (mastodon-infra.templa
 Mastodon EC2 インスタンスには Public IP を設定しません。Mastodon EC2 インスタンスに SSH でログインする場合は、踏み台サーバを利用し、SSH 転送機能でログインします。
 
 * TeraTerm を使う場合。
-  1. 踏み台サーバにログインします。
-  1. [Setup]→[SSH Forwarding] を実行します。
-  1. [Add] を押します。
-  1. [Forward local port] を選択し、適当なポート番号を設定します。[listen] は空のままにします。
-  1. [to remote machine] に Mastodon EC2 インスタンスの Private IP を設定します。
-  1. [port] は 22 にします。
-  1. [OK] を押します。
-  1. 別の TeraTerm ウィンドウで localhost の [Forward local port] に接続します。
+    1. 踏み台サーバにログインします。
+    1. [Setup]→[SSH Forwarding] を実行します。
+    1. [Add] を押します。
+    1. [Forward local port] を選択し、適当なポート番号を設定します。[listen] は空のままにします。
+    1. [to remote machine] に Mastodon EC2 インスタンスの Private IP を設定します。
+    1. [port] は 22 にします。
+    1. [OK] を押します。
+    1. 別の TeraTerm ウィンドウで localhost の [Forward local port] に接続します。
 * ssh コマンドを使う場合。
-  1. `ssh -i [PRIVATE KEY] ubuntu@[BASTION] -L [LOCAL PORT]:[MASTODON PRIVATE IP]:22`
-  1. 別の端末で `ssh -i [PRIVATE KEY] ubuntu@localhost -p [LOCAL PORT]`
+    1. `ssh -i [PRIVATE KEY] ubuntu@[BASTION] -L [LOCAL PORT]:[MASTODON PRIVATE IP]:22`
+    1. 別の端末で `ssh -i [PRIVATE KEY] ubuntu@localhost -p [LOCAL PORT]`
 
 
 
@@ -140,33 +140,33 @@ Let's Encrypt の証明書を使うための手順を示します。
 
 1. Mastodon の Load Balancer のホスト名に、DNS の CNAME レコードを設定します。
 1. Mastodon の EC2 インスタンスに SSH でログインします。AutoScaling で複数のインスタンスが動いている場合は、1台に絞ってから実施します。
-  * 1台に絞らないと Let's Encrypt サーバと certbot の連携に失敗するおそれがあります。
+    * 1台に絞らないと Let's Encrypt サーバと certbot の連携に失敗するおそれがあります。
 1. certbot をインストールします。
-  
-  ```
-  sudo su
-  add-apt-repository ppa:certbot/certbot
-  apt-get update
-  apt-get install certbot
-  ```
-  
+
+    ```
+    sudo su
+    add-apt-repository ppa:certbot/certbot
+    apt-get update
+    apt-get install certbot
+    ```
+
 1. `certbot` を実行して証明書を作成します。
   
-  ```
-  certbot certonly --webroot -w /home/mastodon/live/public -d [DOMAIN NAME]
-  ```
+    ```
+    certbot certonly --webroot -w /home/mastodon/[DOMAIN NAME]/public -d [DOMAIN NAME]
+    ```
   
 1. `/etc/letsencrypt/live/[DOMAIN NAME]` に最新の証明書を指すシンボリックリンクがありますので、SCP もしくは S3 経由で入手します。
   
-  ```
-  aws s3 cp /etc/letsencrypt/live/[DOMAIN NAME]/fullchain.pem s3://[BUCKET]/[FOLDER]/
-  aws s3 cp /etc/letsencrypt/live/[DOMAIN NAME]/privkey.pem   s3://[BUCKET]/[FOLDER]/
-  ```
+    ```
+    aws s3 cp /etc/letsencrypt/live/[DOMAIN NAME]/fullchain.pem s3://[BUCKET]/[FOLDER]/
+    aws s3 cp /etc/letsencrypt/live/[DOMAIN NAME]/privkey.pem   s3://[BUCKET]/[FOLDER]/
+    ```
   
 1. AWS コンソールの Certificate Manager を開き、証明書の再インポートを実行します。
-  * [Certificate body] に `fullchain.pem` の前半を設定します。
-  * [Certificate private key] に `privkey.pem` 全文を設定します。
-  * [Certificate chain] に `fullchain.pem` の後半を設定します。
+    * [Certificate body] に `fullchain.pem` の前半を設定します。
+    * [Certificate private key] に `privkey.pem` 全文を設定します。
+    * [Certificate chain] に `fullchain.pem` の後半を設定します。
 
 
 
@@ -176,39 +176,39 @@ Mastodon の更新は踏み台サーバで行います。
 
 1. SSH で踏み台サーバにログインします。
 1. スーパーユーザーになります。
-1. `/home/mastodon/live` に移動します。
+1. `/home/mastodon/[DOMAIN NAME]` に移動します。
 1. `git fetch` します。
-  * 失敗する場合は `live` ディレクトリを削除して `git clone` しなおします。この場合 `.env.production` ファイルをバックアップしてください。`rake secret` でキーを変更してしまうとデータベースにアクセスできなくなります。
+    * 失敗する場合は `/home/mastodon/[DOMAIN NAME]` ディレクトリを削除して `git clone` しなおします。この場合 `.env.production` ファイルをバックアップしてください。`rake secret` でキーを変更してしまうとデータベースアクセスでエラーになります。
 1. `git checkout` で最新のリリースタグに切り替えます。
 1. データベースのマイグレーションを行います。
-  
-  ```
-  RAILS_ENV=production bundle exec rails db:migrate
-  ```
+
+    ```
+    RAILS_ENV=production bundle exec rails db:migrate
+    ```
   
 1. 静的コンテンツのプリコンパイルを行います。
+
+    ```
+    yarn install --pure-lockfile
+    RAILS_ENV=production bundle exec rails assets:precompile
+    ```
   
-  ```
-  yarn install --pure-lockfile
-  RAILS_ENV=production bundle exec rails assets:precompile
-  ```
-  
-1. live ディレクトリのアーカイブを作成します。アーカイブのファイル名は、CloudFormation スタックを構築したときに設定した名前にします。
-  
-  ```
-  cd ..
-  tar cfz [PACKAGE NAME] live
-  ```
-  
+1. `/home/mastodon/[DOMAIN NAME]` ディレクトリのアーカイブを作成します。アーカイブのファイル名は、CloudFormation スタックを構築したときに設定した名前にします。
+
+    ```
+    cd ..
+    tar cfz [PACKAGE NAME] [DOMAIN NAME]
+    ```
+
 1. S3 のパッケージファイル置き場にアップロードします。
   
-  ```
-  aws s3 cp [PACKAGE NAME] s3://[BUCKET]/[FOLDER]/
-  ```
+    ```
+    aws s3 cp [PACKAGE NAME] s3://[BUCKET]/[FOLDER]/
+    ```
   
 1. AutoScaling の最小インスタンス数を 2 にします。
-1. Mastodon の EC2 インスタンスが 2つに増えたら、古い方を Terminate します。
-1. AutoScaling の最小インスタンスを 1 に戻します。
+1. Mastodon の EC2 インスタンスが 2つに増えたら、AutoScaling の最小インスタンスを 1 に戻します。
+1. 10 分後に古い方が Terminate します。
 
 
 
@@ -218,7 +218,7 @@ Mastodon サービスを閉じる場合は、AWS コンソール、もしくは 
 
 1. アプリケーションスタックを先に削除します。
 1. アプリケーションスタックが消滅しましたら、インフラスタックを削除します。
-  * アプリケーションスタックが存在している間はインフラスタックは削除できません。
+    * アプリケーションスタックが存在している間はインフラスタックは削除できません。
 
 RDS のスナップショットやパラメータグループが残る場合がありますので、必要に応じて削除します。S3 のコンテンツ置き場やアクセスログ置き場は手動で削除します。
 
@@ -262,7 +262,7 @@ RDS のスナップショットやパラメータグループが残る場合が�
 
 * DBEngineVersion
   * Postgresql のバージョンを指定します。
-    * 有効な値: "9.6.1", "9.5.4", "9.5.2", "9.4.9", "9.4.7", "9.3.14", "9.3.12"
+    * 有効な値: "9.6.2", "9.6.1", "9.5.4", "9.5.2", "9.4.9", "9.4.7", "9.3.14", "9.3.12"
 * DBInstanceClass
   * DB インスタンスのインスタンスタイプを指定します。
     * デフォルト: "db.t2.micro"
@@ -299,6 +299,7 @@ RDS のスナップショットやパラメータグループが残る場合が�
 * BastionInstanceType
   * 踏み台サーバの EC2 インスタンスのインスタンスタイプを指定します。
     * デフォルト: "t2.micro"
+      * 無料枠になるためこのインスタンスタイプにしていますが、メモリ不足により `yarn install` がいつまでも完了しない場合があります。その場合は 1 ランク上のインスタンスタイプに切り替えてみてください。
 * NATInstanceType
   * NAT インスタンスのインスタンスタイプを指定します。
     * デフォルト: "t2.micro"
@@ -308,6 +309,9 @@ RDS のスナップショットやパラメータグループが残る場合が�
 
 * MastodonFQDN
   * Mastodon の完全なホスト名を指定します。
+* MastodonVersion
+  * Mastodon のリリースタグ名を指定します。master ブランチの最新を使う場合は空文字列を指定します。
+    * デフォルト: v1.3.3
 
 
 #### メール関係の設定
@@ -331,13 +335,15 @@ RDS のスナップショットやパラメータグループが残る場合が�
   * サブネットの AvailabilityZone を指定します。
 * SubnetAvailabilityZone2
   * サブネットの AvailabilityZone を指定します。
-* Tag1Key
+* Tag1Key, Tag2Key
   * AWS リソースに付与するタグのキーです。
-* Tag1Value
+* Tag1Value, Tag2Value
   * AWS リソースに付与するタグの値です。コストの算出に利用できます。
 
 
 ### アプリケーション
+
+インフラスタックのリソースを複数の Mastodon インスタンスで共有できるよう、インフラスタックと同じ設定項目がいくつか存在します。
 
 #### AWS リソース関係の設定
 
@@ -345,16 +351,43 @@ RDS のスナップショットやパラメータグループが残る場合が�
   * インフラスタックの名前を指定します。
 * CertArn
   * サーバー証明書がインポートされている Certificate Manager の ARN を指定します。
-* Tag1Key
+* Tag1Key, Tag2Key
   * AWS リソースに付与するタグのキーです。
-* Tag1Value
+* Tag1Value, Tag2Value
   * AWS リソースに付与するタグの値です。コストの算出に利用できます。
+
+#### Mastodon 関係の設定
+
+* MastodonFQDN
+  * Mastodon の完全なホスト名を指定します。
+
+#### ビルド済みパッケージ置き場関係の設定
+
+* PackageS3Bucket
+  * ビルド済みパッケージ置き場の S3 のバケット名を指定します。
+* PackageS3Prefix
+  * ビルド済みパッケージ置き場の S3 のフォルダ名を指定します。先頭と末尾にスラッシュ (/) はつけないでください。
+* PackageName
+  * ビルド済みパッケージのファイル名を指定します。
+
+#### コンテンツ置き場関係の設定
+
+* ContentsS3Bucket
+  * コンテンツ置き場の S3 のバケット名を指定します。
+
+
+#### LoadBalancer アクセスログ置き場関係の設定
+
+* LBAccessLogS3Bucket
+  * LoadBalancer アクセスログ置き場の S3 のバケット名を指定します。バケットのリージョンは LoadBalancer と同じでなければなりません。
+* LBAccessLogPrefix
+  * LoadBalancer アクセスログ置き場の S3 のフォルダ名を指定します。先頭と末尾にスラッシュ (/) はつけないでください。
 
 
 #### EC2 関係の設定
 
 * EC2KeyPair
-  * EC2 キーペアの名前を指定します。SSH でログインするのに必要です。
+  * EC2 キーペアの名前を指定します。Mastodon サーバ に SSH でログインするのに必要です。
 * InstanceAMI
   * Mastodon サーバの EC2 インスタンスの AMI を指定します。"Ubuntu Server 16.04 LTS (HVM), SSD Volume Type" の AMI を利用してください。
 * InstanceType
