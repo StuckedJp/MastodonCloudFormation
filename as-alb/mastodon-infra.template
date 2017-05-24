@@ -1,7 +1,6 @@
 {
   "AWSTemplateFormatVersion" : "2010-09-09",
-
-  "Description" : "",
+  "Description" : "CloudFormation template file for Mastodon (Infrastructure layer).",
 
   "Parameters": {
     "Tag1Key": {
@@ -21,7 +20,6 @@
       "Type": "String"
     },
 
-
     "MastodonFQDN": {
       "Description" : "FQDN of Mastodon instance",
       "Type": "String"
@@ -32,16 +30,10 @@
       "Default" : "v1.3.3"
     },
 
-
-    "SubnetAvailabilityZone1": {
-      "Description" : "Availability Zone of Subnet",
-      "Type": "String"
+    "SubnetAvailabilityZone": {
+      "Description" : "Availability Zones of Subnet",
+      "Type": "List<AWS::EC2::AvailabilityZone::Name>"
     },
-    "SubnetAvailabilityZone2": {
-      "Description" : "Availability Zone of Subnet",
-      "Type": "String"
-    },
-
 
     "DBInstanceClass": {
       "Description" : "RDS instance type",
@@ -132,12 +124,12 @@
     },
     "BastionInstanceAMI": {
       "Description" : "EC2 instance AMI ID of bastion server.",
-      "Type" : "String",
+      "Type" : "AWS::EC2::Image::Id",
       "ConstraintDescription" : "must be a valid EC2 AMI ID."
     },
     "EC2KeyPair": {
       "Description" : "EC2 Key Pair Name",
-      "Type" : "String",
+      "Type" : "AWS::EC2::KeyPair::KeyName",
       "ConstraintDescription" : "must be a valid EC2 Key Pair Name."
     },
 
@@ -358,7 +350,7 @@
       "Properties" : {
         "CidrBlock" : { "Fn::FindInMap" : [ "CIDR", "PrivateSubnet1", "IP" ] },
         "MapPublicIpOnLaunch" : false,
-        "AvailabilityZone" : { "Ref": "SubnetAvailabilityZone1" },
+        "AvailabilityZone" : { "Fn::Select" : [ "0", {"Ref" : "SubnetAvailabilityZone"} ] },
         "Tags" : [
           { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-PrivateSubnet1" } },
           { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} },
@@ -372,7 +364,7 @@
       "Properties" : {
         "CidrBlock" : { "Fn::FindInMap" : [ "CIDR", "PrivateSubnet2", "IP" ] },
         "MapPublicIpOnLaunch" : false,
-        "AvailabilityZone" : { "Ref": "SubnetAvailabilityZone2" },
+        "AvailabilityZone" : { "Fn::Select" : [ "1", {"Ref" : "SubnetAvailabilityZone"} ] },
         "Tags" : [
           { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-PrivateSubnet2" } },
           { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} },
@@ -386,7 +378,7 @@
       "Properties" : {
         "CidrBlock" : { "Fn::FindInMap" : [ "CIDR", "PublicSubnet1", "IP" ] },
         "MapPublicIpOnLaunch" : true,
-        "AvailabilityZone" : { "Ref": "SubnetAvailabilityZone1" },
+        "AvailabilityZone" : { "Fn::Select" : [ "0", {"Ref" : "SubnetAvailabilityZone"} ] },
         "Tags" : [
           { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-PublicSubnet1" } },
           { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} },
@@ -400,7 +392,7 @@
       "Properties" : {
         "CidrBlock" : { "Fn::FindInMap" : [ "CIDR", "PublicSubnet2", "IP" ] },
         "MapPublicIpOnLaunch" : true,
-        "AvailabilityZone" : { "Ref": "SubnetAvailabilityZone2" },
+        "AvailabilityZone" : { "Fn::Select" : [ "1", {"Ref" : "SubnetAvailabilityZone"} ] },
         "Tags" : [
           { "Key": "Name", "Value": { "Fn::Sub": "${AWS::StackName}-PublicSubnet2" } },
           { "Key": { "Ref": "Tag1Key" }, "Value": { "Ref": "Tag1Value"} },
@@ -1247,7 +1239,7 @@
         "AllocatedStorage" : { "Fn::FindInMap" : [ "RDSConfig", "Storage", "ValueByGb" ] },
         "AllowMajorVersionUpgrade" : false,
         "AutoMinorVersionUpgrade" : true,
-        "AvailabilityZone" : { "Ref": "SubnetAvailabilityZone1" },
+        "AvailabilityZone" : { "Fn::Select" : [ "0", {"Ref" : "SubnetAvailabilityZone"} ] },
         "BackupRetentionPeriod" : { "Fn::FindInMap" : [ "RDSConfig", "BackupRetentionPeriod", "Value" ] },
         "CopyTagsToSnapshot" : true,
         "DBInstanceClass" : { "Ref": "DBInstanceClass" },
@@ -1379,13 +1371,13 @@
     },
 
     "SubnetAvailabilityZone1": {
-      "Description": "AZ 1",
-      "Value": { "Ref": "SubnetAvailabilityZone1" },
+      "Description": "Availability Zones of Subnet",
+      "Value": { "Fn::Select" : [ "0", { "Ref": "SubnetAvailabilityZone" } ] },
       "Export": { "Name" : {"Fn::Sub": "${AWS::StackName}-SubnetAvailabilityZone1" }}
     },
     "SubnetAvailabilityZone2": {
-      "Description": "AZ 2",
-      "Value": { "Ref": "SubnetAvailabilityZone2" },
+      "Description": "Availability Zones of Subnet",
+      "Value": { "Fn::Select" : [ "1", { "Ref": "SubnetAvailabilityZone" } ] },
       "Export": { "Name" : {"Fn::Sub": "${AWS::StackName}-SubnetAvailabilityZone2" }}
     },
 
