@@ -19,15 +19,15 @@
 
         { "ParameterKey": "ContentsS3Bucket", "ParameterValue": "" },
 
+        { "ParameterKey": "LBAccessLogS3Bucket", "ParameterValue": "" },
+        { "ParameterKey": "LBAccessLogPrefix", "ParameterValue": "" },
+
         { "ParameterKey": "CertArn", "ParameterValue": "" }
     ],
     "Capabilities": [
         "CAPABILITY_IAM"
     ],
     "Tags": [
-        {
-            "Key": "",
-            "Value": ""
-        }
+        { "Key": "",  "Value": "" }
     ]
 }
