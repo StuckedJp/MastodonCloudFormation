@@ -49,9 +49,6 @@
         "CAPABILITY_IAM"
     ],
     "Tags": [
-        {
-            "Key": "",
-            "Value": ""
-        }
+        { "Key": "", "Value": "" }
     ]
 }
