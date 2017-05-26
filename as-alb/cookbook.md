@@ -3,6 +3,10 @@
 
 ## 1つのインフラスタックで構築したリソースを使って、複数の Mastodon インスタンスを起動する
 
+
+**現状、インフラを共用したインスタンスでタイムラインが混じる問題があります。[Pull Request の #3094](https://github.com/tootsuite/mastodon/pull/3094) で直るかもしれません。**
+
+
 * VPC、Subnet、NAT、踏み台サーバは共通で利用します。
 * RDS も共通で利用します。ただし、スキーマを分けます。
 * ElastiCache(Redis) も共通で利用します。ただし、データベースを分けます。
@@ -357,7 +361,7 @@ Mastodon のログは、journald に出力されます。これを CloudWatch �
           }
     ```
 
-1. `createConfigFiles` に、前期で追加した 3項目を追加します。
+1. `createConfigFiles` に、前記で追加した 3項目を追加します。
 
     ```json
             "createConfigFiles": [
@@ -382,4 +386,4 @@ Mastodon のログは、journald に出力されます。これを CloudWatch �
 1. アプリケーションスタックを更新します。
 1. AutoScaling を使ってインスタンスを更新します。
 
-**ログの出力が止まってしまう**
+**問題点: ログの出力が止まってしまう**
