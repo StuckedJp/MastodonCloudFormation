@@ -82,7 +82,7 @@ CloudFormation テンプレートは、インフラ部分 (mastodon-infra.templa
         2017-04-28 04:08:13,525 - util.py[WARNING]: Failed running /var/lib/cloud/instance/scripts/part-001 [2]
         ```
 
-    リトライすれば成功する場合があります。リトライする場合はログに書かれているスクリプト (上記の例であれば `/var/lib/cloud/instance/scripts/part-001`) をスーパーユーザーで実行してください。Mastodon ユーザーの作成や`git clone`するところは、再実行するとエラーになりますので、エラー発生箇所に応じてスクリプトの一部をコメントアウトする必要があります。
+      リトライすれば成功する場合があります。リトライする場合はログに書かれているスクリプト (上記の例であれば `/var/lib/cloud/instance/scripts/part-001`) をスーパーユーザーで実行してください。Mastodon ユーザーの作成や`git clone`するところは、再実行するとエラーになりますので、エラー発生箇所に応じてスクリプトの一部をコメントアウトする必要があります。
 
 
 #### 踏み台サーバの扱い

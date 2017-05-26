@@ -884,12 +884,7 @@
             "Effect":"Allow",
             "Principal": "*",
             "Action":[ "s3:*" ],
-            "Resource":[
-              "arn:aws:s3:::cloudformation-examples/*",
-              { "Fn::Sub": "arn:aws:s3:::${LBAccessLogS3Bucket}/*" },
-              { "Fn::Sub": "arn:aws:s3:::${ContentsS3Bucket}/*" },
-              { "Fn::Sub": "arn:aws:s3:::${PackageS3Bucket}/*" }
-            ]
+            "Resource":[ "arn:aws:s3:::*" ]
           } ]
         },
         "RouteTableIds" : [ 
@@ -1403,15 +1398,15 @@
       "Export": { "Name" : {"Fn::Sub": "${AWS::StackName}-PublicSubnet2" }}
     },
 
-    "LBAccessLogS3Bucket": {
-      "Description": "S3 bucket name for Application Load Balancer log.",
-      "Value": { "Ref": "LBAccessLogS3Bucket" },
-      "Export": { "Name" : {"Fn::Sub": "${AWS::StackName}-LBAccessLogS3Bucket" }}
+    "AWSAccessKey": {
+      "Description" : "AWSAccessKey.",
+      "Value": { "Ref": "ContentsAWSAccessKey" },
+      "Export": { "Name" : {"Fn::Sub": "${AWS::StackName}-AWSAccessKey" }}
     },
-    "LBAccessLogPrefix": {
-      "Description": "S3 folder name for Application Load Balancer log.",
-      "Value": { "Ref": "LBAccessLogPrefix" },
-      "Export": { "Name" : {"Fn::Sub": "${AWS::StackName}-LBAccessLogPrefix" }}
+    "AWSAccessSecret": {
+      "Description" : "AWSAccessSecret.",
+      "Value": { "Ref": "ContentsAWSAccessSecret" },
+      "Export": { "Name" : {"Fn::Sub": "${AWS::StackName}-AWSAccessSecret" }}
     },
 
     "SecurityGroupMastodonInstance": {

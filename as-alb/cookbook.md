@@ -21,6 +21,7 @@
     `--- PreBuilded_Package
     Bucket_for_Instance2_Cache
     ```
+
     * S3 のコンテンツキャッシュは Mastodon インスタンスごとに作成します。
     * S3 のログ置き場は Mastodon インスタンスごとに作成します。
     * S3 の事前ビルドパッケージ置き場は Mastodon インスタンスごとに作成します。
@@ -48,35 +49,6 @@
     ]
 }
 ```
-
-
-### VPC Endpoint の変更
-
-VPC エンドポイントに `Bucket_for_Instance2` を追加します。
-
-1. AWS コンソールにアクセスし、[VPC]→[エンドポイント]を開きます。
-1. Mastodon の VPC を選択し [ポリシー]タブを開きます。
-1. [ポリシーの編集] ボタンを押して、`Resource` 配列に、`Bucket_for_Instance2` を追加します。以下は例です。
-
-    ```json
-    {
-        "Version": "2012-10-17",
-        "Statement": [
-            {
-                "Effect": "Allow",
-                "Principal": "*",
-                "Action": "s3:*",
-                "Resource": [
-                    "arn:aws:s3:::cloudformation-examples/*",
-                    "arn:aws:s3:::[Bucket_for_Instance1]/*",
-                    "arn:aws:s3:::[Bucket_for_Instance1_Cache]/*",
-                    "arn:aws:s3:::[Bucket_for_Instance2]/*",
-                    "arn:aws:s3:::[Bucket_for_Instance2_Cache]/*"
-                ]
-            }
-        ]
-    }
-    ```
 
 
 ### 踏み台のインスタンスポリシーの変更
@@ -152,7 +124,7 @@ VPC エンドポイントに `Bucket_for_Instance2` を追加します。
         * `Bucket_for_Instance2_Cache` のバケット名を指定します。
 1. ビルドしなおして、パッケージを作成します。
 
-    ```
+    ```bash
     rm -fr vendor/bundle
     bundle install --deployment --without development test
     yarn install --pure-lockfile
@@ -168,7 +140,7 @@ VPC エンドポイントに `Bucket_for_Instance2` を追加します。
 
 1. 取得済みの SSL 証明書があれば、それを Certificate Manager にインポートします。ここでは、Let's Encrypt を使いますので、まずオレオレ証明書を作成します。
 
-    ```
+    ```bash
     openssl genrsa -des3 -out server.key 2048
     openssl req -new -key server.key -out server.csr
     cp server.key server.key.org
@@ -200,7 +172,7 @@ VPC エンドポイントに `Bucket_for_Instance2` を追加します。
 1. `Instance2` の EC2 インスタンスにログインします。(踏み台の端末から SSH 転送します。)
 1. certbot をインストールします。
 
-    ```
+    ```bash
     sudo su
     add-apt-repository ppa:certbot/certbot
     apt-get update
@@ -210,10 +182,204 @@ VPC エンドポイントに `Bucket_for_Instance2` を追加します。
 1. `certbot certonly --webroot -w /home/mastodon/[Instance2]/public -d [Instance2 Domain Name]`
 1. 証明書をインポートします。
 
-    ```
+    ```bash
     aws acm import-certificate \
     --certificate-arn [Instance2 ACM ARN] \
     --certificate file:///etc/letsencrypt/live/[Instance2 Domain Name]/fullchain.pem \
     --private-key file:///etc/letsencrypt/live/[Instance2 Domain Name]/privkey.pem \
     --certificate-chain file:///etc/letsencrypt/live/[Instance2 Domain Name]/???????.pem
     ```
+
+
+
+## Nginx の ログを CloudWatch に転送する。
+
+1. アプリケーション層のテンプレートの `MastodonInstanceAutoScalingLaunchConfig` の `Metadata` に以下の項目を追加します。
+
+    ```json
+          "awslog": {
+            "files": {
+              "/root/awslogs.conf": {
+                "content": { "Fn::Join": ["", [
+                  "[general]\n",
+                  "state_file = /var/awslogs/state/agent-state\n",
+                  "[/var/log/nginx/access.log]\n",
+                  "datetime_format = %d/%b/%Y:%H:%M:%S %z\n",
+                  "file = /var/log/nginx/access.log\n",
+                  "buffer_duration = 5000\n",
+                  "log_stream_name = {instance_id}\n",
+                  "initial_position = start_of_file\n",
+                  "log_group_name = /var/log/nginx/access.log\n"
+                ] ] },
+                "mode"  : "000644",
+                "owner" : "root",
+                "group" : "root"
+              }
+            }
+          },
+          "awsCredentials": {
+            "files": {
+              "/root/.aws/credentials": {
+                "content": { "Fn::Join": ["", [
+                  "[default]\n",
+                  "aws_access_key_id = ", { "Fn::ImportValue": {"Fn::Sub": "${InfraStackName}-AWSAccessKey" } }, "\n",
+                  "aws_secret_access_key = ", { "Fn::ImportValue": {"Fn::Sub": "${InfraStackName}-AWSAccessSecret" } }, "\n"
+                ] ] },
+                "mode"  : "000644",
+                "owner" : "root",
+                "group" : "root"
+              }
+            }
+          }
+    ```
+
+1. `createConfigFiles` に `awslog`と`awsCredentials` を追加します。
+
+    ```json
+            "createConfigFiles": [
+                ...
+              "awslog",
+              "awsCredentials"
+            ]
+
+    ```
+
+1. `MastodonInstanceAutoScalingLaunchConfig` の `UserData` の、`Install config files` の後ろに、以下のコマンドを追加します。
+
+    ```json
+    "# ********** Setup AWS Log **********\n",
+    "cd /root\n",
+    "apt-get update\n",
+    "curl https://s3.amazonaws.com/aws-cloudwatch/downloads/latest/awslogs-agent-setup.py -O\n",
+    "python ./awslogs-agent-setup.py --region ", { "Ref": "AWS::Region" }, " --non-interactive --configfile /root/awslogs.conf\n",
+    ```
+
+1. アプリケーションスタックを更新します。
+1. AutoScaling を使ってインスタンスを更新します。
+1. AWS コンソールで、CloudWatch を確認します。"/var/log/nginx/access.log" というロググループが作成されます。
+
+エラーログも CloudWatch に転送したい場合は、`/var/log/nginx/error.log` のエントリを `/root/awslogs.conf` に追加します。
+
+
+
+## Mastodon の ログを CloudWatch に転送する。
+
+Mastodon のログは、journald に出力されます。これを CloudWatch に転送するために [journald-cloudwatch-logs](https://github.com/saymedia/journald-cloudwatch-logs) を導入します。
+
+1. `MastodonInstanceIAMRole` に CloudWatch へのアクセスを許可するエントリを追加します。
+
+    ```json
+        "MastodonInstanceIAMRole": {
+        "Type": "AWS::IAM::Role",
+        "Properties": {
+            "AssumeRolePolicyDocument": {
+            "Version" : "2012-10-17",
+            "Statement": [ {
+                "Effect": "Allow",
+                "Principal": {
+                "Service": [ "ec2.amazonaws.com" ]
+                },
+                "Action": [ "sts:AssumeRole" ]
+            } ]
+            },
+            "Path": "/",
+            "Policies": [ {
+            "PolicyName": "root",
+            "PolicyDocument": {
+                "Version" : "2012-10-17",
+                "Statement": [ 
+                    ... (S3 の設定) ...
+                    {
+                        "Effect": "Allow",
+                        "Action": [
+                            "logs:CreateLogStream",
+                            "logs:PutLogEvents",
+                            "logs:DescribeLogStreams"
+                        ],
+                        "Resource": [
+                            "arn:aws:logs:*:*:log-group:*",
+                            "arn:aws:logs:*:*:log-group:*:log-stream:*"
+                        ]
+                    }
+                ]
+            }
+            } ]
+        }
+        },
+    ```
+
+1. アプリケーション層のテンプレートの `MastodonInstanceAutoScalingLaunchConfig` の `Metadata` に以下の項目を追加します。
+
+    ```json
+          "journald-cloudwatch-logs": {
+            "sources": {
+              "/root/journald-cloudwatch-logs": "https://github.com/saymedia/journald-cloudwatch-logs/releases/download/v0.0.1/journald-cloudwatch-logs-linux.zip"
+            }
+          },
+          "journald-cloudwatch-logs-config": {
+            "files": {
+              "/root/journald-cloudwatch-logs/journald-cloudwatch-logs.conf": {
+                "content": { "Fn::Join": ["", [
+                  "log_group = \"", { "Ref": "AWS::StackName" }, "-mastodon\"\n",
+                  "state_file = \"/var/lib/journald-cloudwatch-logs/state\"\n"
+                ] ] },
+                "mode"  : "000644",
+                "owner" : "root",
+                "group" : "root"
+              }
+            }
+          },
+          "journald-cloudwatch-logs-service": {
+            "files": {
+              "/etc/systemd/system/journald-cloudwatch-logs.service": {
+                "content": { "Fn::Join": ["", [
+                  "[Unit]\n",
+                  "Description=journald-cloudwatch-logs\n",
+                  "Wants=basic.target\n",
+                  "After=basic.target network.target\n",
+                  "\n",
+                  "[Service]\n",
+                  "User=root\n",
+                  "Group=root\n",
+                  "ExecStart=/root/journald-cloudwatch-logs/journald-cloudwatch-logs/journald-cloudwatch-logs /root/journald-cloudwatch-logs/journald-cloudwatch-logs.conf\n",
+                  "KillMode=process\n",
+                  "Restart=on-failure\n",
+                  "RestartSec=42s\n",
+                  "\n",
+                  "[Install]\n",
+                  "WantedBy=default.target\n"
+                ] ] },
+                "mode"  : "000644",
+                "owner" : "root",
+                "group" : "root"
+              }
+            }
+          }
+    ```
+
+1. `createConfigFiles` に、前期で追加した 3項目を追加します。
+
+    ```json
+            "createConfigFiles": [
+                ...
+              "journald-cloudwatch-logs",
+              "journald-cloudwatch-logs-config",
+              "journald-cloudwatch-logs-service"
+            ]
+
+    ```
+
+1. `MastodonInstanceAutoScalingLaunchConfig` の `UserData` の、`Install config files` の後ろに、以下のコマンドを追加します。
+
+    ```json
+    "# ********** Setup Journald-CloudWatch **********\n",
+    "mkdir -p /var/lib/journald-cloudwatch-logs\n",
+    "chmod 777 /var/lib/journald-cloudwatch-logs\n",
+    "systemctl enable /etc/systemd/system/journald-cloudwatch-logs.service\n",
+    ```
+
+1. `journald-cloudwatch-logs.conf` で指定した `log_group` を AWS コンソールで作成します。
+1. アプリケーションスタックを更新します。
+1. AutoScaling を使ってインスタンスを更新します。
+
+**ログの出力が止まってしまう**
