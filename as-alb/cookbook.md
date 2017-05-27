@@ -188,10 +188,11 @@
 
     ```bash
     aws acm import-certificate \
+    --region [Region] \
     --certificate-arn [Instance2 ACM ARN] \
-    --certificate file:///etc/letsencrypt/live/[Instance2 Domain Name]/fullchain.pem \
+    --certificate file:///etc/letsencrypt/live/[Instance2 Domain Name]/cert.pem \
     --private-key file:///etc/letsencrypt/live/[Instance2 Domain Name]/privkey.pem \
-    --certificate-chain file:///etc/letsencrypt/live/[Instance2 Domain Name]/???????.pem
+    --certificate-chain file:///etc/letsencrypt/live/[Instance2 Domain Name]/chain.pem
     ```
 
 
