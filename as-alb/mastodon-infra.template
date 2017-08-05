@@ -26,8 +26,7 @@
     },
     "MastodonVersion": {
       "Description" : "Release tag name of Mastodon",
-      "Type": "String",
-      "Default" : "v1.3.3"
+      "Type": "String"
     },
 
     "SubnetAvailabilityZone": {
@@ -55,7 +54,8 @@
       "Description" : "RDS (Postgresql) engine version",
       "Type": "String",
       "AllowedValues" : [
-        "9.6.2", "9.6.1", "9.5.6", "9.5.4", "9.5.2", "9.4.9", "9.4.7", "9.3.14", "9.3.12"
+        "9.6.3", "9.6.2", "9.6.1", "9.5.7", "9.5.6", "9.5.4", "9.5.2",
+        "9.4.12", "9.4.11", "9.4.9", "9.4.7", "9.3.17", "9.3.16", "9.3.14", "9.3.12"
       ],
       "ConstraintDescription" : "must be a valid RDS engine version."
     },
@@ -242,22 +242,22 @@
       "Storage": { "ValueByGb": "20" }
     },
     "RegionConfig": {
-      "us-east-1"     : { "Principal": "127311923021", "NATAMI": "ami-258e1f33" },
-      "us-east-2"     : { "Principal": "033677994240", "NATAMI": "ami-6793b702" },
-      "us-west-1"     : { "Principal": "027434742980", "NATAMI": "ami-8437a5e4" },
-      "us-west-2"     : { "Principal": "797873946194", "NATAMI": "ami-eeba9f8e" },
-      "ca-central-1"  : { "Principal": "985666609251", "NATAMI": "ami-c8db67ac" },
-      "eu-west-1"     : { "Principal": "156460612806", "NATAMI": "ami-5bc6c23d" },
-      "eu-central-1"  : { "Principal": "054676820928", "NATAMI": "ami-17c4d073" },
-      "eu-west-2"     : { "Principal": "652711504416", "NATAMI": "ami-0469bb6b" },
-      "ap-northeast-1": { "Principal": "582318560864", "NATAMI": "ami-6c3c130b" },
-      "ap-northeast-2": { "Principal": "600734575887", "NATAMI": "ami-2e15c740" },
-      "ap-southeast-1": { "Principal": "114774131450", "NATAMI": "ami-ae5ce5cd" },
-      "ap-southeast-2": { "Principal": "783225319266", "NATAMI": "ami-85c1b2ea" },
-      "ap-south-1"    : { "Principal": "718504428378", "NATAMI": "ami-242f2647" },
-      "sa-east-1"     : { "Principal": "507241528517", "NATAMI": "ami-93ccaeff" },
-      "us-gov-west-1" : { "Principal": "048591011584", "NATAMI": "ami-6ae2660b" },
-      "cn-north-1"    : { "Principal": "638102146993", "NATAMI": "ami-c1e036ac" }
+      "us-east-1"     : { "Principal": "127311923021", "NATAMI": "ami-d4c5efc2" },
+      "us-east-2"     : { "Principal": "033677994240", "NATAMI": "ami-f27b5a97" },
+      "us-west-1"     : { "Principal": "027434742980", "NATAMI": "ami-b87f53d8" },
+      "us-west-2"     : { "Principal": "797873946194", "NATAMI": "ami-8bfce8f2" },
+      "ca-central-1"  : { "Principal": "985666609251", "NATAMI": "ami-b0a619d4" },
+      "eu-west-1"     : { "Principal": "156460612806", "NATAMI": "ami-3a849f5c" },
+      "eu-central-1"  : { "Principal": "054676820928", "NATAMI": "ami-9ebe18f1" },
+      "eu-west-2"     : { "Principal": "652711504416", "NATAMI": "ami-21120445" },
+      "ap-northeast-1": { "Principal": "582318560864", "NATAMI": "ami-10dfc877" },
+      "ap-northeast-2": { "Principal": "600734575887", "NATAMI": "ami-1a1bc474" },
+      "ap-southeast-1": { "Principal": "114774131450", "NATAMI": "ami-36af2055" },
+      "ap-southeast-2": { "Principal": "783225319266", "NATAMI": "ami-1e91817d" },
+      "ap-south-1"    : { "Principal": "718504428378", "NATAMI": "ami-e0215f8f" },
+      "sa-east-1"     : { "Principal": "507241528517", "NATAMI": "ami-8bdab1e7" },
+      "us-gov-west-1" : { "Principal": "048591011584", "NATAMI": "ami-c39610a2" },
+      "cn-north-1"    : { "Principal": "638102146993", "NATAMI": "ami-e1f7268c" }
     }
   },
 
@@ -1038,6 +1038,7 @@
           "echo \"PAPERCLIP_SECRET=`bundle exec rake secret`\" >> .env.production\n",
           "echo \"SECRET_KEY_BASE=`bundle exec rake secret`\" >> .env.production\n",
           "echo \"OTP_SECRET=`bundle exec rake secret`\" >> .env.production\n",
+          "bundle exec rake mastodon:webpush:generate_vapid_key >> .env.production\n",
 
           "bundle exec rails db:setup\n",
           "bundle exec rails assets:precompile\n",
@@ -1091,7 +1092,9 @@
                 "redis-tools": [],
                 "nginx": [],
                 "awscli": [],
-                "nodejs": []
+                "nodejs": [],
+                "libicu-dev": [],
+                "libidn11-dev": []
               }
             }
           },
