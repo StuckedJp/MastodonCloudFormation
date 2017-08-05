@@ -315,7 +315,7 @@
           "rm -f /etc/nginx/sites-enabled/default \n",
 
           "# ********** Setup daily cron **********\n",
-          "echo \"0 18 * * *  mastodon    /home/mastodon/mastodon.daily.sh\" >> /etc/crontab\n",
+          "# echo \"0 18 * * *  mastodon    /home/mastodon/mastodon.daily.sh\" >> /etc/crontab\n",
 
           "# ********** Restart system **********\n",
           "reboot \n",
@@ -360,7 +360,9 @@
                 "redis-tools": [],
                 "nginx": [],
                 "awscli": [],
-                "nodejs": []
+                "nodejs": [],
+                "libicu-dev": [],
+                "libidn11-dev": []
               }
             }
           },
