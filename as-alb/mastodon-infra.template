@@ -29,6 +29,19 @@
       "Type": "String"
     },
 
+    "SecretKeyBase": {
+      "Description" : "SECRET_KEY_BASE value.",
+      "Type": "String"
+    },
+    "PaperclipSecret": {
+      "Description" : "PAPERCLIP_SECRET value.",
+      "Type": "String"
+    },
+    "OtpSecret": {
+      "Description" : "OTP_SECRET value.",
+      "Type": "String"
+    },
+
     "SubnetAvailabilityZone": {
       "Description" : "Availability Zones of Subnet",
       "Type": "List<AWS::EC2::AvailabilityZone::Name>"
@@ -79,6 +92,11 @@
       "Type": "String",
       "Default" : "standard",
       "AllowedValues" : [ "standard", "gp2", "io1" ],
+      "ConstraintDescription" : "must be a valid RDS storage type."
+    },
+    "DBSnapshotIdentifier": {
+      "Description" : "RDS Snapshot ID",
+      "Type": "String",
       "ConstraintDescription" : "must be a valid RDS storage type."
     },
 
@@ -263,8 +281,12 @@
 
 
   "Conditions": {
-    "IsVirginia": { "Fn::Equals" : [ { "Ref": "AWS::Region" }, "us-east-1"] },
-    "IsMaster": { "Fn::Equals" : [ { "Ref": "MastodonVersion" }, ""] }
+    "IsVirginia"             : { "Fn::Equals" : [ { "Ref": "AWS::Region" }, "us-east-1"] },
+    "IsMaster"               : { "Fn::Equals" : [ { "Ref": "MastodonVersion" }, ""] },
+    "HasSecretKeyBase"       : { "Fn::Not": [ { "Fn::Equals" : [ { "Ref": "SecretKeyBase"   }, ""]  } ] },
+    "HasPaperclipSecret"     : { "Fn::Not": [ { "Fn::Equals" : [ { "Ref": "PaperclipSecret" }, ""]  } ] },
+    "HasOtpSecret"           : { "Fn::Not": [ { "Fn::Equals" : [ { "Ref": "OtpSecret"       }, ""]  } ] },
+    "HasDBSnapshotIdentifier": { "Fn::Not": [ { "Fn::Equals" : [ { "Ref": "DBSnapshotIdentifier" }, ""]  } ] }
   },
 
 
@@ -1035,12 +1057,21 @@
           " --region ", { "Ref" : "AWS::Region" }, "\n",
 
           "export RAILS_ENV=production\n",
-          "echo \"PAPERCLIP_SECRET=`bundle exec rake secret`\" >> .env.production\n",
-          "echo \"SECRET_KEY_BASE=`bundle exec rake secret`\" >> .env.production\n",
-          "echo \"OTP_SECRET=`bundle exec rake secret`\" >> .env.production\n",
+          { "Fn::If": [ "HasSecretKeyBase",
+            { "Fn::Sub": "echo \"SECRET_KEY_BASE=${SecretKeyBase}\" >> .env.production\n" },
+            "echo \"SECRET_KEY_BASE=`bundle exec rake secret`\" >> .env.production\n" ]
+          },
+          { "Fn::If": [ "HasPaperclipSecret",
+            { "Fn::Sub": "echo \"PAPERCLIP_SECRET=${PaperclipSecret}\" >> .env.production\n" },
+            "echo \"PAPERCLIP_SECRET=`bundle exec rake secret`\" >> .env.production\n" ]
+          },
+          { "Fn::If": [ "HasOtpSecret",
+            { "Fn::Sub": "echo \"OTP_SECRET=${OtpSecret}\" >> .env.production\n" },
+            "echo \"OTP_SECRET=`bundle exec rake secret`\" >> .env.production\n" ]
+          },
           "bundle exec rake mastodon:webpush:generate_vapid_key >> .env.production\n",
 
-          "bundle exec rails db:setup\n",
+          { "Fn::If": [ "HasDBSnapshotIdentifier", "", "bundle exec rails db:setup\n" ] },
           "bundle exec rails assets:precompile\n",
 
           "cd .. \n",
@@ -1243,11 +1274,12 @@
         "CopyTagsToSnapshot" : true,
         "DBInstanceClass" : { "Ref": "DBInstanceClass" },
         "DBInstanceIdentifier" : { "Fn::Join" : [ "-", [ { "Ref": "AWS::StackName" }, "RDS" ] ] },
-        "DBName" : { "Ref": "DBName" },
+        "DBName" : { "Fn::If": [ "HasDBSnapshotIdentifier", "", { "Ref": "DBName" } ] },
         "VPCSecurityGroups" : [
           { "Ref": "SecurityGroupRDS" }
         ],
         "DBSubnetGroupName" : { "Ref": "RDSSubnetGroup" },
+        "DBSnapshotIdentifier": { "Fn::If": [ "HasDBSnapshotIdentifier", { "Ref": "DBSnapshotIdentifier" }, "" ] },
         "Engine" : "postgres",
         "EngineVersion" : { "Ref": "DBEngineVersion" },
         "LicenseModel" : { "Ref": "DBLicenseModel" },
