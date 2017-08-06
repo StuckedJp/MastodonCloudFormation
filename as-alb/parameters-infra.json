@@ -8,6 +8,10 @@
         { "ParameterKey": "MastodonFQDN", "ParameterValue": "" },
         { "ParameterKey": "MastodonVersion", "ParameterValue": "" },
 
+        { "ParameterKey": "SecretKeyBase", "ParameterValue": "" },
+        { "ParameterKey": "PaperclipSecret", "ParameterValue": "" },
+        { "ParameterKey": "OtpSecret", "ParameterValue": "" },
+
         { "ParameterKey": "SubnetAvailabilityZone1", "ParameterValue": "" },
         { "ParameterKey": "SubnetAvailabilityZone2", "ParameterValue": "" },
 
@@ -18,6 +22,7 @@
         { "ParameterKey": "DBMasterUsername", "ParameterValue": "" },
         { "ParameterKey": "DBMasterUserPassword", "ParameterValue": "" },
         { "ParameterKey": "DBStorageType", "ParameterValue": "" },
+        { "ParameterKey": "DBSnapshotIdentifier", "ParameterValue": "" },
 
         { "ParameterKey": "ElastiCacheNodeType", "ParameterValue": "" },
         { "ParameterKey": "ElastiCacheVersion", "ParameterValue": "" },
