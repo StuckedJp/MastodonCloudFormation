@@ -1273,7 +1273,6 @@
         "BackupRetentionPeriod" : { "Fn::FindInMap" : [ "RDSConfig", "BackupRetentionPeriod", "Value" ] },
         "CopyTagsToSnapshot" : true,
         "DBInstanceClass" : { "Ref": "DBInstanceClass" },
-        "DBInstanceIdentifier" : { "Fn::Join" : [ "-", [ { "Ref": "AWS::StackName" }, "RDS" ] ] },
         "DBName" : { "Fn::If": [ "HasDBSnapshotIdentifier", "", { "Ref": "DBName" } ] },
         "VPCSecurityGroups" : [
           { "Ref": "SecurityGroupRDS" }
