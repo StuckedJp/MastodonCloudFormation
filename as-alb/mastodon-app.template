@@ -279,7 +279,7 @@
           "ln -s /root/aws-cfn-bootstrap-latest/init/ubuntu/cfn-hup /etc/init.d/cfn-hup \n",
 
           "# ********** Install required packages **********\n",
-          "curl -sL https://deb.nodesource.com/setup_6.x | bash - \n",
+          "curl -sL https://deb.nodesource.com/setup_8.x | bash - \n",
           "apt-add-repository -y ppa:brightbox/ruby-ng\n",
           "apt-get update\n",
           "/usr/local/bin/cfn-init -v ",
@@ -469,7 +469,7 @@
                   "\n",
                   "  keepalive_timeout    70;\n",
                   "  sendfile             on;\n",
-                  "  client_max_body_size 8m;\n",
+                  "  client_max_body_size 40m;\n",
                   "\n",
                   "  root /home/mastodon/", { "Ref": "MastodonFQDN" }, "/public;\n",
                   "\n",
