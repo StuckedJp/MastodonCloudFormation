@@ -62,6 +62,13 @@ Parameters:
     Description: RDS (Postgresql) engine version
     Type: String
     AllowedValues:
+      - 10.4
+      - 10.3
+      - 10.1
+      - 9.6.11
+      - 9.6.10
+      - 9.6.9
+      - 9.6.8
       - 9.6.6
       - 9.6.5
       - 9.6.3
@@ -120,6 +127,10 @@ Parameters:
     Description: ElastiCache (Redis) engine version
     Type: String
     AllowedValues:
+      - 5.0.0
+      - 4.0.10
+      - 3.2.10
+      - 3.2.6
       - 3.2.4
       - 2.8.24
       - 2.8.23
@@ -337,52 +348,55 @@ Mappings:
   RegionConfig:
     us-east-1:
       Principal: '127311923021'
-      NATAMI: ami-d4c5efc2
+      NATAMI: ami-0422d936d535c63b1
     us-east-2:
       Principal: 033677994240
-      NATAMI: ami-f27b5a97
+      NATAMI: ami-0f9c61b5a562a16af
     us-west-1:
       Principal: 027434742980
-      NATAMI: ami-b87f53d8
+      NATAMI: ami-0d4027d2cdbca669d
     us-west-2:
       Principal: '797873946194'
-      NATAMI: ami-8bfce8f2
+      NATAMI: ami-40d1f038
     ca-central-1:
       Principal: '985666609251'
-      NATAMI: ami-b0a619d4
+      NATAMI: ami-b61b96d2
     eu-west-1:
       Principal: '156460612806'
-      NATAMI: ami-3a849f5c
-    eu-central-1:
-      Principal: 054676820928
-      NATAMI: ami-9ebe18f1
+      NATAMI: ami-0ea87e2bfa81ca08a
     eu-west-2:
       Principal: '652711504416'
-      NATAMI: ami-21120445
+      NATAMI: ami-e6768381
+    eu-west-3:
+      Principal: '009996457667'
+      NATAMI: ami-0050bb60cea70c5b3
+    eu-central-1:
+      Principal: 054676820928
+      NATAMI: ami-06465d49ba60cf770
     ap-northeast-1:
       Principal: '582318560864'
-      NATAMI: ami-10dfc877
+      NATAMI: ami-0cf78ae724f63bac0
     ap-northeast-2:
       Principal: '600734575887'
-      NATAMI: ami-1a1bc474
+      NATAMI: ami-00c1445796bc0a29f
     ap-southeast-1:
       Principal: '114774131450'
-      NATAMI: ami-36af2055
+      NATAMI: ami-0cf24653bcf894797
     ap-southeast-2:
       Principal: '783225319266'
-      NATAMI: ami-1e91817d
+      NATAMI: ami-08cfa02141f9e9bee
     ap-south-1:
       Principal: '718504428378'
-      NATAMI: ami-e0215f8f
+      NATAMI: ami-0aba92643213491b9
     sa-east-1:
       Principal: '507241528517'
-      NATAMI: ami-8bdab1e7
+      NATAMI: ami-09c013530239687aa
     us-gov-west-1:
       Principal: 048591011584
-      NATAMI: ami-c39610a2
+      NATAMI: ami-c177eba0
     cn-north-1:
       Principal: '638102146993'
-      NATAMI: ami-e1f7268c
+      NATAMI: ami-04cd0cf505fd3295e
 Conditions:
   IsVirginia: !Equals 
     - !Ref 'AWS::Region'
@@ -422,17 +436,11 @@ Resources:
               arn:aws:s3:::${LBAccessLogS3Bucket}/${LBAccessLogPrefix}/AWSLogs/${AWS::AccountId}/*
             Principal:
               AWS:
-                - !FindInMap 
-                  - RegionConfig
-                  - !Ref 'AWS::Region'
-                  - Principal
+                - !FindInMap [ RegionConfig, !Ref 'AWS::Region', Principal ]
   VPC:
     Type: 'AWS::EC2::VPC'
     Properties:
-      CidrBlock: !FindInMap 
-        - CIDR
-        - VPC
-        - IP
+      CidrBlock: !FindInMap [ CIDR, VPC, IP ]
       EnableDnsHostnames: true
       Tags:
         - Key: Name
@@ -471,19 +479,13 @@ Resources:
     Type: 'AWS::EC2::Route'
     DependsOn: VPCGatewayAttachment
     Properties:
-      DestinationCidrBlock: !FindInMap 
-        - CIDR
-        - All
-        - IP
+      DestinationCidrBlock: !FindInMap [ CIDR, All, IP ]
       GatewayId: !Ref InternetGW
       RouteTableId: !Ref VPCRouteTable
   PrivateSubnet1:
     Type: 'AWS::EC2::Subnet'
     Properties:
-      CidrBlock: !FindInMap 
-        - CIDR
-        - PrivateSubnet1
-        - IP
+      CidrBlock: !FindInMap [ CIDR, PrivateSubnet1, IP ]
       MapPublicIpOnLaunch: false
       AvailabilityZone: !Select 
         - '0'
@@ -499,10 +501,7 @@ Resources:
   PrivateSubnet2:
     Type: 'AWS::EC2::Subnet'
     Properties:
-      CidrBlock: !FindInMap 
-        - CIDR
-        - PrivateSubnet2
-        - IP
+      CidrBlock: !FindInMap [ CIDR, PrivateSubnet2, IP ]
       MapPublicIpOnLaunch: false
       AvailabilityZone: !Select 
         - '1'
@@ -518,10 +517,7 @@ Resources:
   PublicSubnet1:
     Type: 'AWS::EC2::Subnet'
     Properties:
-      CidrBlock: !FindInMap 
-        - CIDR
-        - PublicSubnet1
-        - IP
+      CidrBlock: !FindInMap [ CIDR, PublicSubnet1, IP ]
       MapPublicIpOnLaunch: true
       AvailabilityZone: !Select 
         - '0'
@@ -537,10 +533,7 @@ Resources:
   PublicSubnet2:
     Type: 'AWS::EC2::Subnet'
     Properties:
-      CidrBlock: !FindInMap 
-        - CIDR
-        - PublicSubnet2
-        - IP
+      CidrBlock: !FindInMap [ CIDR, PublicSubnet2, IP ]
       MapPublicIpOnLaunch: true
       AvailabilityZone: !Select 
         - '1'
@@ -567,10 +560,7 @@ Resources:
   PublicSubnetNetworkAclEntryIngressHttp:
     Type: 'AWS::EC2::NetworkAclEntry'
     Properties:
-      CidrBlock: !FindInMap 
-        - CIDR
-        - All
-        - IP
+      CidrBlock: !FindInMap [ CIDR, All, IP ]
       Egress: false
       NetworkAclId: !Ref PublicSubnetNetworkAcl
       PortRange:
@@ -582,10 +572,7 @@ Resources:
   PublicSubnetNetworkAclEntryIngressHttps:
     Type: 'AWS::EC2::NetworkAclEntry'
     Properties:
-      CidrBlock: !FindInMap 
-        - CIDR
-        - All
-        - IP
+      CidrBlock: !FindInMap [ CIDR, All, IP ]
       Egress: false
       NetworkAclId: !Ref PublicSubnetNetworkAcl
       PortRange:
@@ -597,10 +584,7 @@ Resources:
   PublicSubnetNetworkAclEntryIngressSSH:
     Type: 'AWS::EC2::NetworkAclEntry'
     Properties:
-      CidrBlock: !FindInMap 
-        - CIDR
-        - All
-        - IP
+      CidrBlock: !FindInMap [ CIDR, All, IP ]
       Egress: false
       NetworkAclId: !Ref PublicSubnetNetworkAcl
       PortRange:
@@ -612,10 +596,7 @@ Resources:
   PublicSubnetNetworkAclEntryIngressConnectBack:
     Type: 'AWS::EC2::NetworkAclEntry'
     Properties:
-      CidrBlock: !FindInMap 
-        - CIDR
-        - All
-        - IP
+      CidrBlock: !FindInMap [ CIDR, All, IP ]
       Egress: false
       NetworkAclId: !Ref PublicSubnetNetworkAcl
       PortRange:
@@ -627,10 +608,7 @@ Resources:
   PublicSubnetNetworkAclEntryIngressICMP:
     Type: 'AWS::EC2::NetworkAclEntry'
     Properties:
-      CidrBlock: !FindInMap 
-        - CIDR
-        - All
-        - IP
+      CidrBlock: !FindInMap [ CIDR, All, IP ]
       Egress: false
       Icmp:
         Code: -1
@@ -642,10 +620,7 @@ Resources:
   PublicSubnetNetworkAclEntryIngressPrivateSubnet1:
     Type: 'AWS::EC2::NetworkAclEntry'
     Properties:
-      CidrBlock: !FindInMap 
-        - CIDR
-        - PrivateSubnet1
-        - IP
+      CidrBlock: !FindInMap [ CIDR, PrivateSubnet1, IP ]
       Egress: false
       NetworkAclId: !Ref PublicSubnetNetworkAcl
       Protocol: -1
@@ -654,10 +629,7 @@ Resources:
   PublicSubnetNetworkAclEntryIngressPrivateSubnet2:
     Type: 'AWS::EC2::NetworkAclEntry'
     Properties:
-      CidrBlock: !FindInMap 
-        - CIDR
-        - PrivateSubnet2
-        - IP
+      CidrBlock: !FindInMap [ CIDR, PrivateSubnet2, IP ]
       Egress: false
       NetworkAclId: !Ref PublicSubnetNetworkAcl
       Protocol: -1
@@ -666,10 +638,7 @@ Resources:
   PublicSubnetNetworkAclEntryEgress:
     Type: 'AWS::EC2::NetworkAclEntry'
     Properties:
-      CidrBlock: !FindInMap 
-        - CIDR
-        - All
-        - IP
+      CidrBlock: !FindInMap [ CIDR, All, IP ]
       Egress: true
       NetworkAclId: !Ref PublicSubnetNetworkAcl
       Protocol: -1
@@ -699,10 +668,7 @@ Resources:
   PrivateSubnet1NetworkAclEntryIngress:
     Type: 'AWS::EC2::NetworkAclEntry'
     Properties:
-      CidrBlock: !FindInMap 
-        - CIDR
-        - PublicSubnet1
-        - IP
+      CidrBlock: !FindInMap [ CIDR, PublicSubnet1, IP ]
       Egress: false
       NetworkAclId: !Ref PrivateSubnetNetworkAcl
       Protocol: -1
@@ -711,10 +677,7 @@ Resources:
   PrivateSubnet2NetworkAclEntryIngress:
     Type: 'AWS::EC2::NetworkAclEntry'
     Properties:
-      CidrBlock: !FindInMap 
-        - CIDR
-        - PublicSubnet2
-        - IP
+      CidrBlock: !FindInMap [ CIDR, PublicSubnet2, IP ]
       Egress: false
       NetworkAclId: !Ref PrivateSubnetNetworkAcl
       Protocol: -1
@@ -723,10 +686,7 @@ Resources:
   PrivateSubnetNetworkAclEntryIngressConnectBack:
     Type: 'AWS::EC2::NetworkAclEntry'
     Properties:
-      CidrBlock: !FindInMap 
-        - CIDR
-        - All
-        - IP
+      CidrBlock: !FindInMap [ CIDR, All, IP ]
       Egress: false
       NetworkAclId: !Ref PrivateSubnetNetworkAcl
       PortRange:
@@ -738,10 +698,7 @@ Resources:
   PrivateSubnetNetworkAclEntryEgress:
     Type: 'AWS::EC2::NetworkAclEntry'
     Properties:
-      CidrBlock: !FindInMap 
-        - CIDR
-        - All
-        - IP
+      CidrBlock: !FindInMap [ CIDR, All, IP ]
       Egress: true
       NetworkAclId: !Ref PrivateSubnetNetworkAcl
       Protocol: -1
@@ -782,10 +739,7 @@ Resources:
   SecurityGroupBastionInstanceIngressSSH:
     Type: 'AWS::EC2::SecurityGroupIngress'
     Properties:
-      CidrIp: !FindInMap 
-        - CIDR
-        - All
-        - IP
+      CidrIp: !FindInMap [ CIDR, All, IP ]
       FromPort: 22
       ToPort: 22
       GroupId: !Ref SecurityGroupBastionInstance
@@ -793,10 +747,7 @@ Resources:
   SecurityGroupBastionInstanceEgress:
     Type: 'AWS::EC2::SecurityGroupEgress'
     Properties:
-      CidrIp: !FindInMap 
-        - CIDR
-        - All
-        - IP
+      CidrIp: !FindInMap [ CIDR, All, IP ]
       GroupId: !Ref SecurityGroupBastionInstance
       IpProtocol: '-1'
   SecurityGroupNATInstance:
@@ -814,10 +765,7 @@ Resources:
   SecurityGroupNATInstanceIngressPrivateSubnet1Http:
     Type: 'AWS::EC2::SecurityGroupIngress'
     Properties:
-      CidrIp: !FindInMap 
-        - CIDR
-        - PrivateSubnet1
-        - IP
+      CidrIp: !FindInMap [ CIDR, PrivateSubnet1, IP ]
       FromPort: 80
       ToPort: 80
       GroupId: !Ref SecurityGroupNATInstance
@@ -825,10 +773,7 @@ Resources:
   SecurityGroupNATInstanceIngressPrivateSubnet2Http:
     Type: 'AWS::EC2::SecurityGroupIngress'
     Properties:
-      CidrIp: !FindInMap 
-        - CIDR
-        - PrivateSubnet2
-        - IP
+      CidrIp: !FindInMap [ CIDR, PrivateSubnet2, IP ]
       FromPort: 80
       ToPort: 80
       GroupId: !Ref SecurityGroupNATInstance
@@ -836,10 +781,7 @@ Resources:
   SecurityGroupNATInstanceIngressPrivateSubnet1Https:
     Type: 'AWS::EC2::SecurityGroupIngress'
     Properties:
-      CidrIp: !FindInMap 
-        - CIDR
-        - PrivateSubnet1
-        - IP
+      CidrIp: !FindInMap [ CIDR, PrivateSubnet1, IP ]
       FromPort: 443
       ToPort: 443
       GroupId: !Ref SecurityGroupNATInstance
@@ -847,10 +789,7 @@ Resources:
   SecurityGroupNATInstanceIngressPrivateSubnet2Https:
     Type: 'AWS::EC2::SecurityGroupIngress'
     Properties:
-      CidrIp: !FindInMap 
-        - CIDR
-        - PrivateSubnet2
-        - IP
+      CidrIp: !FindInMap [ CIDR, PrivateSubnet2, IP ]
       FromPort: 443
       ToPort: 443
       GroupId: !Ref SecurityGroupNATInstance
@@ -858,10 +797,7 @@ Resources:
   SecurityGroupNATInstanceIngressPrivateSubnet1Smtp:
     Type: 'AWS::EC2::SecurityGroupIngress'
     Properties:
-      CidrIp: !FindInMap 
-        - CIDR
-        - PrivateSubnet1
-        - IP
+      CidrIp: !FindInMap [ CIDR, PrivateSubnet1, IP ]
       FromPort: !Ref SMTPHostPort
       ToPort: !Ref SMTPHostPort
       GroupId: !Ref SecurityGroupNATInstance
@@ -869,10 +805,7 @@ Resources:
   SecurityGroupNATInstanceIngressPrivateSubnet2Smtp:
     Type: 'AWS::EC2::SecurityGroupIngress'
     Properties:
-      CidrIp: !FindInMap 
-        - CIDR
-        - PrivateSubnet2
-        - IP
+      CidrIp: !FindInMap [ CIDR, PrivateSubnet2, IP ]
       FromPort: !Ref SMTPHostPort
       ToPort: !Ref SMTPHostPort
       GroupId: !Ref SecurityGroupNATInstance
@@ -880,10 +813,7 @@ Resources:
   SecurityGroupNATInstanceIngressSSH:
     Type: 'AWS::EC2::SecurityGroupIngress'
     Properties:
-      CidrIp: !FindInMap 
-        - CIDR
-        - All
-        - IP
+      CidrIp: !FindInMap [ CIDR, All, IP ]
       FromPort: 22
       ToPort: 22
       GroupId: !Ref SecurityGroupNATInstance
@@ -891,10 +821,7 @@ Resources:
   SecurityGroupNATInstanceEgress:
     Type: 'AWS::EC2::SecurityGroupEgress'
     Properties:
-      CidrIp: !FindInMap 
-        - CIDR
-        - All
-        - IP
+      CidrIp: !FindInMap [ CIDR, All, IP ]
       GroupId: !Ref SecurityGroupNATInstance
       IpProtocol: '-1'
   SecurityGroupMastodonInstance:
@@ -912,10 +839,7 @@ Resources:
   SecurityGroupMastodonInstanceIngressHttp:
     Type: 'AWS::EC2::SecurityGroupIngress'
     Properties:
-      CidrIp: !FindInMap 
-        - CIDR
-        - All
-        - IP
+      CidrIp: !FindInMap [ CIDR, All, IP ]
       FromPort: 80
       ToPort: 80
       GroupId: !Ref SecurityGroupMastodonInstance
@@ -923,10 +847,7 @@ Resources:
   SecurityGroupMastodonInstanceIngressHttps:
     Type: 'AWS::EC2::SecurityGroupIngress'
     Properties:
-      CidrIp: !FindInMap 
-        - CIDR
-        - All
-        - IP
+      CidrIp: !FindInMap [ CIDR, All, IP ]
       FromPort: 443
       ToPort: 443
       GroupId: !Ref SecurityGroupMastodonInstance
@@ -934,10 +855,7 @@ Resources:
   SecurityGroupMastodonInstanceIngressSSH:
     Type: 'AWS::EC2::SecurityGroupIngress'
     Properties:
-      CidrIp: !FindInMap 
-        - CIDR
-        - All
-        - IP
+      CidrIp: !FindInMap [ CIDR, All, IP ]
       FromPort: 22
       ToPort: 22
       GroupId: !Ref SecurityGroupMastodonInstance
@@ -945,10 +863,7 @@ Resources:
   SecurityGroupMastodonInstanceEgress:
     Type: 'AWS::EC2::SecurityGroupEgress'
     Properties:
-      CidrIp: !FindInMap 
-        - CIDR
-        - All
-        - IP
+      CidrIp: !FindInMap [ CIDR, All, IP ]
       GroupId: !Ref SecurityGroupMastodonInstance
       IpProtocol: '-1'
   NATInstanceNetworkIF:
@@ -971,10 +886,7 @@ Resources:
     DependsOn: VPCGatewayAttachment
     Properties:
       DisableApiTermination: false
-      ImageId: !FindInMap 
-        - RegionConfig
-        - !Ref 'AWS::Region'
-        - NATAMI
+      ImageId: !FindInMap [ RegionConfig, !Ref 'AWS::Region', NATAMI ]
       InstanceInitiatedShutdownBehavior: stop
       InstanceType: !Ref NATInstanceType
       KeyName: !Ref EC2KeyPair
@@ -1004,10 +916,7 @@ Resources:
     Type: 'AWS::EC2::Route'
     Properties:
       RouteTableId: !Ref NATRouteTable
-      DestinationCidrBlock: !FindInMap 
-        - CIDR
-        - All
-        - IP
+      DestinationCidrBlock: !FindInMap [ CIDR, All, IP ]
       InstanceId: !Ref NATInstance
   PrivateSubnet1RouteTableAssociation:
     Type: 'AWS::EC2::SubnetRouteTableAssociation'
@@ -1108,10 +1017,7 @@ Resources:
         - DeviceName: /dev/sda1
           Ebs:
             DeleteOnTermination: true
-            VolumeSize: !FindInMap 
-              - InstanceConfig
-              - Storage
-              - ValueByGb
+            VolumeSize: !FindInMap [ InstanceConfig, Storage, ValueByGb ]
       DisableApiTermination: false
       IamInstanceProfile: !Ref BastionInstanceProfile
       ImageId: !Ref BastionInstanceAMI
@@ -1130,149 +1036,156 @@ Resources:
           Value: !Ref Tag1Value
         - Key: !Ref Tag2Key
           Value: !Ref Tag2Value
-      UserData: !Base64 
-        'Fn::Join':
-          - ''
-          - - |
-              #!/bin/bash -xe
-            - |
-              # ********** Install packages for cloud formation **********
-            - |
-              export HOME=/root 
-            - |
-              apt-get update 
-            - |
-              apt-get -y install python-pip python-setuptools 
-            - |
-              pip install --upgrade pip 
-            - |
-              cd /root 
-            - |
-              mkdir aws-cfn-bootstrap-latest
-            - >-
-              curl
-              https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz
-              |
-            - |2
-                tar xz -C aws-cfn-bootstrap-latest --strip-components 1 
-            - |
-              easy_install aws-cfn-bootstrap-latest
-            - >
-              ln -s /root/aws-cfn-bootstrap-latest/init/ubuntu/cfn-hup
-              /etc/init.d/cfn-hup 
-            - |
-              # ********** Install required packages **********
-            - |
-              curl -sL https://deb.nodesource.com/setup_6.x | bash - 
-            - |
-              apt-add-repository -y ppa:brightbox/ruby-ng
-            - |
-              apt-get update
-            - '/usr/local/bin/cfn-init -v '
-            - ' --stack '
-            - !Ref 'AWS::StackName'
-            - ' --resource BastionInstance '
-            - ' --configsets installPackages '
-            - ' --region '
-            - !Ref 'AWS::Region'
-            - |+
-
-            - |
-              npm install -g yarn 
-            - |
-              # ********** Add user **********
-            - |
-              useradd -d /home/mastodon --create-home --user-group mastodon
-            - |
-              # ********** Build Mastodon **********
-            - |
-              cd /home/mastodon 
-            - 'git clone https://github.com/tootsuite/mastodon.git '
-            - !Ref MastodonFQDN
-            - |2
-               
-            - 'cd '
-            - !Ref MastodonFQDN
-            - |2
-               
-            - !If 
-              - IsMaster
-              - ''
-              - !Sub |
-                git checkout ${MastodonVersion} 
-            - |
-              gem install bundler 
-            - |
-              bundle install --deployment --without development test 
-            - |
-              yarn install --pure-lockfile 
-            - |
-              # ********** Setup Mastodon **********
-            - '/usr/local/bin/cfn-init -v '
-            - ' --stack '
-            - !Ref 'AWS::StackName'
-            - ' --resource BastionInstance '
-            - ' --configsets createMastodonConfig '
-            - ' --region '
-            - !Ref 'AWS::Region'
-            - |+
-
-            - |
-              export RAILS_ENV=production
-            - !If 
-              - HasSecretKeyBase
-              - !Sub |
-                echo "SECRET_KEY_BASE=${SecretKeyBase}" >> .env.production
-              - >
-                echo "SECRET_KEY_BASE=`bundle exec rake secret`" >>
-                .env.production
-            - !If 
-              - HasPaperclipSecret
-              - !Sub |
-                echo "PAPERCLIP_SECRET=${PaperclipSecret}" >> .env.production
-              - >
-                echo "PAPERCLIP_SECRET=`bundle exec rake secret`" >>
-                .env.production
-            - !If 
-              - HasOtpSecret
-              - !Sub |
-                echo "OTP_SECRET=${OtpSecret}" >> .env.production
+      UserData: 
+        Fn::Base64:
+          Fn::Join:
+            - ''
+            - - |
+                #!/bin/bash -xe
               - |
-                echo "OTP_SECRET=`bundle exec rake secret`" >> .env.production
-            - >
-              bundle exec rake mastodon:webpush:generate_vapid_key >>
-              .env.production
-            - !If 
-              - HasDBSnapshotIdentifier
-              - ''
+                # ********** Install packages for cloud formation **********
               - |
-                bundle exec rails db:setup
-            - |
-              bundle exec rails assets:precompile
-            - |
-              cd .. 
-            - 'tar cfz '
-            - !Ref PackageName
-            - ' '
-            - !Ref MastodonFQDN
-            - |2
-               
-            - !Sub >
-              aws s3 cp ${PackageName}
-              s3://${PackageS3Bucket}/${PackageS3Prefix}/${PackageName} 
-            - |
-              # ********** Notify **********
-            - '/usr/local/bin/cfn-signal '
-            - ' -e 0'
-            - ' --stack '
-            - !Ref 'AWS::StackName'
-            - ' --resource BastionInstance'
-            - ' --region '
-            - !Ref 'AWS::Region'
-            - |+
+                export HOME=/root 
+              - |
+                apt-get update 
+              - |
+                apt-get -y install python-pip python-setuptools 
+              - |
+                pip install --upgrade pip awscli 
+              - |
+                cd /root 
+              - |
+                mkdir aws-cfn-bootstrap-latest
+              - |
+                curl https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz | tar xz -C aws-cfn-bootstrap-latest --strip-components 1 
+              - |
+                python /usr/lib/python2.7/dist-packages/easy_install.py aws-cfn-bootstrap-latest
+              - |
+                ln -s /root/aws-cfn-bootstrap-latest/init/ubuntu/cfn-hup /etc/init.d/cfn-hup 
 
-            - |
-              # ********** The End **********
+              - |
+                # ********** Install required packages **********
+              - |
+                curl -sL https://deb.nodesource.com/setup_8.x | bash -
+              - |
+                curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -
+              - |
+                echo "deb https://dl.yarnpkg.com/debian/ stable main" > /etc/apt/sources.list.d/yarn.list
+              - |
+                apt-add-repository -y ppa:brightbox/ruby-ng
+              - |
+                apt-get update
+              - '/usr/local/bin/cfn-init -v '
+              - ' --stack '
+              - !Ref 'AWS::StackName'
+              - ' --resource BastionInstance '
+              - ' --configsets installPackages '
+              - ' --region '
+              - !Ref 'AWS::Region'
+              - |+
+
+              - |
+                gem update --system
+              - |
+                gem install bundler
+              - |
+                # ********** Add mastodon user **********
+              - |
+                useradd -d /home/mastodon --create-home --user-group mastodon
+
+              - |
+                # ********** Build Mastodon **********
+              - |
+                cd /home/mastodon 
+              - 'git clone https://github.com/tootsuite/mastodon.git '
+              - !Ref MastodonFQDN
+              - |+
+                
+              - 'cd '
+              - !Ref MastodonFQDN
+              - |+
+                
+              - !If 
+                - IsMaster
+                - ''
+                - !Sub |
+                  git checkout ${MastodonVersion} 
+              - |
+                bundle install -j$(getconf _NPROCESSORS_ONLN) --deployment --without development test 
+              - |
+                yarn install --pure-lockfile 
+              - |
+                # ********** Setup Mastodon **********
+              - '/usr/local/bin/cfn-init -v '
+              - ' --stack '
+              - !Ref 'AWS::StackName'
+              - ' --resource BastionInstance '
+              - ' --configsets createMastodonConfig '
+              - ' --region '
+              - !Ref 'AWS::Region'
+              - |+
+
+              - |
+                export RAILS_ENV=production
+              - !If 
+                - HasSecretKeyBase
+                - !Sub |
+                  echo "SECRET_KEY_BASE=${SecretKeyBase}" >> .env.production
+                - >
+                  echo "SECRET_KEY_BASE=`bundle exec rake secret`" >>
+                  .env.production
+
+              - !If 
+                - HasPaperclipSecret
+                - !Sub |
+                  echo "PAPERCLIP_SECRET=${PaperclipSecret}" >> .env.production
+                - >
+                  echo "PAPERCLIP_SECRET=`bundle exec rake secret`" >>
+                  .env.production
+
+              - !If 
+                - HasOtpSecret
+                - !Sub |
+                  echo "OTP_SECRET=${OtpSecret}" >> .env.production
+                - >
+                  echo "OTP_SECRET=`bundle exec rake secret`" >>
+                  .env.production
+
+              - |
+                bundle exec rake mastodon:webpush:generate_vapid_key >> .env.production
+              - !If 
+                - HasDBSnapshotIdentifier
+                - ''
+                - |
+                  bundle exec rails db:setup 
+
+              - |
+                bundle exec rails assets:precompile
+              - |
+                cd ..
+              - 'tar cfz '
+              - !Ref PackageName
+              - ' '
+              - !Ref MastodonFQDN
+              - |+
+
+              - !Sub >
+                aws s3 cp ${PackageName}
+                s3://${PackageS3Bucket}/${PackageS3Prefix}/${PackageName} 
+
+              - |
+                # ********** Notify **********
+              - '/usr/local/bin/cfn-signal '
+              - ' -e 0'
+              - ' --stack '
+              - !Ref 'AWS::StackName'
+              - ' --resource BastionInstance'
+              - ' --region '
+              - !Ref 'AWS::Region'
+              - |+
+
+              - |
+                # ********** The End **********
     CreationPolicy:
       ResourceSignal:
         Timeout: PT30M
@@ -1287,29 +1200,42 @@ Resources:
         aptPackages:
           packages:
             apt:
-              imagemagick: []
-              ffmpeg: []
-              libpq-dev: []
-              libxml2-dev: []
-              libxslt1-dev: []
-              file: []
-              git: []
-              curl: []
-              gcc: []
-              g++: []
-              pkg-config: []
-              libprotobuf-dev: []
-              protobuf-compiler: []
+              imagemagick : []
+              ffmpeg : []
+              libpq-dev : []
+              libxml2-dev : []
+              libxslt1-dev : []
+              file : []
+              git-core : []
+              g++ : []
+              libprotobuf-dev : []
+              protobuf-compiler : []
+              pkg-config : []
+              nodejs : []
+              gcc : []
+              autoconf : []
+              bison : []
+              build-essential : []
+              libssl-dev : []
+              libyaml-dev : []
+              libreadline6-dev : []
+              zlib1g-dev : []
+              libncurses5-dev : []
+              libffi-dev : []
+              libgdbm5 : []
+              libgdbm-dev : []
+              nginx : []
+              redis-server : []
+              redis-tools : []
+              postgresql : []
+              postgresql-contrib : []
+              certbot : []
+              yarn : []
+              libidn11-dev : []
+              libicu-dev : []
+              libjemalloc-dev : []
               ruby2.5: []
               ruby2.5-dev: []
-              make: []
-              postgresql-client: []
-              redis-tools: []
-              nginx: []
-              awscli: []
-              nodejs: []
-              libicu-dev: []
-              libidn11-dev: []
         createMastodonConfig:
           files:
             /home/mastodon/.env.production:
@@ -1436,6 +1362,8 @@ Resources:
                   - |
                     STREAMING_CLUSTER_NUM=1
                   - |
+                    SAFETY_ASSURED=1
+                  - |
                     # Secrets
               mode: '000644'
               owner: root
@@ -1460,78 +1388,39 @@ Resources:
   SecurityGroupRDSIngressPublicSubnet1:
     Type: 'AWS::EC2::SecurityGroupIngress'
     Properties:
-      CidrIp: !FindInMap 
-        - CIDR
-        - PublicSubnet1
-        - IP
-      FromPort: !FindInMap 
-        - RDSConfig
-        - Port
-        - Value
-      ToPort: !FindInMap 
-        - RDSConfig
-        - Port
-        - Value
+      CidrIp: !FindInMap [ CIDR, PublicSubnet1, IP ]
+      FromPort: !FindInMap [ RDSConfig, Port, Value ]
+      ToPort: !FindInMap [ RDSConfig, Port, Value ]
       GroupId: !Ref SecurityGroupRDS
       IpProtocol: tcp
   SecurityGroupRDSIngressPublicSubnet2:
     Type: 'AWS::EC2::SecurityGroupIngress'
     Properties:
-      CidrIp: !FindInMap 
-        - CIDR
-        - PublicSubnet2
-        - IP
-      FromPort: !FindInMap 
-        - RDSConfig
-        - Port
-        - Value
-      ToPort: !FindInMap 
-        - RDSConfig
-        - Port
-        - Value
+      CidrIp: !FindInMap [ CIDR, PublicSubnet2, IP ]
+      FromPort: !FindInMap [ RDSConfig, Port, Value ]
+      ToPort: !FindInMap [ RDSConfig, Port, Value ]
       GroupId: !Ref SecurityGroupRDS
       IpProtocol: tcp
   SecurityGroupRDSIngressPrivateSubnet1:
     Type: 'AWS::EC2::SecurityGroupIngress'
     Properties:
-      CidrIp: !FindInMap 
-        - CIDR
-        - PrivateSubnet1
-        - IP
-      FromPort: !FindInMap 
-        - RDSConfig
-        - Port
-        - Value
-      ToPort: !FindInMap 
-        - RDSConfig
-        - Port
-        - Value
+      CidrIp: !FindInMap [ CIDR, PrivateSubnet1, IP ]
+      FromPort: !FindInMap [ RDSConfig, Port, Value ]
+      ToPort: !FindInMap [ RDSConfig, Port, Value ]
       GroupId: !Ref SecurityGroupRDS
       IpProtocol: tcp
   SecurityGroupRDSIngressPrivateSubnet2:
     Type: 'AWS::EC2::SecurityGroupIngress'
     Properties:
-      CidrIp: !FindInMap 
-        - CIDR
-        - PrivateSubnet2
-        - IP
-      FromPort: !FindInMap 
-        - RDSConfig
-        - Port
-        - Value
-      ToPort: !FindInMap 
-        - RDSConfig
-        - Port
-        - Value
+      CidrIp: !FindInMap [ CIDR, PrivateSubnet2, IP ]
+      FromPort: !FindInMap [ RDSConfig, Port, Value ]
+      ToPort: !FindInMap [ RDSConfig, Port, Value ]
       GroupId: !Ref SecurityGroupRDS
       IpProtocol: tcp
   SecurityGroupRDSEgress:
     Type: 'AWS::EC2::SecurityGroupEgress'
     Properties:
-      CidrIp: !FindInMap 
-        - CIDR
-        - All
-        - IP
+      CidrIp: !FindInMap [ CIDR, All, IP ]
       GroupId: !Ref SecurityGroupRDS
       IpProtocol: '-1'
   RDSSubnetGroup:
@@ -1552,19 +1441,13 @@ Resources:
     Type: 'AWS::RDS::DBInstance'
     DependsOn: VPCGatewayAttachment
     Properties:
-      AllocatedStorage: !FindInMap 
-        - RDSConfig
-        - Storage
-        - ValueByGb
+      AllocatedStorage: !FindInMap [ RDSConfig, Storage, ValueByGb ]
       AllowMajorVersionUpgrade: false
       AutoMinorVersionUpgrade: true
       AvailabilityZone: !Select 
         - '0'
         - !Ref SubnetAvailabilityZone
-      BackupRetentionPeriod: !FindInMap 
-        - RDSConfig
-        - BackupRetentionPeriod
-        - Value
+      BackupRetentionPeriod: !FindInMap [ RDSConfig, BackupRetentionPeriod, Value ]
       CopyTagsToSnapshot: true
       DBInstanceClass: !Ref DBInstanceClass
       DBName: !If 
@@ -1584,10 +1467,7 @@ Resources:
       MasterUsername: !Ref DBMasterUsername
       MasterUserPassword: !Ref DBMasterUserPassword
       MultiAZ: false
-      Port: !FindInMap 
-        - RDSConfig
-        - Port
-        - Value
+      Port: !FindInMap [ RDSConfig, Port, Value ]
       PubliclyAccessible: false
       StorageEncrypted: false
       StorageType: !Ref DBStorageType
@@ -1613,78 +1493,39 @@ Resources:
   SecurityGroupElastiCacheIngressPublicSubnet1:
     Type: 'AWS::EC2::SecurityGroupIngress'
     Properties:
-      CidrIp: !FindInMap 
-        - CIDR
-        - PublicSubnet1
-        - IP
-      FromPort: !FindInMap 
-        - ElastiCacheConfig
-        - Port
-        - Value
-      ToPort: !FindInMap 
-        - ElastiCacheConfig
-        - Port
-        - Value
+      CidrIp: !FindInMap [ CIDR, PublicSubnet1, IP ]
+      FromPort: !FindInMap [ ElastiCacheConfig, Port, Value ]
+      ToPort: !FindInMap [ ElastiCacheConfig, Port, Value ]
       GroupId: !Ref SecurityGroupElastiCache
       IpProtocol: tcp
   SecurityGroupElastiCacheIngressPublicSubnet2:
     Type: 'AWS::EC2::SecurityGroupIngress'
     Properties:
-      CidrIp: !FindInMap 
-        - CIDR
-        - PublicSubnet2
-        - IP
-      FromPort: !FindInMap 
-        - ElastiCacheConfig
-        - Port
-        - Value
-      ToPort: !FindInMap 
-        - ElastiCacheConfig
-        - Port
-        - Value
+      CidrIp: !FindInMap [ CIDR, PublicSubnet2, IP ]
+      FromPort: !FindInMap [ ElastiCacheConfig, Port, Value ]
+      ToPort: !FindInMap [ ElastiCacheConfig, Port, Value ]
       GroupId: !Ref SecurityGroupElastiCache
       IpProtocol: tcp
   SecurityGroupElastiCacheIngressPrivateSubnet1:
     Type: 'AWS::EC2::SecurityGroupIngress'
     Properties:
-      CidrIp: !FindInMap 
-        - CIDR
-        - PrivateSubnet1
-        - IP
-      FromPort: !FindInMap 
-        - ElastiCacheConfig
-        - Port
-        - Value
-      ToPort: !FindInMap 
-        - ElastiCacheConfig
-        - Port
-        - Value
+      CidrIp: !FindInMap [ CIDR, PrivateSubnet1, IP ]
+      FromPort: !FindInMap [ ElastiCacheConfig, Port, Value ]
+      ToPort: !FindInMap [ ElastiCacheConfig, Port, Value ]
       GroupId: !Ref SecurityGroupElastiCache
       IpProtocol: tcp
   SecurityGroupElastiCacheIngressPrivateSubnet2:
     Type: 'AWS::EC2::SecurityGroupIngress'
     Properties:
-      CidrIp: !FindInMap 
-        - CIDR
-        - PrivateSubnet2
-        - IP
-      FromPort: !FindInMap 
-        - ElastiCacheConfig
-        - Port
-        - Value
-      ToPort: !FindInMap 
-        - ElastiCacheConfig
-        - Port
-        - Value
+      CidrIp: !FindInMap [ CIDR, PrivateSubnet2, IP ]
+      FromPort: !FindInMap [ ElastiCacheConfig, Port, Value ]
+      ToPort: !FindInMap [ ElastiCacheConfig, Port, Value ]
       GroupId: !Ref SecurityGroupElastiCache
       IpProtocol: tcp
   SecurityGroupElastiCacheEgress:
     Type: 'AWS::EC2::SecurityGroupEgress'
     Properties:
-      CidrIp: !FindInMap 
-        - CIDR
-        - All
-        - IP
+      CidrIp: !FindInMap [ CIDR, All, IP ]
       GroupId: !Ref SecurityGroupElastiCache
       IpProtocol: '-1'
   ElastiCacheSubnetGroup:
@@ -1704,10 +1545,7 @@ Resources:
       AutoMinorVersionUpgrade: true
       CacheNodeType: !Ref ElastiCacheNodeType
       CacheSubnetGroupName: !Ref ElastiCacheSubnetGroup
-      ClusterName: !Join 
-        - '-'
-        - - !Ref 'AWS::StackName'
-          - Redis
+      ClusterName: !Ref 'AWS::StackName' 
       Engine: redis
       EngineVersion: !Ref ElastiCacheVersion
       NumCacheNodes: 1
