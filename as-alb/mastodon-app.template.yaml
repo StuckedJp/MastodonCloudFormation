@@ -156,30 +156,16 @@ Resources:
             Statement:
               - Effect: Allow
                 Action: 's3:*'
-                Resource: !Join 
-                  - ''
-                  - - 'arn:aws:s3:::'
-                    - !Ref ContentsS3Bucket
+                Resource: !Sub arn:aws:s3:::${ContentsS3Bucket}
               - Effect: Allow
                 Action: 's3:*'
-                Resource: !Join 
-                  - ''
-                  - - 'arn:aws:s3:::'
-                    - !Ref ContentsS3Bucket
-                    - /*
+                Resource: !Sub arn:aws:s3:::${ContentsS3Bucket}/*
               - Effect: Allow
                 Action: 's3:*'
-                Resource: !Join 
-                  - ''
-                  - - 'arn:aws:s3:::'
-                    - !Ref PackageS3Bucket
+                Resource: !Sub arn:aws:s3:::${PackageS3Bucket}
               - Effect: Allow
                 Action: 's3:*'
-                Resource: !Join 
-                  - ''
-                  - - 'arn:aws:s3:::'
-                    - !Ref PackageS3Bucket
-                    - /*
+                Resource: !Sub arn:aws:s3:::${PackageS3Bucket}/*
               - Effect: Allow
                 Action: 'acm:*'
                 Resource: !Ref CertArn
@@ -200,11 +186,7 @@ Resources:
       UnhealthyThresholdCount: 2
       Matcher:
         HttpCode: 200-399
-      Name: !Join 
-        - '-'
-        - - !Ref 'AWS::StackName'
-          - alb
-          - tg
+      Name: !Sub ${AWS::StackName}-alb-tg
       Port: 80
       Protocol: HTTP
       Tags:
@@ -277,10 +259,7 @@ Resources:
         - DeviceName: /dev/sda1
           Ebs:
             DeleteOnTermination: true
-            VolumeSize: !FindInMap 
-              - InstanceConfig
-              - Storage
-              - ValueByGb
+            VolumeSize: !FindInMap [ InstanceConfig, Storage, ValueByGb ]
       IamInstanceProfile: !Ref MastodonInstanceProfile
       ImageId: !Ref InstanceAMI
       InstanceMonitoring: true
@@ -303,26 +282,26 @@ Resources:
             - |
               apt-get -y install python-pip python-setuptools 
             - |
-              pip install --upgrade pip 
+              pip install --upgrade pip awscli 
             - |
               cd /root 
             - |
               mkdir aws-cfn-bootstrap-latest
-            - >-
-              curl
-              https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz
-              |
-            - |2
-                tar xz -C aws-cfn-bootstrap-latest --strip-components 1 
             - |
-              easy_install aws-cfn-bootstrap-latest
-            - >
-              ln -s /root/aws-cfn-bootstrap-latest/init/ubuntu/cfn-hup
-              /etc/init.d/cfn-hup 
+              curl https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz | tar xz -C aws-cfn-bootstrap-latest --strip-components 1 
+            - |
+              python /usr/lib/python2.7/dist-packages/easy_install.py aws-cfn-bootstrap-latest
+            - |
+              ln -s /root/aws-cfn-bootstrap-latest/init/ubuntu/cfn-hup /etc/init.d/cfn-hup 
+
             - |
               # ********** Install required packages **********
             - |
-              curl -sL https://deb.nodesource.com/setup_8.x | bash - 
+              curl -sL https://deb.nodesource.com/setup_8.x | bash -
+            - |
+              curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -
+            - |
+              echo "deb https://dl.yarnpkg.com/debian/ stable main" > /etc/apt/sources.list.d/yarn.list
             - |
               apt-add-repository -y ppa:brightbox/ruby-ng
             - |
@@ -337,15 +316,14 @@ Resources:
             - |+
 
             - |
-              # apt-get install -y nodejs 
+              gem update --system
             - |
-              npm install -g yarn 
+              gem install bundler
             - |
-              gem install bundler 
-            - |
-              # ********** Add user **********
+              # ********** Add mastodon user **********
             - |
               useradd -d /home/mastodon --create-home --user-group mastodon
+
             - |
               # ********** Download pre-builded Mastodon **********
             - |
@@ -383,11 +361,6 @@ Resources:
             - |
               rm -f /etc/nginx/sites-enabled/default 
             - |
-              # ********** Setup daily cron **********
-            - >
-              # echo "0 18 * * *  mastodon    /home/mastodon/mastodon.daily.sh"
-              >> /etc/crontab
-            - |
               # ********** Restart system **********
             - |
               reboot 
@@ -407,29 +380,40 @@ Resources:
         aptPackages:
           packages:
             apt:
-              imagemagick: []
-              ffmpeg: []
-              libpq-dev: []
-              libxml2-dev: []
-              libxslt1-dev: []
-              file: []
-              git: []
-              curl: []
-              gcc: []
-              g++: []
-              pkg-config: []
-              libprotobuf-dev: []
-              protobuf-compiler: []
+              imagemagick : []
+              ffmpeg : []
+              libpq-dev : []
+              libxml2-dev : []
+              libxslt1-dev : []
+              file : []
+              git-core : []
+              g++ : []
+              libprotobuf-dev : []
+              protobuf-compiler : []
+              pkg-config : []
+              nodejs : []
+              gcc : []
+              autoconf : []
+              bison : []
+              build-essential : []
+              libssl-dev : []
+              libyaml-dev : []
+              libreadline6-dev : []
+              zlib1g-dev : []
+              libncurses5-dev : []
+              libffi-dev : []
+              libgdbm5 : []
+              libgdbm-dev : []
+              nginx : []
+              redis-tools : []
+              postgresql-contrib : []
+              certbot : []
+              yarn : []
+              libidn11-dev : []
+              libicu-dev : []
+              libjemalloc-dev : []
               ruby2.5: []
               ruby2.5-dev: []
-              make: []
-              postgresql-client: []
-              redis-tools: []
-              nginx: []
-              awscli: []
-              nodejs: []
-              libicu-dev: []
-              libidn11-dev: []
         systemd-mastodon-web:
           files:
             /etc/systemd/system/mastodon-web.service:
@@ -459,6 +443,8 @@ Resources:
                     Environment="PORT=3000"
                   - |
                     ExecStart=/usr/local/bin/bundle exec puma -C config/puma.rb
+                  - |
+                    ExecReload=/bin/kill -SIGUSR1 $MAINPID
                   - |
                     TimeoutSec=15
                   - |
@@ -498,9 +484,11 @@ Resources:
                   - |
                     Environment="RAILS_ENV=production"
                   - |
-                    Environment="DB_POOL=5"
+                    Environment="DB_POOL=25"
+                  - |
+                    Environment="MALLOC_ARENA_MAX=2"
                   - >
-                    ExecStart=/usr/local/bin/bundle exec sidekiq -c 5 -q default
+                    ExecStart=/usr/local/bin/bundle exec sidekiq -c 25
                     -q mailers -q pull -q push
                   - |
                     TimeoutSec=15
@@ -543,6 +531,8 @@ Resources:
                   - |
                     Environment="PORT=4000"
                   - |
+                    Environment="STREAMING_CLUSTER_NUM=1"
+                  - |
                     ExecStart=/usr/bin/npm run start
                   - |
                     TimeoutSec=15
@@ -573,6 +563,10 @@ Resources:
                   - |+
 
                   - |
+                    proxy_cache_path /var/cache/nginx levels=1:2 keys_zone=CACHE:10m inactive=7d max_size=1g;
+                  - |+
+
+                  - |
                     server {
                   - |2
                       listen 80;
@@ -597,7 +591,7 @@ Resources:
                   - |2
                       sendfile             on;
                   - |2
-                      client_max_body_size 40m;
+                      client_max_body_size 80m;
                   - |+
 
                   - '  root /home/mastodon/'
@@ -653,6 +647,8 @@ Resources:
                   - |2
                         add_header Cache-Control "public, max-age=31536000, immutable";
                   - |2
+                        add_header Strict-Transport-Security "max-age=31536000";
+                  - |2
                         try_files $uri @proxy;
                   - |2
                       }
@@ -662,6 +658,8 @@ Resources:
                       location /sw.js {
                   - |2
                         add_header Cache-Control "public, max-age=0";
+                  - |2
+                        add_header Strict-Transport-Security "max-age=31536000";
                   - |2
                         try_files $uri @proxy;
                   - |2
@@ -696,6 +694,18 @@ Resources:
                         proxy_set_header Upgrade $http_upgrade;
                   - |2
                         proxy_set_header Connection $connection_upgrade;
+                  - |+
+
+                  - |2
+                        proxy_cache CACHE;
+                  - |2
+                        proxy_cache_valid 200 7d;
+                  - |2
+                        proxy_cache_use_stale error timeout updating http_500 http_502 http_503 http_504;
+                  - |2
+                        add_header X-Cached $upstream_cache_status;
+                  - |2
+                        add_header Strict-Transport-Security "max-age=31536000";
                   - |+
 
                   - |2
