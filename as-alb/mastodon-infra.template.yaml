@@ -1246,15 +1246,11 @@ Resources:
                   - |
                     # You may set REDIS_URL instead for more advanced options
                   - REDIS_HOST=
-                  - !GetAtt 
-                    - ElastiCacheCluster
-                    - RedisEndpoint.Address
+                  - !GetAtt ElastiCacheCluster.RedisEndpoint.Address 
                   - |+
 
                   - REDIS_PORT=
-                  - !GetAtt 
-                    - ElastiCacheCluster
-                    - RedisEndpoint.Port
+                  - !GetAtt ElastiCacheCluster.RedisEndpoint.Port
                   - |+
 
                   - |
@@ -1262,9 +1258,7 @@ Resources:
                   - |
                     # Database
                   - DB_HOST=
-                  - !GetAtt 
-                    - RDSInstance
-                    - Endpoint.Address
+                  - !GetAtt RDSInstance.Endpoint.Address
                   - |+
 
                   - DB_NAME=
@@ -1280,9 +1274,7 @@ Resources:
                   - |+
 
                   - DB_PORT=
-                  - !GetAtt 
-                    - RDSInstance
-                    - Endpoint.Port
+                  - !GetAtt RDSInstance.Endpoint.Port
                   - |+
 
                   - |
@@ -1291,8 +1283,6 @@ Resources:
                   - !Ref MastodonFQDN
                   - |+
 
-                  - |
-                    LOCAL_HTTPS=true
                   - |
                     # Mail
                   - SMTP_SERVER=
