@@ -141,32 +141,20 @@ Let's Encrypt の証明書を使うための手順を示します。
 1. Mastodon の Load Balancer のホスト名に、DNS の CNAME レコードを設定します。
 1. Mastodon の EC2 インスタンスに SSH でログインします。AutoScaling で複数のインスタンスが動いている場合は、1台に絞ってから実施します。
     * 1台に絞らないと Let's Encrypt サーバと certbot の連携に失敗するおそれがあります。
-1. certbot をインストールします。
-
-    ```
-    sudo su
-    add-apt-repository ppa:certbot/certbot
-    apt-get update
-    apt-get install certbot
-    ```
-
 1. `certbot` を実行して証明書を作成します。
-  
     ```
     certbot certonly --webroot -w /home/mastodon/[DOMAIN NAME]/public -d [DOMAIN NAME]
     ```
-  
-1. `/etc/letsencrypt/live/[DOMAIN NAME]` に最新の証明書を指すシンボリックリンクがありますので、SCP もしくは S3 経由で入手します。
-  
+1. 証明書をインポートします。
     ```
-    aws s3 cp /etc/letsencrypt/live/[DOMAIN NAME]/fullchain.pem s3://[BUCKET]/[FOLDER]/
-    aws s3 cp /etc/letsencrypt/live/[DOMAIN NAME]/privkey.pem   s3://[BUCKET]/[FOLDER]/
+    aws acm import-certificate \
+    --region [Region] \
+    --certificate-arn [ACM ARN] \
+    --certificate file:///etc/letsencrypt/live/[DOMAIN NAME]/cert.pem \
+    --private-key file:///etc/letsencrypt/live/[DOMAIN NAME]/privkey.pem \
+    --certificate-chain file:///etc/letsencrypt/live/[DOMAIN NAME]/chain.pem
     ```
   
-1. AWS コンソールの Certificate Manager を開き、証明書の再インポートを実行します。
-    * [Certificate body] に `fullchain.pem` の前半を設定します。
-    * [Certificate private key] に `privkey.pem` 全文を設定します。
-    * [Certificate chain] に `fullchain.pem` の後半を設定します。
 
 
 
@@ -180,32 +168,16 @@ Mastodon の更新は踏み台サーバで行います。
 1. `git fetch` します。
     * 失敗する場合は `/home/mastodon/[DOMAIN NAME]` ディレクトリを削除して `git clone` しなおします。この場合 `.env.production` ファイルをバックアップしてください。`rake secret` でキーを変更してしまうとデータベースアクセスでエラーになります。
 1. `git checkout` で最新のリリースタグに切り替えます。
-1. データベースのマイグレーションを行います。
-
-    ```
-    RAILS_ENV=production bundle exec rails db:migrate
-    ```
-  
-1. 静的コンテンツのプリコンパイルを行います。
-
-    ```
-    yarn install --pure-lockfile
-    RAILS_ENV=production bundle exec rails assets:precompile
-    ```
-  
+1. Mastodon のリリースノートに従って作業を行います。
 1. `/home/mastodon/[DOMAIN NAME]` ディレクトリのアーカイブを作成します。アーカイブのファイル名は、CloudFormation スタックを構築したときに設定した名前にします。
-
     ```
     cd ..
     tar cfz [PACKAGE NAME] [DOMAIN NAME]
     ```
-
 1. S3 のパッケージファイル置き場にアップロードします。
-  
     ```
     aws s3 cp [PACKAGE NAME] s3://[BUCKET]/[FOLDER]/
     ```
-  
 1. AutoScaling の最小インスタンス数を 2 にします。
 1. Mastodon の EC2 インスタンスが 2つに増えたら、AutoScaling の最小インスタンスを 1 に戻します。
 1. 10 分後に古い方が Terminate します。
@@ -262,7 +234,6 @@ RDS のスナップショットやパラメータグループが残る場合が�
 
 * DBEngineVersion
   * Postgresql のバージョンを指定します。
-    * 有効な値: "9.6.2", "9.6.1", "9.5.4", "9.5.2", "9.4.9", "9.4.7", "9.3.14", "9.3.12"
 * DBInstanceClass
   * DB インスタンスのインスタンスタイプを指定します。
     * デフォルト: "db.t2.micro"
@@ -270,7 +241,6 @@ RDS のスナップショットやパラメータグループが残る場合が�
   * Postgresql のライセンスモデルを指定します。"postgresql-license" のみ指定できます。
 * DBStorageType
   * DB インスタンスのストレージタイプを指定します。インスタンスタイプによって変わります。
-    * 有効な値: "standard", "gp2", "io1"
     * デフォルト: "standard"
 * DBName
   * データベースのスキーマ名を指定します。
@@ -287,7 +257,6 @@ RDS のスナップショットやパラメータグループが残る場合が�
   * デフォルト: "cache.t2.micro"
 * ElastiCacheVersion
   * Redis のバージョンを指定します。
-  * 有効な値: "3.2.4", "2.8.24", "2.8.23", "2.8.22", "2.8.21", "2.8.19", "2.8.6", "2.6.13"
 
 
 #### EC2 関係の設定
@@ -295,7 +264,7 @@ RDS のスナップショットやパラメータグループが残る場合が�
 * EC2KeyPair
   * EC2 キーペアの名前を指定します。SSH でログインするのに必要です。
 * BastionInstanceAMI
-  * 踏み台サーバの EC2 インスタンスの AMI を指定します。"Ubuntu Server 16.04 LTS (HVM), SSD Volume Type" の AMI を利用してください。
+  * 踏み台サーバの EC2 インスタンスの AMI を指定します。"Ubuntu Server 18.04 LTS (HVM), SSD Volume Type" の AMI を利用してください。
 * BastionInstanceType
   * 踏み台サーバの EC2 インスタンスのインスタンスタイプを指定します。
     * デフォルト: "t2.micro"
@@ -311,7 +280,6 @@ RDS のスナップショットやパラメータグループが残る場合が�
   * Mastodon の完全なホスト名を指定します。
 * MastodonVersion
   * Mastodon のリリースタグ名を指定します。master ブランチの最新を使う場合は空文字列を指定します。
-    * デフォルト: v1.3.3
 
 
 #### メール関係の設定
@@ -331,9 +299,7 @@ RDS のスナップショットやパラメータグループが残る場合が�
 
 #### AWS リソース関係の設定
 
-* SubnetAvailabilityZone1
-  * サブネットの AvailabilityZone を指定します。
-* SubnetAvailabilityZone2
+* SubnetAvailabilityZone
   * サブネットの AvailabilityZone を指定します。
 * Tag1Key, Tag2Key
   * AWS リソースに付与するタグのキーです。
