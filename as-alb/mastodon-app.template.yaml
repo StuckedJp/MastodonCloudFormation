@@ -563,7 +563,7 @@ Resources:
                   - |+
 
                   - |
-                    proxy_cache_path /var/cache/nginx levels=1:2 keys_zone=CACHE:10m inactive=7d max_size=1g;
+                    # proxy_cache_path /var/cache/nginx levels=1:2 keys_zone=CACHE:10m inactive=7d max_size=1g;
                   - |+
 
                   - |
@@ -647,8 +647,6 @@ Resources:
                   - |2
                         add_header Cache-Control "public, max-age=31536000, immutable";
                   - |2
-                        add_header Strict-Transport-Security "max-age=31536000";
-                  - |2
                         try_files $uri @proxy;
                   - |2
                       }
@@ -658,8 +656,6 @@ Resources:
                       location /sw.js {
                   - |2
                         add_header Cache-Control "public, max-age=0";
-                  - |2
-                        add_header Strict-Transport-Security "max-age=31536000";
                   - |2
                         try_files $uri @proxy;
                   - |2
@@ -685,7 +681,7 @@ Resources:
                   - |2
                         proxy_pass http://127.0.0.1:3000;
                   - |2
-                        proxy_buffering off;
+                        proxy_buffering on;
                   - |2
                         proxy_redirect off;
                   - |2
@@ -694,18 +690,6 @@ Resources:
                         proxy_set_header Upgrade $http_upgrade;
                   - |2
                         proxy_set_header Connection $connection_upgrade;
-                  - |+
-
-                  - |2
-                        proxy_cache CACHE;
-                  - |2
-                        proxy_cache_valid 200 7d;
-                  - |2
-                        proxy_cache_use_stale error timeout updating http_500 http_502 http_503 http_504;
-                  - |2
-                        add_header X-Cached $upstream_cache_status;
-                  - |2
-                        add_header Strict-Transport-Security "max-age=31536000";
                   - |+
 
                   - |2
@@ -729,7 +713,7 @@ Resources:
                   - |+
 
                   - |2
-                        proxy_pass http://localhost:4000;
+                        proxy_pass http://127.0.0.1:4000;
                   - |2
                         proxy_buffering off;
                   - |2
