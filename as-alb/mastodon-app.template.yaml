@@ -487,9 +487,8 @@ Resources:
                     Environment="DB_POOL=25"
                   - |
                     Environment="MALLOC_ARENA_MAX=2"
-                  - >
+                  - |
                     ExecStart=/usr/local/bin/bundle exec sidekiq -c 25
-                    -q mailers -q pull -q push
                   - |
                     TimeoutSec=15
                   - |
@@ -563,7 +562,7 @@ Resources:
                   - |+
 
                   - |
-                    # proxy_cache_path /var/cache/nginx levels=1:2 keys_zone=CACHE:10m inactive=7d max_size=1g;
+                    proxy_cache_path /var/cache/nginx levels=1:2 keys_zone=CACHE:10m inactive=7d max_size=1g;
                   - |+
 
                   - |
@@ -620,18 +619,6 @@ Resources:
 
                   - |2
                       add_header Strict-Transport-Security "max-age=31536000";
-                  - '  add_header Access-Control-Allow-Origin "https://'
-                  - !Ref MastodonFQDN
-                  - |
-                    /";
-                  - '  add_header Content-Security-Policy "style-src ''self'' ''unsafe-inline''; '
-                  - >-
-                    script-src 'self'; object-src 'self'; img-src data: blob:
-                    https:; media-src data: https:; 
-                  - 'connect-src ''self'' blob: wss://'
-                  - !Ref MastodonFQDN
-                  - |
-                    ; upgrade-insecure-requests";
                   - |+
 
                   - |2
@@ -647,6 +634,8 @@ Resources:
                   - |2
                         add_header Cache-Control "public, max-age=31536000, immutable";
                   - |2
+                        add_header Strict-Transport-Security "max-age=31536000";
+                  - |2
                         try_files $uri @proxy;
                   - |2
                       }
@@ -656,6 +645,8 @@ Resources:
                       location /sw.js {
                   - |2
                         add_header Cache-Control "public, max-age=0";
+                  - |2
+                        add_header Strict-Transport-Security "max-age=31536000";
                   - |2
                         try_files $uri @proxy;
                   - |2
@@ -690,6 +681,18 @@ Resources:
                         proxy_set_header Upgrade $http_upgrade;
                   - |2
                         proxy_set_header Connection $connection_upgrade;
+                  - |+
+
+                  - |2
+                        proxy_cache CACHE;
+                  - |2
+                        proxy_cache_valid 200 7d;
+                  - |2
+                        proxy_cache_use_stale error timeout updating http_500 http_502 http_503 http_504;
+                  - |2
+                        add_header X-Cached $upstream_cache_status;
+                  - |2
+                        add_header Strict-Transport-Security "max-age=31536000";
                   - |+
 
                   - |2
