@@ -22,9 +22,6 @@ Parameters:
   SecretKeyBase:
     Description: SECRET_KEY_BASE value.
     Type: String
-  PaperclipSecret:
-    Description: PAPERCLIP_SECRET value.
-    Type: String
   OtpSecret:
     Description: OTP_SECRET value.
     Type: String
@@ -62,6 +59,8 @@ Parameters:
     Description: RDS (Postgresql) engine version
     Type: String
     AllowedValues:
+      - 10.6
+      - 10.5
       - 10.4
       - 10.3
       - 10.1
@@ -407,10 +406,6 @@ Conditions:
   HasSecretKeyBase: !Not 
     - !Equals 
       - !Ref SecretKeyBase
-      - ''
-  HasPaperclipSecret: !Not 
-    - !Equals 
-      - !Ref PaperclipSecret
       - ''
   HasOtpSecret: !Not 
     - !Equals 
@@ -810,14 +805,14 @@ Resources:
       ToPort: !Ref SMTPHostPort
       GroupId: !Ref SecurityGroupNATInstance
       IpProtocol: tcp
-  SecurityGroupNATInstanceIngressSSH:
-    Type: 'AWS::EC2::SecurityGroupIngress'
-    Properties:
-      CidrIp: !FindInMap [ CIDR, All, IP ]
-      FromPort: 22
-      ToPort: 22
-      GroupId: !Ref SecurityGroupNATInstance
-      IpProtocol: tcp
+  # SecurityGroupNATInstanceIngressSSH:
+  #   Type: 'AWS::EC2::SecurityGroupIngress'
+  #   Properties:
+  #     CidrIp: !FindInMap [ CIDR, All, IP ]
+  #     FromPort: 22
+  #     ToPort: 22
+  #     GroupId: !Ref SecurityGroupNATInstance
+  #     IpProtocol: tcp
   SecurityGroupNATInstanceEgress:
     Type: 'AWS::EC2::SecurityGroupEgress'
     Properties:
@@ -1136,14 +1131,6 @@ Resources:
                   .env.production
 
               - !If 
-                - HasPaperclipSecret
-                - !Sub |
-                  echo "PAPERCLIP_SECRET=${PaperclipSecret}" >> .env.production
-                - >
-                  echo "PAPERCLIP_SECRET=`bundle exec rake secret`" >>
-                  .env.production
-
-              - !If 
                 - HasOtpSecret
                 - !Sub |
                   echo "OTP_SECRET=${OtpSecret}" >> .env.production
@@ -1157,7 +1144,7 @@ Resources:
                 - HasDBSnapshotIdentifier
                 - ''
                 - |
-                  bundle exec rails db:setup 
+                  SAFETY_ASSURED=1 bundle exec rails db:setup 
 
               - |
                 bundle exec rails assets:precompile
@@ -1350,8 +1337,6 @@ Resources:
                   - |
                     STREAMING_CLUSTER_NUM=1
                   - |
-                    SAFETY_ASSURED=1
-                  - |
                     # Secrets
               mode: '000644'
               owner: root
@@ -1438,10 +1423,10 @@ Resources:
       BackupRetentionPeriod: !FindInMap [ RDSConfig, BackupRetentionPeriod, Value ]
       CopyTagsToSnapshot: true
       DBInstanceClass: !Ref DBInstanceClass
-      DBName: !If 
-        - HasDBSnapshotIdentifier
-        - ''
-        - !Ref DBName
+      # DBName: !If 
+      #   - HasDBSnapshotIdentifier
+      #   - ''
+      #   - !Ref DBName
       VPCSecurityGroups:
         - !Ref SecurityGroupRDS
       DBSubnetGroupName: !Ref RDSSubnetGroup
