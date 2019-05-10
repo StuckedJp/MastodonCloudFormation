@@ -412,8 +412,8 @@ Resources:
               libidn11-dev : []
               libicu-dev : []
               libjemalloc-dev : []
-              ruby2.5: []
-              ruby2.5-dev: []
+              ruby2.6: []
+              ruby2.6-dev: []
         systemd-mastodon-web:
           files:
             /etc/systemd/system/mastodon-web.service:
