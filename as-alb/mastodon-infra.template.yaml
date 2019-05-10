@@ -1219,8 +1219,8 @@ Resources:
               libidn11-dev : []
               libicu-dev : []
               libjemalloc-dev : []
-              ruby2.5: []
-              ruby2.5-dev: []
+              ruby2.6: []
+              ruby2.6-dev: []
         createMastodonConfig:
           files:
             /home/mastodon/.env.production:
