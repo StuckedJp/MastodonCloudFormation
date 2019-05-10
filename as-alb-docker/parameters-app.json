@@ -1,0 +1,33 @@
+{
+    "Parameters": [
+        { "ParameterKey": "Tag1Key", "ParameterValue": "" },
+        { "ParameterKey": "Tag1Value", "ParameterValue": "" },
+        { "ParameterKey": "Tag2Key", "ParameterValue": "" },
+        { "ParameterKey": "Tag2Value", "ParameterValue": "" },
+
+        { "ParameterKey": "InfraStackName", "ParameterValue": "" },
+
+        { "ParameterKey": "MastodonFQDN", "ParameterValue": "" },
+
+        { "ParameterKey": "InstanceType", "ParameterValue": "" },
+        { "ParameterKey": "InstanceAMI", "ParameterValue": "" },
+        { "ParameterKey": "EC2KeyPair", "ParameterValue": "" },
+
+        { "ParameterKey": "PackageS3Bucket", "ParameterValue": "" },
+        { "ParameterKey": "PackageS3Prefix", "ParameterValue": "" },
+        { "ParameterKey": "PackageName", "ParameterValue": "" },
+
+        { "ParameterKey": "ContentsS3Bucket", "ParameterValue": "" },
+
+        { "ParameterKey": "LBAccessLogS3Bucket", "ParameterValue": "" },
+        { "ParameterKey": "LBAccessLogPrefix", "ParameterValue": "" },
+
+        { "ParameterKey": "CertArn", "ParameterValue": "" }
+    ],
+    "Capabilities": [
+        "CAPABILITY_IAM"
+    ],
+    "Tags": [
+        { "Key": "",  "Value": "" }
+    ]
+}
