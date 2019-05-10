@@ -1,0 +1,59 @@
+{
+    "Parameters": [
+        { "ParameterKey": "Tag1Key", "ParameterValue": "" },
+        { "ParameterKey": "Tag1Value", "ParameterValue": "" },
+        { "ParameterKey": "Tag2Key", "ParameterValue": "" },
+        { "ParameterKey": "Tag2Value", "ParameterValue": "" },
+
+        { "ParameterKey": "MastodonFQDN", "ParameterValue": "" },
+        { "ParameterKey": "MastodonVersion", "ParameterValue": "" },
+
+        { "ParameterKey": "SecretKeyBase", "ParameterValue": "" },
+        { "ParameterKey": "PaperclipSecret", "ParameterValue": "" },
+        { "ParameterKey": "OtpSecret", "ParameterValue": "" },
+
+        { "ParameterKey": "SubnetAvailabilityZone1", "ParameterValue": "" },
+        { "ParameterKey": "SubnetAvailabilityZone2", "ParameterValue": "" },
+
+        { "ParameterKey": "DBInstanceClass", "ParameterValue": "" },
+        { "ParameterKey": "DBName", "ParameterValue": "" },
+        { "ParameterKey": "DBEngineVersion", "ParameterValue": "" },
+        { "ParameterKey": "DBLicenseModel", "ParameterValue": "" },
+        { "ParameterKey": "DBMasterUsername", "ParameterValue": "" },
+        { "ParameterKey": "DBMasterUserPassword", "ParameterValue": "" },
+        { "ParameterKey": "DBStorageType", "ParameterValue": "" },
+        { "ParameterKey": "DBSnapshotIdentifier", "ParameterValue": "" },
+
+        { "ParameterKey": "ElastiCacheNodeType", "ParameterValue": "" },
+        { "ParameterKey": "ElastiCacheVersion", "ParameterValue": "" },
+
+        { "ParameterKey": "BastionInstanceType", "ParameterValue": "" },
+        { "ParameterKey": "BastionInstanceAMI", "ParameterValue": "" },
+        { "ParameterKey": "EC2KeyPair", "ParameterValue": "" },
+
+        { "ParameterKey": "NATInstanceType", "ParameterValue": "" },
+
+        { "ParameterKey": "PackageS3Bucket", "ParameterValue": "" },
+        { "ParameterKey": "PackageS3Prefix", "ParameterValue": "" },
+        { "ParameterKey": "PackageName", "ParameterValue": "" },
+
+        { "ParameterKey": "ContentsS3Bucket", "ParameterValue": "" },
+        { "ParameterKey": "ContentsAWSAccessKey", "ParameterValue": "" },
+        { "ParameterKey": "ContentsAWSAccessSecret", "ParameterValue": "" },
+
+        { "ParameterKey": "LBAccessLogS3Bucket", "ParameterValue": "" },
+        { "ParameterKey": "LBAccessLogPrefix", "ParameterValue": "" },
+
+        { "ParameterKey": "SMTPHostName", "ParameterValue": "" },
+        { "ParameterKey": "SMTPHostPort", "ParameterValue": "" },
+        { "ParameterKey": "SMTPUserName", "ParameterValue": "" },
+        { "ParameterKey": "SMTPPassword", "ParameterValue": "" },
+        { "ParameterKey": "SMTPSenderAddress", "ParameterValue": "" }
+    ],
+    "Capabilities": [
+        "CAPABILITY_IAM"
+    ],
+    "Tags": [
+        { "Key": "", "Value": "" }
+    ]
+}
