@@ -1,0 +1,600 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: CloudFormation template file for Mastodon (Bastion).
+Parameters:
+  Tag1Key:
+    Description: Tag key
+    Type: String
+  Tag1Value:
+    Description: Tag value
+    Type: String
+  Tag2Key:
+    Description: Tag key
+    Type: String
+  Tag2Value:
+    Description: Tag value
+    Type: String
+  InfraStackName:
+    Description: Stack name of infrastructure.
+    Type: String
+  MastodonFQDN:
+    Description: FQDN of Mastodon instance
+    Type: String
+  MastodonVersion:
+    Description: Release tag name of Mastodon
+    Type: String
+  SecretKeyBase:
+    Description: SECRET_KEY_BASE value.
+    Type: String
+  OtpSecret:
+    Description: OTP_SECRET value.
+    Type: String
+  UseExistingDB:
+    Description: Uses existing Database
+    Type: String
+    AllowedValues:
+      - 'true'
+      - 'false'
+  BastionInstanceType:
+    Description: EC2 instance type of bastion server
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+      - t1.micro
+      - t2.nano
+      - t2.micro
+      - t2.small
+      - t2.medium
+      - t2.large
+      - m1.small
+      - m1.medium
+      - m1.large
+      - m1.xlarge
+      - m2.xlarge
+      - m2.2xlarge
+      - m2.4xlarge
+      - m3.medium
+      - m3.large
+      - m3.xlarge
+      - m3.2xlarge
+      - m4.large
+      - m4.xlarge
+      - m4.2xlarge
+      - m4.4xlarge
+      - m4.10xlarge
+      - c1.medium
+      - c1.xlarge
+      - c3.large
+      - c3.xlarge
+      - c3.2xlarge
+      - c3.4xlarge
+      - c3.8xlarge
+      - c4.large
+      - c4.xlarge
+      - c4.2xlarge
+      - c4.4xlarge
+      - c4.8xlarge
+      - g2.2xlarge
+      - g2.8xlarge
+      - r3.large
+      - r3.xlarge
+      - r3.2xlarge
+      - r3.4xlarge
+      - r3.8xlarge
+      - i2.xlarge
+      - i2.2xlarge
+      - i2.4xlarge
+      - i2.8xlarge
+      - d2.xlarge
+      - d2.2xlarge
+      - d2.4xlarge
+      - d2.8xlarge
+      - hi1.4xlarge
+      - hs1.8xlarge
+      - cr1.8xlarge
+      - cc2.8xlarge
+      - cg1.4xlarge
+    ConstraintDescription: must be a valid EC2 instance type.
+  BastionInstanceAMI:
+    Description: EC2 instance AMI ID of bastion server.
+    Type: 'AWS::EC2::Image::Id'
+    ConstraintDescription: must be a valid EC2 AMI ID.
+  EC2KeyPair:
+    Description: EC2 Key Pair Name
+    Type: 'AWS::EC2::KeyPair::KeyName'
+    ConstraintDescription: must be a valid EC2 Key Pair Name.
+  PackageS3Bucket:
+    Description: S3 bucket name for Mastodon pre-build package.
+    Type: String
+    ConstraintDescription: must be a valid S3 bucket name.
+  PackageS3Prefix:
+    Description: S3 folder name for Mastodon pre-build package.
+    Type: String
+    ConstraintDescription: must be a valid S3 key name.
+  PackageName:
+    Description: File name for Mastodon pre-build package.
+    Type: String
+    ConstraintDescription: must be a valid file name.
+  ContentsS3Bucket:
+    Description: S3 bucket name of content cache.
+    Type: String
+    ConstraintDescription: must be a valid S3 bucket name.
+  ContentsAWSAccessKey:
+    Description: AWSAccessKey for S3 access.
+    Type: String
+  ContentsAWSAccessSecret:
+    Description: AWSAccessSecret for S3 access.
+    Type: String
+  SMTPHostName:
+    Description: SMTP host name.
+    Type: String
+  SMTPHostPort:
+    Description: SMTP host port number.
+    Default: '587'
+    Type: Number
+  SMTPUserName:
+    Description: SMTP user name.
+    Type: String
+  SMTPPassword:
+    Description: SMTP user password.
+    Type: String
+  SMTPSenderAddress:
+    Description: E-mail address of mail sender.
+    Type: String
+    ConstraintDescription: must be a valid e-mail address.
+Mappings:
+  CIDR:
+    VPC:
+      IP: 10.0.0.0/16
+    PrivateSubnet1:
+      IP: 10.0.10.0/24
+    PrivateSubnet2:
+      IP: 10.0.11.0/24
+    PublicSubnet1:
+      IP: 10.0.20.0/24
+    PublicSubnet2:
+      IP: 10.0.21.0/24
+    All:
+      IP: 0.0.0.0/0
+  InstanceConfig:
+    Storage:
+      ValueByGb: '20'
+Conditions:
+  IsVirginia: !Equals 
+    - !Ref 'AWS::Region'
+    - us-east-1
+  IsMaster: !Equals 
+    - !Ref MastodonVersion
+    - ''
+  HasSecretKeyBase: !Not 
+    - !Equals 
+      - !Ref SecretKeyBase
+      - ''
+  HasOtpSecret: !Not 
+    - !Equals 
+      - !Ref OtpSecret
+      - ''
+  IsUseExistingDB: !Equals 
+    - !Ref UseExistingDB
+    - 'true'
+Resources:
+  BastionInstanceIAMRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: 's3:*'
+                Resource: !Join 
+                  - ''
+                  - - 'arn:aws:s3:::'
+                    - !Ref ContentsS3Bucket
+              - Effect: Allow
+                Action: 's3:*'
+                Resource: !Join 
+                  - ''
+                  - - 'arn:aws:s3:::'
+                    - !Ref ContentsS3Bucket
+                    - /*
+              - Effect: Allow
+                Action: 's3:*'
+                Resource: !Join 
+                  - ''
+                  - - 'arn:aws:s3:::'
+                    - !Ref PackageS3Bucket
+              - Effect: Allow
+                Action: 's3:*'
+                Resource: !Join 
+                  - ''
+                  - - 'arn:aws:s3:::'
+                    - !Ref PackageS3Bucket
+                    - /*
+  BastionInstanceProfile:
+    Type: 'AWS::IAM::InstanceProfile'
+    Properties:
+      Roles:
+        - !Ref BastionInstanceIAMRole
+  BastionInstanceNetworkIF:
+    Type: 'AWS::EC2::NetworkInterface'
+    Properties:
+      Description: Bastion instance network interface.
+      GroupSet: 
+        - !ImportValue 
+          'Fn::Sub': '${InfraStackName}-SecurityGroupBastionInstance'
+      SourceDestCheck: true
+      SubnetId: !ImportValue 
+        'Fn::Sub': '${InfraStackName}-PublicSubnet1'
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-BastionNetworkIF'
+        - Key: !Ref Tag1Key
+          Value: !Ref Tag1Value
+        - Key: !Ref Tag2Key
+          Value: !Ref Tag2Value
+  BastionInstance:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            DeleteOnTermination: true
+            VolumeSize: !FindInMap [ InstanceConfig, Storage, ValueByGb ]
+      DisableApiTermination: false
+      IamInstanceProfile: !Ref BastionInstanceProfile
+      ImageId: !Ref BastionInstanceAMI
+      InstanceInitiatedShutdownBehavior: stop
+      InstanceType: !Ref BastionInstanceType
+      KeyName: !Ref EC2KeyPair
+      Monitoring: true
+      NetworkInterfaces:
+        - Description: Mastodon Network Interface.
+          DeviceIndex: '0'
+          NetworkInterfaceId: !Ref BastionInstanceNetworkIF
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-Bastion'
+        - Key: !Ref Tag1Key
+          Value: !Ref Tag1Value
+        - Key: !Ref Tag2Key
+          Value: !Ref Tag2Value
+      UserData: 
+        Fn::Base64:
+          Fn::Join:
+            - ''
+            - - |
+                #!/bin/bash -xe
+              - |
+                # ********** Install packages for cloud formation **********
+              - |
+                export HOME=/root 
+              - |
+                apt-get update 
+              - |
+                apt-get -y install python-pip python-setuptools 
+              - |
+                pip install --upgrade pip awscli 
+              - |
+                cd /root 
+              - |
+                mkdir aws-cfn-bootstrap-latest
+              - |
+                curl https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz | tar xz -C aws-cfn-bootstrap-latest --strip-components 1 
+              - |
+                python /usr/lib/python2.7/dist-packages/easy_install.py aws-cfn-bootstrap-latest
+              - |
+                ln -s /root/aws-cfn-bootstrap-latest/init/ubuntu/cfn-hup /etc/init.d/cfn-hup 
+
+              - |
+                # ********** Install required packages **********
+              - |
+                curl -sL https://deb.nodesource.com/setup_8.x | bash -
+              - |
+                curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -
+              - |
+                echo "deb https://dl.yarnpkg.com/debian/ stable main" > /etc/apt/sources.list.d/yarn.list
+              - |
+                apt-add-repository -y ppa:brightbox/ruby-ng
+              - |
+                apt-get update
+              - '/usr/local/bin/cfn-init -v '
+              - ' --stack '
+              - !Ref 'AWS::StackName'
+              - ' --resource BastionInstance '
+              - ' --configsets installPackages '
+              - ' --region '
+              - !Ref 'AWS::Region'
+              - |+
+
+              - |
+                gem update --system
+              - |
+                gem install bundler
+              - |
+                # ********** Add mastodon user **********
+              - |
+                useradd -d /home/mastodon --create-home --user-group mastodon
+
+              - |
+                # ********** Build Mastodon **********
+              - |
+                cd /home/mastodon 
+              - 'git clone https://github.com/tootsuite/mastodon.git '
+              - !Ref MastodonFQDN
+              - |+
+                
+              - 'cd '
+              - !Ref MastodonFQDN
+              - |+
+                
+              - !If 
+                - IsMaster
+                - ''
+                - !Sub |
+                  git checkout ${MastodonVersion} 
+              - |
+                bundle install -j$(getconf _NPROCESSORS_ONLN) --deployment --without development test 
+              - |
+                yarn install --pure-lockfile 
+              - |
+                # ********** Setup Mastodon **********
+              - '/usr/local/bin/cfn-init -v '
+              - ' --stack '
+              - !Ref 'AWS::StackName'
+              - ' --resource BastionInstance '
+              - ' --configsets createMastodonConfig '
+              - ' --region '
+              - !Ref 'AWS::Region'
+              - |+
+
+              - |
+                export RAILS_ENV=production
+              - !If 
+                - HasSecretKeyBase
+                - !Sub |
+                  echo "SECRET_KEY_BASE=${SecretKeyBase}" >> .env.production
+                - >
+                  echo "SECRET_KEY_BASE=`bundle exec rake secret`" >>
+                  .env.production
+
+              - !If 
+                - HasOtpSecret
+                - !Sub |
+                  echo "OTP_SECRET=${OtpSecret}" >> .env.production
+                - >
+                  echo "OTP_SECRET=`bundle exec rake secret`" >>
+                  .env.production
+
+              - |
+                bundle exec rake mastodon:webpush:generate_vapid_key >> .env.production
+              - !If 
+                - IsUseExistingDB
+                - ''
+                - |
+                  SAFETY_ASSURED=1 bundle exec rails db:setup 
+
+              - |
+                bundle exec rails assets:precompile
+              - |
+                cd ..
+              - 'tar cfz '
+              - !Ref PackageName
+              - ' '
+              - !Ref MastodonFQDN
+              - |+
+
+              - !Sub >
+                aws s3 cp ${PackageName}
+                s3://${PackageS3Bucket}/${PackageS3Prefix}/${PackageName} 
+
+              - |
+                # ********** Notify **********
+              - '/usr/local/bin/cfn-signal '
+              - ' -e 0'
+              - ' --stack '
+              - !Ref 'AWS::StackName'
+              - ' --resource BastionInstance'
+              - ' --region '
+              - !Ref 'AWS::Region'
+              - |+
+
+              - |
+                # ********** The End **********
+    CreationPolicy:
+      ResourceSignal:
+        Timeout: PT30M
+    Metadata:
+      'AWS::CloudFormation::Init':
+        configSets:
+          installPackages:
+            - aptPackages
+          createMastodonConfig:
+            - createMastodonConfig
+            - moveMastodonConfig
+        aptPackages:
+          packages:
+            apt:
+              imagemagick : []
+              ffmpeg : []
+              libpq-dev : []
+              libxml2-dev : []
+              libxslt1-dev : []
+              file : []
+              git-core : []
+              g++ : []
+              libprotobuf-dev : []
+              protobuf-compiler : []
+              pkg-config : []
+              nodejs : []
+              gcc : []
+              autoconf : []
+              bison : []
+              build-essential : []
+              libssl-dev : []
+              libyaml-dev : []
+              libreadline6-dev : []
+              zlib1g-dev : []
+              libncurses5-dev : []
+              libffi-dev : []
+              libgdbm5 : []
+              libgdbm-dev : []
+              redis-tools : []
+              postgresql-client : []
+              postgresql-contrib : []
+              certbot : []
+              yarn : []
+              libidn11-dev : []
+              libicu-dev : []
+              libjemalloc-dev : []
+              ruby2.6: []
+              ruby2.6-dev: []
+        createMastodonConfig:
+          files:
+            /home/mastodon/.env.production:
+              content: !Join 
+                - ''
+                - - |
+                    # GENERATED BY CLOUD FORMATION TEMPLATE
+                  - |
+                    # Redis
+                  - |
+                    # You may set REDIS_URL instead for more advanced options
+                  - REDIS_HOST=
+                  - !ImportValue
+                    'Fn::Sub': '${InfraStackName}-ElasticacheEndPoint' 
+                  - |+
+
+                  - REDIS_PORT=
+                  - !ImportValue
+                    'Fn::Sub': '${InfraStackName}-ElasticacheEndPointPort' 
+                  - |+
+
+                  - |
+                    # You may set DATABASE_URL instead for more advanced options
+                  - |
+                    # Database
+                  - DB_HOST=
+                  - !ImportValue
+                    'Fn::Sub': '${InfraStackName}-RDSInstanceEndPoint' 
+                  - |+
+
+                  - DB_NAME=
+                  - !ImportValue
+                    'Fn::Sub': '${InfraStackName}-DBName' 
+                  - |+
+
+                  - DB_USER=
+                  - !ImportValue
+                    'Fn::Sub': '${InfraStackName}-DBMasterUsername' 
+                  - |+
+
+                  - DB_PASS=
+                  - !ImportValue
+                    'Fn::Sub': '${InfraStackName}-DBMasterUserPassword' 
+                  - |+
+
+                  - DB_PORT=
+                  - !ImportValue
+                    'Fn::Sub': '${InfraStackName}-RDSInstanceEndPointPort' 
+                  - |+
+
+                  - |
+                    # Domain
+                  - LOCAL_DOMAIN=
+                  - !Ref MastodonFQDN
+                  - |+
+
+                  - |
+                    # Mail
+                  - SMTP_SERVER=
+                  - !Ref SMTPHostName
+                  - |+
+
+                  - SMTP_PORT=
+                  - !Ref SMTPHostPort
+                  - |+
+
+                  - SMTP_LOGIN=
+                  - !Ref SMTPUserName
+                  - |+
+
+                  - SMTP_PASSWORD=
+                  - !Ref SMTPPassword
+                  - |+
+
+                  - SMTP_FROM_ADDRESS=
+                  - !Ref SMTPSenderAddress
+                  - |+
+
+                  - |
+                    # Aws
+                  - |
+                    S3_ENABLED=true
+                  - S3_BUCKET=
+                  - !Ref ContentsS3Bucket
+                  - |+
+
+                  - AWS_ACCESS_KEY_ID=
+                  - !Ref ContentsAWSAccessKey
+                  - |+
+
+                  - AWS_SECRET_ACCESS_KEY=
+                  - !Ref ContentsAWSAccessSecret
+                  - |+
+
+                  - S3_REGION=
+                  - !Ref 'AWS::Region'
+                  - |+
+
+                  - |
+                    S3_PROTOCOL=https
+                  - S3_HOSTNAME=
+                  - !If 
+                    - IsVirginia
+                    - s3.amazonaws.com
+                    - !Join 
+                      - ''
+                      - - s3-
+                        - !Ref 'AWS::Region'
+                        - .amazonaws.com
+                  - |+
+
+                  - |
+                    # Option
+                  - |
+                    # SINGLE_USER_MODE=true
+                  - |
+                    # Cluster number setting for streaming API server.
+                  - >
+                    # If you comment out following line, cluster number will be
+                    `numOfCpuCores - 1`.
+                  - |
+                    STREAMING_CLUSTER_NUM=1
+                  - |
+                    # Secrets
+              mode: '000644'
+              owner: root
+              group: root
+        moveMastodonConfig:
+          commands:
+            001_moveFile:
+              command: !Sub 'mv .env.production ${MastodonFQDN}/.env.production'
+              cwd: /home/mastodon
+
+Outputs:
+  BastionInstanceIPAddress:
+    Description: Host name of Bastion instance
+    Value: !GetAtt 
+      - BastionInstance
+      - PublicIp
