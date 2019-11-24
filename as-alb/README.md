@@ -75,6 +75,26 @@ CloudFormation テンプレートは、インフラ部分 (mastodon-infra.templa
     aws cloudformation create-stack --stack-name [INFRASTRUCTURE STACK NAME] --region [REGION] --template-url [URL OF mastodon-infra.template] --cli-input-json file://,parameters-infra.json
     ```
   
+1. インフラスタックの構築が完了するのを待ちます。
+
+
+
+### 踏み台スタックの構築
+
+1. `parameters-bastion.json` をコピーして編集します。設定内容は「テンプレートパラメータ」の項目を参照してください。
+  
+    ```
+    cp parameters-bastion.json ,parameters-bastion.json
+    # ,parameters-bastion.json を編集
+    ```
+  
+1. S3 の適当な場所に `mastodon-bastion.template` をアップロードします。
+1. 踏み台スタックを作成します。いくつかのリソースにはスタック名を先頭に付与します。
+  
+    ```
+    aws cloudformation create-stack --stack-name [BASTION STACK NAME] --region [REGION] --template-url [URL OF mastodon-bastion.template] --cli-input-json file://,parameters-bastion.json
+    ```
+
 1. S3 のビルド済み Mastodon パッケージ置き場に、パッケージがアップロードされるのを待ちます。約 30 分かかります。
     * Mastodon のビルドは、踏み台サーバで行われます。踏み台サーバは「[STACK NAME]-Bastion」という名前のインスタンスです。状況を確認したい場合は踏み台サーバに SSH でログインして `/var/log/cloud-init-output.log` を確認します。`/var/log/cloud-init-output.log` に以下のような行がある場合、構築は失敗しています。
     
@@ -129,8 +149,26 @@ Mastodon EC2 インスタンスには Public IP を設定しません。Mastodon
     1. [OK] を押します。
     1. 別の TeraTerm ウィンドウで localhost の [Forward local port] に接続します。
 * ssh コマンドを使う場合。
-    1. `ssh -i [PRIVATE KEY] ubuntu@[BASTION] -L [LOCAL PORT]:[MASTODON PRIVATE IP]:22`
-    1. 別の端末で `ssh -i [PRIVATE KEY] ubuntu@localhost -p [LOCAL PORT]`
+    1. `$HOME/.ssh/config` ファイルを以下のように編集します。
+
+    ```
+    Host aws-v-u
+        HostName [BASTION]
+        IdentityFile [PRIVATE KEY]
+        User ubuntu
+        ServerAliveInterval 60
+
+    Host aws-v-u-p
+        HostName [MASTODON PRIVATE IP]
+        IdentityFile [PRIVATE KEY]
+        User ubuntu
+        ProxyCommand ssh -W %h:%p aws-v-u
+        ServerAliveInterval 60
+
+    ```
+
+    1. `ssh aws-v-u` で踏み台にログインできます。
+    1. `ssh aws-v-u-p` で Web サーバーにログインできます。
 
 
 
@@ -189,8 +227,9 @@ Mastodon の更新は踏み台サーバで行います。
 Mastodon サービスを閉じる場合は、AWS コンソール、もしくは AWS CLI で、以下の順番で CloudFormation スタックを削除します。
 
 1. アプリケーションスタックを先に削除します。
-1. アプリケーションスタックが消滅しましたら、インフラスタックを削除します。
-    * アプリケーションスタックが存在している間はインフラスタックは削除できません。
+1. 踏み台スタックを削除します。
+1. アプリケーションスタック、踏み台スタックが消滅しましたら、インフラスタックを削除します。
+    * アプリケーションスタック、踏み台スタックが存在している間はインフラスタックは削除できません。
 
 RDS のスナップショットやパラメータグループが残る場合がありますので、必要に応じて削除します。S3 のコンテンツ置き場やアクセスログ置き場は手動で削除します。
 
@@ -201,26 +240,6 @@ RDS のスナップショットやパラメータグループが残る場合が�
 テンプレートファイルの設定項目について説明します。
 
 ### インフラ
-
-#### コンテンツ置き場関係の設定
-
-* ContentsAWSAccessKey
-  * AWS のアクセスキーを指定します。
-* ContentsAWSAccessSecret
-  * AWS のシークレットキーを指定します。
-* ContentsS3Bucket
-  * コンテンツ置き場の S3 のバケット名を指定します。
-
-
-#### ビルド済みパッケージ置き場関係の設定
-
-* PackageS3Bucket
-  * ビルド済みパッケージ置き場の S3 のバケット名を指定します。
-* PackageS3Prefix
-  * ビルド済みパッケージ置き場の S3 のフォルダ名を指定します。先頭と末尾にスラッシュ (/) はつけないでください。
-* PackageName
-  * ビルド済みパッケージのファイル名を指定します。
-
 
 #### LoadBalancer アクセスログ置き場関係の設定
 
@@ -263,16 +282,31 @@ RDS のスナップショットやパラメータグループが残る場合が�
 
 * EC2KeyPair
   * EC2 キーペアの名前を指定します。SSH でログインするのに必要です。
-* BastionInstanceAMI
-  * 踏み台サーバの EC2 インスタンスの AMI を指定します。"Ubuntu Server 18.04 LTS (HVM), SSD Volume Type" の AMI を利用してください。
-* BastionInstanceType
-  * 踏み台サーバの EC2 インスタンスのインスタンスタイプを指定します。
-    * デフォルト: "t2.micro"
-      * 無料枠になるためこのインスタンスタイプにしていますが、メモリ不足により `yarn install` がいつまでも完了しない場合があります。その場合は 1 ランク上のインスタンスタイプに切り替えてみてください。
 * NATInstanceType
   * NAT インスタンスのインスタンスタイプを指定します。
     * デフォルト: "t2.micro"
 
+
+#### AWS リソース関係の設定
+
+* SubnetAvailabilityZone
+  * サブネットの AvailabilityZone を指定します。
+* Tag1Key, Tag2Key
+  * AWS リソースに付与するタグのキーです。
+* Tag1Value, Tag2Value
+  * AWS リソースに付与するタグの値です。コストの算出に利用できます。
+
+
+### 踏み台
+
+#### AWS リソース関係の設定
+
+* InfraStackName
+  * インフラスタックの名前を指定します。
+* Tag1Key, Tag2Key
+  * AWS リソースに付与するタグのキーです。
+* Tag1Value, Tag2Value
+  * AWS リソースに付与するタグの値です。コストの算出に利用できます。
 
 #### Mastodon 関係の設定
 
@@ -280,7 +314,41 @@ RDS のスナップショットやパラメータグループが残る場合が�
   * Mastodon の完全なホスト名を指定します。
 * MastodonVersion
   * Mastodon のリリースタグ名を指定します。master ブランチの最新を使う場合は空文字列を指定します。
+* SecretKeyBase
+  * 初期構築時は空文字列にします。
+* OtpSecret
+  * 初期構築時は空文字列にします。
+* UseExistingDB
+  * 初期構築時は false にします。
 
+#### EC2 関係の設定
+
+* EC2KeyPair
+  * EC2 キーペアの名前を指定します。SSH でログインするのに必要です。
+* BastionInstanceAMI
+  * 踏み台サーバの EC2 インスタンスの AMI を指定します。"Ubuntu Server 18.04 LTS (HVM), SSD Volume Type" の AMI を利用してください。
+* BastionInstanceType
+  * 踏み台サーバの EC2 インスタンスのインスタンスタイプを指定します。
+    * デフォルト: "t2.micro"
+      * 無料枠になるためこのインスタンスタイプにしていますが、メモリ不足により `yarn install` がいつまでも完了しない場合があります。その場合は 1 ランク上のインスタンスタイプに切り替えてみてください。
+
+#### ビルド済みパッケージ置き場関係の設定
+
+* PackageS3Bucket
+  * ビルド済みパッケージ置き場の S3 のバケット名を指定します。
+* PackageS3Prefix
+  * ビルド済みパッケージ置き場の S3 のフォルダ名を指定します。先頭と末尾にスラッシュ (/) はつけないでください。
+* PackageName
+  * ビルド済みパッケージのファイル名を指定します。
+
+#### コンテンツ置き場関係の設定
+
+* ContentsAWSAccessKey
+  * AWS のアクセスキーを指定します。
+* ContentsAWSAccessSecret
+  * AWS のシークレットキーを指定します。
+* ContentsS3Bucket
+  * コンテンツ置き場の S3 のバケット名を指定します。
 
 #### メール関係の設定
 
@@ -295,16 +363,6 @@ RDS のスナップショットやパラメータグループが残る場合が�
   * メール送信サーバーの認証で使用するユーザーのパスワードを指定します。
 * SMTPSenderAddress
   * メールの送信者のメールアドレスを指定します。
-
-
-#### AWS リソース関係の設定
-
-* SubnetAvailabilityZone
-  * サブネットの AvailabilityZone を指定します。
-* Tag1Key, Tag2Key
-  * AWS リソースに付与するタグのキーです。
-* Tag1Value, Tag2Value
-  * AWS リソースに付与するタグの値です。コストの算出に利用できます。
 
 
 ### アプリケーション
