@@ -298,6 +298,10 @@ Resources:
             Principal:
               AWS:
                 - !FindInMap [ RegionConfig, !Ref 'AWS::Region', Principal ]
+
+  #
+  # VPC
+  #
   VPC:
     Type: 'AWS::EC2::VPC'
     Properties:
@@ -343,6 +347,10 @@ Resources:
       DestinationCidrBlock: !FindInMap [ CIDR, All, IP ]
       GatewayId: !Ref InternetGW
       RouteTableId: !Ref VPCRouteTable
+
+  #
+  # Subnet
+  #
   PrivateSubnet1:
     Type: 'AWS::EC2::Subnet'
     Properties:
@@ -407,6 +415,10 @@ Resources:
         - Key: !Ref Tag2Key
           Value: !Ref Tag2Value
       VpcId: !Ref VPC
+
+  #
+  # NetworkACL(Public Subnet)
+  #
   PublicSubnetNetworkAcl:
     Type: 'AWS::EC2::NetworkAcl'
     Properties:
@@ -515,6 +527,10 @@ Resources:
     Properties:
       RouteTableId: !Ref VPCRouteTable
       SubnetId: !Ref PublicSubnet2
+
+  #
+  # NetworkACL(Private Subnet)
+  #
   PrivateSubnetNetworkAcl:
     Type: 'AWS::EC2::NetworkAcl'
     Properties:
@@ -611,6 +627,10 @@ Resources:
       CidrIp: !FindInMap [ CIDR, All, IP ]
       GroupId: !Ref SecurityGroupBastionInstance
       IpProtocol: '-1'
+
+  #
+  # SecurityGroup(NAT)
+  #
   SecurityGroupNATInstance:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
@@ -685,6 +705,10 @@ Resources:
       CidrIp: !FindInMap [ CIDR, All, IP ]
       GroupId: !Ref SecurityGroupNATInstance
       IpProtocol: '-1'
+
+  #
+  # SecurityGroup(Mastodon)
+  #
   SecurityGroupMastodonInstance:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
@@ -727,6 +751,10 @@ Resources:
       CidrIp: !FindInMap [ CIDR, All, IP ]
       GroupId: !Ref SecurityGroupMastodonInstance
       IpProtocol: '-1'
+
+  #
+  # EC2 Instance (NAT)
+  #
   NATInstanceNetworkIF:
     Type: 'AWS::EC2::NetworkInterface'
     Properties:
@@ -806,6 +834,10 @@ Resources:
         - !Ref NATRouteTable
       ServiceName: !Sub 'com.amazonaws.${AWS::Region}.s3'
       VpcId: !Ref VPC
+
+  #
+  # SecrityGroup (RDS)
+  #
   SecurityGroupRDS:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
@@ -870,6 +902,9 @@ Resources:
           Value: !Ref Tag1Value
         - Key: !Ref Tag2Key
           Value: !Ref Tag2Value
+  #
+  # Instance (RDS)
+  #
   RDSInstance:
     Type: 'AWS::RDS::DBInstance'
     DependsOn: VPCGatewayAttachment
@@ -907,6 +942,9 @@ Resources:
           Value: !Ref Tag1Value
         - Key: !Ref Tag2Key
           Value: !Ref Tag2Value
+  #
+  # SecrityGroup (ElastiCache)
+  #
   SecurityGroupElastiCache:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
@@ -968,6 +1006,9 @@ Resources:
       SubnetIds:
         - !Ref PrivateSubnet1
         - !Ref PrivateSubnet2
+  #
+  # Cluster (ElastiCache)
+  #
   ElastiCacheCluster:
     Type: 'AWS::ElastiCache::CacheCluster'
     Properties:
