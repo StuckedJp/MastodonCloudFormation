@@ -5,14 +5,26 @@ Vagrant.configure("2") do |config|
 #    config.proxy.https    = "http://10.0.2.2:3128/"
 #    config.proxy.no_proxy = "localhost,127.0.0.1,10.0.2.2"
 #  end
-  config.vm.provider "virtualbox" do |vb|
-    vb.memory = "2048"
-  end
-  config.vm.box = "ubuntu/bionic64"
-  config.vm.network :private_network, ip: "192.168.100.10"
-  config.vm.provision "shell", inline: <<-SHELL
-    apt update
-    apt upgrade -y
-  SHELL
 
+  config.vm.define "workstation" do |atomic|
+    atomic.vm.box = "ubuntu/bionic64"
+    atomic.vm.hostname = "workstation"
+    atomic.vm.network :forwarded_port, id: "ssh", guest: 22, host: 2222
+    atomic.vm.network "private_network", ip: "192.168.33.10", virtualbox__intnet: "intra"
+    atomic.vm.provision "shell", inline: <<-SHELL
+      apt update
+      apt upgrade -y
+    SHELL
+  end
+
+  config.vm.define "target" do |atomic|
+    atomic.vm.box = "ubuntu/bionic64"
+    atomic.vm.hostname = "target"
+    atomic.vm.network :forwarded_port, id: "ssh", guest: 22, host: 2223
+    atomic.vm.network "private_network", ip: "192.168.33.11", virtualbox__intnet: "intra"
+    atomic.vm.provision "shell", inline: <<-SHELL
+      apt update
+      apt upgrade -y
+    SHELL
+  end
 end
