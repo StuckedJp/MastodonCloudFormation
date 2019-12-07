@@ -149,6 +149,7 @@ Mappings:
       IP: 10.0.21.0/24
     All:
       IP: 0.0.0.0/0
+      IPv6: ::/0
   RDSConfig:
     Port:
       Value: '5432'
@@ -259,6 +260,11 @@ Resources:
           Value: !Ref Tag1Value
         - Key: !Ref Tag2Key
           Value: !Ref Tag2Value
+  Ipv6VPCCidrBlock:
+    Type: AWS::EC2::VPCCidrBlock
+    Properties:
+      AmazonProvidedIpv6CidrBlock: true
+      VpcId: !Ref 'VPC'
   InternetGW:
     Type: 'AWS::EC2::InternetGateway'
     Properties:
@@ -330,8 +336,12 @@ Resources:
       VpcId: !Ref VPC
   PublicSubnet1:
     Type: 'AWS::EC2::Subnet'
+    DependsOn:
+      - Ipv6VPCCidrBlock
     Properties:
       CidrBlock: !FindInMap [ CIDR, PublicSubnet1, IP ]
+      Ipv6CidrBlock: !Sub ['${Param1}20::/64', {
+        Param1: !Select ['0', !Split ['00::/', !Select [0, !GetAtt 'VPC.Ipv6CidrBlocks']]]}]
       MapPublicIpOnLaunch: true
       AvailabilityZone: !Select 
         - '0'
@@ -346,8 +356,12 @@ Resources:
       VpcId: !Ref VPC
   PublicSubnet2:
     Type: 'AWS::EC2::Subnet'
+    DependsOn:
+      - Ipv6VPCCidrBlock
     Properties:
       CidrBlock: !FindInMap [ CIDR, PublicSubnet2, IP ]
+      Ipv6CidrBlock: !Sub ['${Param1}21::/64', {
+        Param1: !Select ['0', !Split ['00::/', !Select [0, !GetAtt 'VPC.Ipv6CidrBlocks']]]}]
       MapPublicIpOnLaunch: true
       AvailabilityZone: !Select 
         - '1'

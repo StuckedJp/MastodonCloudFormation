@@ -175,7 +175,7 @@ Resources:
           Value: !Ref Tag1Value
         - Key: !Ref Tag2Key
           Value: !Ref Tag2Value
-      IpAddressType: ipv4
+      IpAddressType: dualstack
   MastodonInstanceApplicationLoadBalancerListenerHttps:
     Type: 'AWS::ElasticLoadBalancingV2::Listener'
     Properties:
