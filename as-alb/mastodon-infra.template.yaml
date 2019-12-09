@@ -298,6 +298,13 @@ Resources:
       DestinationCidrBlock: !FindInMap [ CIDR, All, IP ]
       GatewayId: !Ref InternetGW
       RouteTableId: !Ref VPCRouteTable
+  VPCRouteTableEoigRoute:
+    Type: 'AWS::EC2::Route'
+    DependsOn: VPCGatewayAttachment
+    Properties:
+      DestinationIpv6CidrBlock: !FindInMap [ CIDR, All, IPv6 ]
+      GatewayId: !Ref InternetGW
+      RouteTableId: !Ref VPCRouteTable
 
   #
   # Subnet
@@ -401,6 +408,18 @@ Resources:
       Protocol: 6
       RuleAction: allow
       RuleNumber: 110
+  PublicSubnetNetworkAclEntryIngressHttpIpv6:
+    Type: 'AWS::EC2::NetworkAclEntry'
+    Properties:
+      Ipv6CidrBlock: !FindInMap [ CIDR, All, IPv6 ]
+      Egress: false
+      NetworkAclId: !Ref PublicSubnetNetworkAcl
+      PortRange:
+        From: 80
+        To: 80
+      Protocol: 6
+      RuleAction: allow
+      RuleNumber: 115
   PublicSubnetNetworkAclEntryIngressHttps:
     Type: 'AWS::EC2::NetworkAclEntry'
     Properties:
@@ -413,6 +432,18 @@ Resources:
       Protocol: 6
       RuleAction: allow
       RuleNumber: 120
+  PublicSubnetNetworkAclEntryIngressHttpsIpv6:
+    Type: 'AWS::EC2::NetworkAclEntry'
+    Properties:
+      Ipv6CidrBlock: !FindInMap [ CIDR, All, IPv6 ]
+      Egress: false
+      NetworkAclId: !Ref PublicSubnetNetworkAcl
+      PortRange:
+        From: 443
+        To: 443
+      Protocol: 6
+      RuleAction: allow
+      RuleNumber: 125
   PublicSubnetNetworkAclEntryIngressSSH:
     Type: 'AWS::EC2::NetworkAclEntry'
     Properties:
@@ -437,18 +468,18 @@ Resources:
       Protocol: 6
       RuleAction: allow
       RuleNumber: 190
-  PublicSubnetNetworkAclEntryIngressICMP:
+  PublicSubnetNetworkAclEntryIngressConnectBackIpv6:
     Type: 'AWS::EC2::NetworkAclEntry'
     Properties:
-      CidrBlock: !FindInMap [ CIDR, All, IP ]
+      Ipv6CidrBlock: !FindInMap [ CIDR, All, IPv6 ]
       Egress: false
-      Icmp:
-        Code: -1
-        Type: -1
       NetworkAclId: !Ref PublicSubnetNetworkAcl
-      Protocol: 1
+      PortRange:
+        From: 1024
+        To: 65535
+      Protocol: 6
       RuleAction: allow
-      RuleNumber: 200
+      RuleNumber: 195
   PublicSubnetNetworkAclEntryIngressPrivateSubnet1:
     Type: 'AWS::EC2::NetworkAclEntry'
     Properties:
@@ -476,6 +507,15 @@ Resources:
       Protocol: -1
       RuleAction: allow
       RuleNumber: 100
+  PublicSubnetNetworkAclEntryEgressIpv6:
+    Type: 'AWS::EC2::NetworkAclEntry'
+    Properties:
+      Ipv6CidrBlock: !FindInMap [ CIDR, All, IPv6 ]
+      Egress: true
+      NetworkAclId: !Ref PublicSubnetNetworkAcl
+      Protocol: -1
+      RuleAction: allow
+      RuleNumber: 105
   PublicSubnet1RouteTableAssociation:
     Type: 'AWS::EC2::SubnetRouteTableAssociation'
     Properties:
@@ -688,10 +728,26 @@ Resources:
       ToPort: 80
       GroupId: !Ref SecurityGroupMastodonInstance
       IpProtocol: tcp
+  SecurityGroupMastodonInstanceIngressHttpIpv6:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      CidrIpv6: !FindInMap [ CIDR, All, IPv6 ]
+      FromPort: 80
+      ToPort: 80
+      GroupId: !Ref SecurityGroupMastodonInstance
+      IpProtocol: tcp
   SecurityGroupMastodonInstanceIngressHttps:
     Type: 'AWS::EC2::SecurityGroupIngress'
     Properties:
       CidrIp: !FindInMap [ CIDR, All, IP ]
+      FromPort: 443
+      ToPort: 443
+      GroupId: !Ref SecurityGroupMastodonInstance
+      IpProtocol: tcp
+  SecurityGroupMastodonInstanceIngressHttpsIpv6:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      CidrIpv6: !FindInMap [ CIDR, All, IPv6 ]
       FromPort: 443
       ToPort: 443
       GroupId: !Ref SecurityGroupMastodonInstance
