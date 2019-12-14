@@ -1,2 +1,2 @@
 require 'chefspec'
-require 'chefspec/policyfile'
+require 'chefspec/berkshelf'

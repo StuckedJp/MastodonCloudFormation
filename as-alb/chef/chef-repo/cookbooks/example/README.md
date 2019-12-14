@@ -4,7 +4,7 @@ An example cookbook
 
 ## Requirements
 
-### Platforms:
+### Platform:
 
 _No platforms defined_
 

@@ -2,9 +2,9 @@
 # Cookbook:: install_rbenv
 # Recipe:: default
 #
-# Copyright:: 2019, The Authors, All Rights Reserved.
+# Copyright:: 2019, Sakai Takao, All Rights Reserved.
 
-user_data = data_bag_item('user', 'mastodon')
+user_data = node['user']
 ruby_version = '2.6.5'
 user = 'mastodon'
 group = 'mastodon'
@@ -26,6 +26,10 @@ cookbook_file "#{home}/.bash_profile" do
     user        user
     group       group
     mode        '0644'
+end
+
+link "#{home}/.bashrc" do
+    to "#{home}/.bash_profile"
 end
 
 execute "install_ruby_build" do

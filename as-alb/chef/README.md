@@ -37,15 +37,15 @@ https://docs.joinmastodon.org/administration/installation/
             atomic.vm.network :forwarded_port, id: "ssh", guest: 22, host: 2201
             atomic.vm.network "private_network", ip: "192.168.100.10", virtualbox__intnet: "intra"
             atomic.vm.provider "virtualbox" do |vb|
-            vb.memory = "2048"
+              vb.memory = "2048"
             end
             atomic.vm.provision "shell", inline: <<-SHELL
-            apt update
-            apt upgrade -y
+              apt update
+              apt upgrade -y
             SHELL
             atomic.vm.provision "chef_solo" do |chef|
-            chef.version = "14.12.9"
-            chef.add_recipe "chefdk"
+              chef.version = "14.12.9"
+              chef.add_recipe "chefdk"
             end
         end
 
@@ -87,6 +87,7 @@ https://docs.joinmastodon.org/administration/installation/
 1. `vagrant ssh workstation` で workstation にログインし、以下を実行する。
     ```
     chef gem install knife-zero
+    chef gem install knife-zero -v 1.19.6  # Chefdk 1.6.11
     ```
 
 ## リポジトリの作成

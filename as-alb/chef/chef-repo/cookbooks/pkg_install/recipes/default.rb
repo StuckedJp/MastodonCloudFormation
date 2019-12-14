@@ -2,7 +2,7 @@
 # Cookbook:: pkg_install
 # Recipe:: default
 #
-# Copyright:: 2019, The Authors, All Rights Reserved.
+# Copyright:: 2019, Sakai Takao, All Rights Reserved.
 
 # curl
 %w{

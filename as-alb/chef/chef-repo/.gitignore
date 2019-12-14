@@ -48,33 +48,33 @@ nodes
 # tmp/*
 # public/system/*
 
-# ## nodejs
+# ##nodejs
 # node_modules
 
-# ## Nuget (exclude all exes except for the one in the global build folder)
+# # Nuget (exclude all exes except for the one in the global build folder)
 # nuget.exe
 # !build/nuget/nuget.exe
 # *.nupkg
 # # NuGet packages (based on default naming convention)
 # [Bb]uild/[Pp]ackages/
 
-# ## Build System # common build output folders
+# # Build System # common build output folders
 # build-common/
 # output/
 
-# ## VM images
+# ## Probably not a good idea to be keeing VM inages in source control
 # *.vhd
 # *.vhdx
 
 # ## Pester Test summary
 # Test.xml
 
-# ## JetBrains files
+# ##Webstorm files
 # *.idea
 # .idea
 # .idea/
 
-# ## Mono files
+# ##Mono (or something?) files
 # *.pidb
 # *.userprefs
 
@@ -110,14 +110,14 @@ nodes
 # [Rr]elease*/
 # Ankh.NoLoad
 
-# ## Tooling
+# ##Tooling
 # _ReSharper*/
 # *.[Rr]e[Ss]harper
 # [Tt]est[Rr]esult*
 # .[Jj]ust[Cc]ode
 # *ncrunch*
 
-# ## Subversion files
+# ##Subversion files
 # .svn
 
 # ## Office Temp Files

@@ -2,9 +2,9 @@
 # Cookbook:: add_user
 # Recipe:: default
 #
-# Copyright:: 2019, The Authors, All Rights Reserved.
+# Copyright:: 2019, Sakai Takao, All Rights Reserved.
 
-user_data = data_bag_item('user', 'mastodon')
+user_data = node['user']
 
 group 'mastodon' do
     action  :create

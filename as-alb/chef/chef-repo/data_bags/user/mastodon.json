@@ -1,7 +1,0 @@
-{
-  "id": "mastodon",
-  "shell": "/bin/bash",
-  "home": "/home/mastodon",
-  "password": "anata-Download-java",
-  "hashed_password": "$1$N7vzugcZ$JAsERyHtdG7ENc9dkMxHY."
-}
