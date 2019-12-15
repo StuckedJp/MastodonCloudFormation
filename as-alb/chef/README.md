@@ -222,7 +222,7 @@ knife node -c conf.rb run_list add node 'recipe[pkg_install]'
 knife node -c conf.rb run_list add node 'recipe[add_user]'
 knife node -c conf.rb run_list add node 'recipe[install_rbenv]'
 knife node -c conf.rb run_list add node 'recipe[setup_database]'
-knife node -c conf.rb run_list add node 'recipe[setup_mastodon]'
+knife node -c conf.rb run_list add node 'recipe[install_mastodon]'
 knife node -c conf.rb run_list add node 'recipe[setup_nginx]'
 knife node -c conf.rb run_list add node 'recipe[setup_mastodon_service]'
 
