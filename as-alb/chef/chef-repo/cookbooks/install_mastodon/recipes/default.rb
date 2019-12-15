@@ -76,15 +76,6 @@ template "/tmp/drop_database.sql" do
     variables   ({:db_name => server_data['database']['db_name']})
 end
 
-execute "clear_database" do
-    user        "root"
-    command <<-EOL
-        sudo -u postgres psql < /tmp/drop_database.sql
-    EOL
-    action          :run
-    ignore_failure  true
-end
-
 execute "init_database" do
     user        "root"
     command <<-EOL

@@ -1,0 +1,358 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: CloudFormation template file for Mastodon (Bastion).
+Parameters:
+  Tag1Key:
+    Description: Tag key
+    Type: String
+  Tag1Value:
+    Description: Tag value
+    Type: String
+  Tag2Key:
+    Description: Tag key
+    Type: String
+  Tag2Value:
+    Description: Tag value
+    Type: String
+  InfraStackName:
+    Description: Stack name of infrastructure.
+    Type: String
+  CookbookUrl:
+    Description: URL for cookbooks on S3.
+    Type: String
+  MastodonFQDN:
+    Description: FQDN of Mastodon instance
+    Type: String
+  MastodonVersion:
+    Description: Release tag name of Mastodon
+    Type: String
+  SecretKeyBase:
+    Description: SECRET_KEY_BASE value.
+    Type: String
+  OtpSecret:
+    Description: OTP_SECRET value.
+    Type: String
+  UseExistingDB:
+    Description: Uses existing Database
+    Type: String
+    AllowedValues:
+      - 'true'
+      - 'false'
+  BastionInstanceType:
+    Description: EC2 instance type of bastion server
+    Type: String
+    Default: t2.micro
+    ConstraintDescription: must be a valid EC2 instance type.
+  BastionInstanceAMI:
+    Description: EC2 instance AMI ID of bastion server.
+    Type: 'AWS::EC2::Image::Id'
+    ConstraintDescription: must be a valid EC2 AMI ID.
+  EC2KeyPair:
+    Description: EC2 Key Pair Name
+    Type: 'AWS::EC2::KeyPair::KeyName'
+    ConstraintDescription: must be a valid EC2 Key Pair Name.
+  PackageS3Bucket:
+    Description: S3 bucket name for Mastodon pre-build package.
+    Type: String
+    ConstraintDescription: must be a valid S3 bucket name.
+  PackageS3Prefix:
+    Description: S3 folder name for Mastodon pre-build package.
+    Type: String
+    ConstraintDescription: must be a valid S3 key name.
+  PackageName:
+    Description: File name for Mastodon pre-build package.
+    Type: String
+    ConstraintDescription: must be a valid file name.
+  ContentsS3Bucket:
+    Description: S3 bucket name of content cache.
+    Type: String
+    ConstraintDescription: must be a valid S3 bucket name.
+  ContentsAWSAccessKey:
+    Description: AWSAccessKey for S3 access.
+    Type: String
+  ContentsAWSAccessSecret:
+    Description: AWSAccessSecret for S3 access.
+    Type: String
+  SMTPHostName:
+    Description: SMTP host name.
+    Type: String
+  SMTPHostPort:
+    Description: SMTP host port number.
+    Default: '587'
+    Type: Number
+  SMTPUserName:
+    Description: SMTP user name.
+    Type: String
+  SMTPPassword:
+    Description: SMTP user password.
+    Type: String
+  SMTPSenderAddress:
+    Description: E-mail address of mail sender.
+    Type: String
+    ConstraintDescription: must be a valid e-mail address.
+Mappings:
+  CIDR:
+    VPC:
+      IP: 10.0.0.0/16
+    PrivateSubnet1:
+      IP: 10.0.10.0/24
+    PrivateSubnet2:
+      IP: 10.0.11.0/24
+    PublicSubnet1:
+      IP: 10.0.20.0/24
+    PublicSubnet2:
+      IP: 10.0.21.0/24
+    All:
+      IP: 0.0.0.0/0
+  InstanceConfig:
+    Storage:
+      ValueByGb: '20'
+Conditions:
+  IsVirginia: !Equals 
+    - !Ref 'AWS::Region'
+    - us-east-1
+  IsMaster: !Equals 
+    - !Ref MastodonVersion
+    - ''
+  HasSecretKeyBase: !Not 
+    - !Equals 
+      - !Ref SecretKeyBase
+      - ''
+  HasOtpSecret: !Not 
+    - !Equals 
+      - !Ref OtpSecret
+      - ''
+  IsUseExistingDB: !Equals 
+    - !Ref UseExistingDB
+    - 'true'
+Resources:
+  BastionInstanceIAMRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: 's3:*'
+                Resource: !Join 
+                  - ''
+                  - - 'arn:aws:s3:::'
+                    - !Ref ContentsS3Bucket
+              - Effect: Allow
+                Action: 's3:*'
+                Resource: !Join 
+                  - ''
+                  - - 'arn:aws:s3:::'
+                    - !Ref ContentsS3Bucket
+                    - /*
+              - Effect: Allow
+                Action: 's3:*'
+                Resource: !Join 
+                  - ''
+                  - - 'arn:aws:s3:::'
+                    - !Ref PackageS3Bucket
+              - Effect: Allow
+                Action: 's3:*'
+                Resource: !Join 
+                  - ''
+                  - - 'arn:aws:s3:::'
+                    - !Ref PackageS3Bucket
+                    - /*
+  BastionInstanceProfile:
+    Type: 'AWS::IAM::InstanceProfile'
+    Properties:
+      Roles:
+        - !Ref BastionInstanceIAMRole
+
+  OpsWorksServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - opsworks.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      Policies:
+        - PolicyName: opsworks-service
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'ec2:*'
+                  - 'iam:PassRole'
+                  - 'cloudwatch:GetMetricStatistics'
+                  - 'elasticloadbalancing:*'
+                Resource: '*'
+
+  BastionOpsWorksStack:
+    Type: AWS::OpsWorks::Stack
+    Properties:
+      AgentVersion: 'LATEST'
+      ConfigurationManager: 
+        Name: 'Chef'
+        Version: '12'
+      CustomCookbooksSource: 
+        Username:
+          !ImportValue 
+            'Fn::Sub': '${InfraStackName}-AWSAccessKey'
+        Password:
+          !ImportValue 
+            'Fn::Sub': '${InfraStackName}-AWSAccessSecret'
+        Type: 's3'
+        Url: !Ref CookbookUrl
+      CustomJson:
+        server:
+          source:
+            tag: !Ref MastodonVersion
+          federation:
+            local_domain: !Ref MastodonFQDN
+          database:
+            db_host:
+              !ImportValue 
+                'Fn::Sub': '${InfraStackName}-RDSInstanceEndPoint'
+            db_user:
+              !ImportValue 
+                'Fn::Sub': '${InfraStackName}-DBMasterUsername'
+            db_name:
+              !ImportValue 
+                'Fn::Sub': '${InfraStackName}-DBName'
+            db_pass:
+              !ImportValue 
+                'Fn::Sub': '${InfraStackName}-DBMasterUserPassword'
+            db_port:
+              !ImportValue 
+                'Fn::Sub': '${InfraStackName}-RDSInstanceEndPointPort'
+          cache:
+            redis_host:
+              !ImportValue 
+                'Fn::Sub': '${InfraStackName}-ElasticacheEndPoint'
+            redis_port:
+              !ImportValue 
+                'Fn::Sub': '${InfraStackName}-ElasticacheEndPointPort'
+          mail:
+            smtp_server: !Ref SMTPHostName
+            smtp_port: !Ref SMTPHostPort
+            smtp_login: !Ref SMTPUserName
+            smtp_password: !Ref SMTPPassword
+            smtp_from_address: !Ref SMTPSenderAddress
+          s3:
+            aws_access_key_id: !Ref ContentsAWSAccessKey
+            aws_secret_access_key: !Ref ContentsAWSAccessSecret
+            s3_bucket: !Ref ContentsS3Bucket
+            s3_region: !Ref 'AWS::Region'
+            s3_hostname:
+              !If
+                - IsVirginia
+                - s3.amazonaws.com
+                - !Join
+                  - ''
+                  - - s3-
+                    - !Ref 'AWS::Region'
+                    - .amazonaws.com
+        user:
+          shell: "/bin/bash"
+          home: "/home/mastodon"
+      DefaultAvailabilityZone: 
+        !ImportValue
+          'Fn::Sub': '${InfraStackName}-SubnetAvailabilityZone1'
+      DefaultSubnetId:
+        !ImportValue
+          'Fn::Sub': '${InfraStackName}-PublicSubnet1'
+      DefaultInstanceProfileArn: !GetAtt [ BastionInstanceProfile, Arn ]
+      DefaultOs: 'Ubuntu 18.04 LTS'
+      DefaultRootDeviceType: 'ebs'
+      DefaultSshKeyName: !Ref EC2KeyPair
+      # ElasticIps: 
+      #   - ElasticIp
+      HostnameTheme: 'Wild_Cats'
+      Name: !Sub '${AWS::StackName}-OpsWorksStack'
+      # RdsDbInstances: 
+      #   - RdsDbInstance
+      ServiceRoleArn: !GetAtt [ OpsWorksServiceRole, Arn ]
+      Tags:
+        - Key: !Ref Tag1Key
+          Value: !Ref Tag1Value
+        - Key: !Ref Tag2Key
+          Value: !Ref Tag2Value
+      UseCustomCookbooks: true
+      UseOpsworksSecurityGroups: false
+      VpcId:
+        !ImportValue
+          'Fn::Sub': '${InfraStackName}-VPC'
+
+  BastionOpsWorksLayer:
+    Type: AWS::OpsWorks::Layer
+    Properties:
+      AutoAssignElasticIps: false
+      AutoAssignPublicIps: true
+      CustomInstanceProfileArn: !GetAtt [ BastionInstanceProfile, Arn ]
+      CustomRecipes: 
+        Configure: 
+          - pkg_install
+          - add_user
+          - install_rbenv
+          - install_mastodon
+      CustomSecurityGroupIds: 
+        - !ImportValue
+            'Fn::Sub': '${InfraStackName}-SecurityGroupBastionInstance'
+      EnableAutoHealing: false
+      InstallUpdatesOnBoot: true
+      Name: !Sub '${AWS::StackName}-OpsWorksLayer'
+      Shortname: 'bastion'
+      StackId: !Ref BastionOpsWorksStack
+      Tags: 
+        - Key: !Ref Tag1Key
+          Value: !Ref Tag1Value
+        - Key: !Ref Tag2Key
+          Value: !Ref Tag2Value
+      Type: custom
+      UseEbsOptimizedInstances: true
+
+  BastionOpsWorksInstance:
+    Type: AWS::OpsWorks::Instance
+    Properties: 
+      AgentVersion: 'INHERIT'
+      # AmiId: !Ref BastionInstanceAMI
+      Architecture: x86_64
+      AvailabilityZone: 
+        !ImportValue
+          'Fn::Sub': '${InfraStackName}-SubnetAvailabilityZone1'
+      EbsOptimized: true
+      # ElasticIps:
+      #   - String
+      # Hostname: String
+      InstallUpdatesOnBoot: true
+      InstanceType: !Ref BastionInstanceType
+      LayerIds: 
+        - !Ref BastionOpsWorksLayer
+      Os: 'Ubuntu 18.04 LTS'
+      RootDeviceType: ebs
+      SshKeyName: !Ref EC2KeyPair
+      StackId: !Ref BastionOpsWorksStack
+      SubnetId:
+        !ImportValue
+          'Fn::Sub': '${InfraStackName}-PublicSubnet1'
+      Tenancy: default
+      VirtualizationType: hvm
+ 
+# Outputs:
+#   BastionInstanceIPAddress:
+#     Description: Host name of Bastion instance
+#     Value: !GetAtt 
+#       - BastionInstance
+#       - PublicIp
