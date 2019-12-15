@@ -68,14 +68,6 @@ execute "generate_secret" do
     not_if  "grep \"# SECRETS\" #{home}/#{fqdn}/.env.production"
 end
 
-template "/tmp/drop_database.sql" do
-    source      "drop_database.sql.erb"
-    mode        "0644"
-    owner       user
-    group       group
-    variables   ({:db_name => server_data['database']['db_name']})
-end
-
 execute "init_database" do
     user        "root"
     command <<-EOL
