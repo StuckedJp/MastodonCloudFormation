@@ -219,6 +219,10 @@ Resources:
         server:
           source:
             tag: !Ref MastodonVersion
+          package:
+            package_name: !Ref PackageName
+            s3_bucket: !Ref PackageS3Bucket
+            s3_prefix: !Ref PackageS3Prefix
           federation:
             local_domain: !Ref MastodonFQDN
           database:
@@ -302,11 +306,13 @@ Resources:
       AutoAssignPublicIps: true
       CustomInstanceProfileArn: !GetAtt [ BastionInstanceProfile, Arn ]
       CustomRecipes: 
-        Setup: 
+        Setup:
           - pkg_install
           - add_user
           - install_rbenv
           - install_mastodon
+        Configure:
+          - upload_precompiled
       CustomSecurityGroupIds: 
         - !ImportValue
             'Fn::Sub': '${InfraStackName}-SecurityGroupBastionInstance'
