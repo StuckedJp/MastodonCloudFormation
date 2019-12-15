@@ -1,0 +1,45 @@
+{
+  "Parameters": [
+    { "ParameterKey": "Tag1Key", "ParameterValue": "" },
+    { "ParameterKey": "Tag1Value", "ParameterValue": "" },
+    { "ParameterKey": "Tag2Key", "ParameterValue": "" },
+    { "ParameterKey": "Tag2Value", "ParameterValue": "" },
+
+    { "ParameterKey": "InfraStackName", "ParameterValue": "" },
+    { "ParameterKey": "CookbookUrl", "ParameterValue": "" },
+
+    { "ParameterKey": "MastodonFQDN", "ParameterValue": "" },
+    { "ParameterKey": "MastodonVersion", "ParameterValue": "" },
+
+    { "ParameterKey": "SecretKeyBase", "ParameterValue": "" },
+    { "ParameterKey": "OtpSecret", "ParameterValue": "" },
+    { "ParameterKey": "UseExistingDB", "ParameterValue": "" },
+
+    { "ParameterKey": "BastionInstanceType", "ParameterValue": "" },
+    { "ParameterKey": "BastionInstanceAMI", "ParameterValue": "" },
+    { "ParameterKey": "EC2KeyPair", "ParameterValue": "" },
+
+    { "ParameterKey": "PackageS3Bucket", "ParameterValue": "" },
+    { "ParameterKey": "PackageS3Prefix", "ParameterValue": "" },
+    { "ParameterKey": "PackageName", "ParameterValue": "" },
+
+    { "ParameterKey": "ContentsS3Bucket", "ParameterValue": "" },
+    { "ParameterKey": "ContentsAWSAccessKey", "ParameterValue": "" },
+    { "ParameterKey": "ContentsAWSAccessSecret", "ParameterValue": "" },
+
+    { "ParameterKey": "SMTPHostName", "ParameterValue": "" },
+    { "ParameterKey": "SMTPHostPort", "ParameterValue": "" },
+    { "ParameterKey": "SMTPUserName", "ParameterValue": "" },
+    { "ParameterKey": "SMTPPassword", "ParameterValue": "" },
+    { "ParameterKey": "SMTPSenderAddress", "ParameterValue": "" }
+  ],
+  "Capabilities": [
+    "CAPABILITY_IAM"
+  ],
+  "Tags": [
+    {
+      "Key": "",
+      "Value": ""
+    }
+  ]
+}
