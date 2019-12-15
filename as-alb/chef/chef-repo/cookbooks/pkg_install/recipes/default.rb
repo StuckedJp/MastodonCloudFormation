@@ -7,10 +7,20 @@
 # curl
 %w{
     curl
+    python-pip
+    python-setuptools
 }.each do |pkg|
     package pkg do
         action [ :install ]
     end
+end
+
+
+# AWS CLI
+execute "install_aws_cli" do
+    user "root"
+    command "pip install --upgrade pip awscli"
+    action :run
 end
 
 
@@ -61,9 +71,8 @@ end
     libgdbm5 
     libgdbm-dev
     nginx
-    redis-server 
     redis-tools 
-    postgresql 
+    postgresql-client
     postgresql-contrib
     certbot 
     python-certbot-nginx
