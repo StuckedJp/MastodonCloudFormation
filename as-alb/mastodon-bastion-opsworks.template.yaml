@@ -302,7 +302,7 @@ Resources:
       AutoAssignPublicIps: true
       CustomInstanceProfileArn: !GetAtt [ BastionInstanceProfile, Arn ]
       CustomRecipes: 
-        Configure: 
+        Setup: 
           - pkg_install
           - add_user
           - install_rbenv
@@ -350,9 +350,9 @@ Resources:
       Tenancy: default
       VirtualizationType: hvm
  
-# Outputs:
-#   BastionInstanceIPAddress:
-#     Description: Host name of Bastion instance
-#     Value: !GetAtt 
-#       - BastionInstance
-#       - PublicIp
+Outputs:
+  BastionInstanceIPAddress:
+    Description: IP address of Bastion instance
+    Value: !GetAtt 
+      - BastionOpsWorksInstance
+      - PublicIp
