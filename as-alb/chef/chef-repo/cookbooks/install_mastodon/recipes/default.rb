@@ -31,11 +31,19 @@ execute "checkout_mastodon" do
     action :run
 end
 
-execute "build_mastodon" do
+execute "bundle_install" do
     user        "root"
     command <<-EOL
         sudo -i -u #{user} git config --global url."https://".insteadOf git://
         sudo -i -u #{user} bash -c "cd #{home}/#{fqdn} && bundle install -j4 --deployment --without development test"
+        sudo -i -u #{user} bash -c "cd #{home}/#{fqdn} && bundle update --bundler"
+    EOL
+    action :run
+end
+
+execute "yarn_install" do
+    user        "root"
+    command <<-EOL
         sudo -i -u #{user} bash -c "cd #{home}/#{fqdn} && yarn install --pure-lockfile"
     EOL
     action :run
