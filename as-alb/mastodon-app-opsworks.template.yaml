@@ -205,12 +205,6 @@ Resources:
       Port: 80
       Protocol: HTTP
 
-  # AppServerElasticLoadBalancerAttachment:
-  #   Type: AWS::OpsWorks::ElasticLoadBalancerAttachment
-  #   Properties: 
-  #     ElasticLoadBalancerName: !Ref AppServerApplicationLoadBalancer
-  #     LayerId: !Ref AppServerOpsWorksLayer
-
   OpsWorksServiceRole:
     Type: AWS::IAM::Role
     Properties:
@@ -302,11 +296,12 @@ Resources:
           - pkg_install
           - alb_support::attach_to_alb
           - add_user
-          - install_rbenv
-        # Configure:
-        #   - download_precompiled
+        Deploy:
+          - download_precompiled
+          - setup_nginx
+          - setup_mastodon_service
         Shutdown:
-          - alb_support::detach_from_alb
+        - alb_support::detach_from_alb
       CustomSecurityGroupIds: 
         - !ImportValue
             'Fn::Sub': '${InfraStackName}-SecurityGroupMastodonInstance'

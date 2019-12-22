@@ -32,7 +32,6 @@ link "#{home}/.bashrc" do
     to          "#{home}/.bash_profile"
     user        user
     group       group
-    mode        '0644'
 end
 
 execute "install_ruby_build" do
