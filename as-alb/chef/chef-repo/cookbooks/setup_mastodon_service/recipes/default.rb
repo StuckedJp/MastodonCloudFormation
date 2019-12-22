@@ -2,10 +2,9 @@
 # Cookbook:: setup_mastodon_service
 # Recipe:: default
 #
-# Copyright:: 2019, The Authors, All Rights Reserved.
-server_data = data_bag_item('server', 'mastodon')
+# Copyright:: 2019, Sakai Takao, All Rights Reserved.
 
-fqdn = server_data['federation']['local_domain']
+fqdn = node['server']['federation']['local_domain']
 
 template "/etc/systemd/system/mastodon-web.service" do
     source      "mastodon-web.service.erb"

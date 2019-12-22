@@ -42,10 +42,6 @@ Parameters:
     Type: String
     Default: t2.micro
     ConstraintDescription: must be a valid EC2 instance type.
-  BastionInstanceAMI:
-    Description: EC2 instance AMI ID of bastion server.
-    Type: 'AWS::EC2::Image::Id'
-    ConstraintDescription: must be a valid EC2 AMI ID.
   EC2KeyPair:
     Description: EC2 Key Pair Name
     Type: 'AWS::EC2::KeyPair::KeyName'
@@ -333,7 +329,6 @@ Resources:
     Type: AWS::OpsWorks::Instance
     Properties: 
       AgentVersion: 'INHERIT'
-      # AmiId: !Ref BastionInstanceAMI
       Architecture: x86_64
       AvailabilityZone: 
         !ImportValue

@@ -1,5 +1,5 @@
 #
-# Cookbook:: install_mastodon
+# Cookbook:: upload_precompiled
 # Recipe:: default
 #
 # Copyright:: 2019, Sakai Takao, All Rights Reserved.
@@ -14,8 +14,8 @@ home = user_data['home']
 execute "packaging" do
     user        "root"
     command <<-EOL
-        cd #{home}
-        tar cfz #{package_data['package_name']} #{fqdn}
+        cd #{home}/../
+        tar cfz #{package_data['package_name']} mastodon
     EOL
     action :run
 end
@@ -23,7 +23,7 @@ end
 execute "upload" do
     user        "root"
     command <<-EOL
-        aws s3 cp #{home}/#{package_data['package_name']} \
+        aws s3 cp #{home}/../#{package_data['package_name']} \
             s3://#{package_data['s3_bucket']}/#{package_data['s3_prefix']}/#{package_data['package_name']}
     EOL
     action :run
