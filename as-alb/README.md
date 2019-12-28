@@ -61,18 +61,36 @@ CloudFormation テンプレートは、インフラ部分 (mastodon-infra.templa
 
 ### インフラスタックの構築
 
-1. `parameters-infra.json` をコピーして編集します。設定内容は「テンプレートパラメータ」の項目を参照してください。
+1. 以下のコマンドでインフラスタックを作成します。いくつかのリソースにはスタック名を先頭に付与します。同じリージョンに複数の Mastodon を起動することができます。
   
     ```
-    cp parameters-infra.json ,parameters-infra.json
-    # ,parameters-infra.json を編集
-    ```
-  
-1. S3 の適当な場所に `mastodon-infra.template` をアップロードします。
-1. インフラスタックを作成します。いくつかのリソースにはスタック名を先頭に付与します。同じリージョンに複数の Mastodon を起動することができます。
-  
-    ```
-    aws cloudformation create-stack --stack-name [INFRASTRUCTURE STACK NAME] --region [REGION] --template-url [URL OF mastodon-infra.template] --cli-input-json file://,parameters-infra.json
+    aws cloudformation deploy \
+    --region [REGION] \
+    --stack-name [INFRASTRUCTURE STACK NAME] \
+    --template-file mastodon-infra.template.yaml \
+    --capabilities CAPABILITY_IAM \
+    --parameter-overrides \
+        Tag1Key=.... \
+        Tag1Value=.... \
+        Tag2Key=.... \
+        Tag2Value=.... \
+        SubnetAvailabilityZone=....,.... \
+        DBInstanceClass=db.t2.micro \
+        DBName=mastodon \
+        DBEngineVersion=11.5 \
+        DBLicenseModel=postgresql-license \
+        DBMasterUsername=mastodon \
+        DBMasterUserPassword=........ \
+        DBStorageType=standard \
+        DBSnapshotIdentifier= \
+        ElastiCacheNodeType=cache.t2.micro \
+        ElastiCacheVersion=5.0.5 \
+        EC2KeyPair=.... \
+        NATInstanceType=t3.nano \
+        ContentsAWSAccessKey=........ \
+        ContentsAWSAccessSecret=............ \
+        LBAccessLogS3Bucket=.... \
+        LBAccessLogPrefix=....
     ```
   
 1. インフラスタックの構築が完了するのを待ちます。
@@ -81,17 +99,46 @@ CloudFormation テンプレートは、インフラ部分 (mastodon-infra.templa
 
 ### 踏み台スタックの構築
 
-1. `parameters-bastion.json` をコピーして編集します。設定内容は「テンプレートパラメータ」の項目を参照してください。
-  
+1. OpsWorks を使います。Cookbook を適当な S3 バケットにアップロードします。
     ```
-    cp parameters-bastion.json ,parameters-bastion.json
-    # ,parameters-bastion.json を編集
+    cd chef/chef-repo/cookbooks/
+    tar cfz ../cookbooks.tgz *
+    aws s3 cp ../cookbooks.tgz s3://[COOKBOOK BUCKET]/[COOKBOOK KEY]
+    cd ../../..
     ```
-  
-1. S3 の適当な場所に `mastodon-bastion.template` をアップロードします。
-1. 踏み台スタックを作成します。いくつかのリソースにはスタック名を先頭に付与します。
-  
+1. 以下のコマンドで踏み台スタックを作成します。いくつかのリソースにはスタック名を先頭に付与します。
     ```
+    aws cloudformation deploy \
+    --region [REGION] \
+    --stack-name [BASTION STACK NAME] \
+    --template-file mastodon-bastion-opsworks.template.yaml \
+    --capabilities CAPABILITY_IAM \
+    --parameter-overrides \
+        Tag1Key=.... \
+        Tag1Value=.... \
+        Tag2Key=.... \
+        Tag2Value=.... \
+        InfraStackName=[INFRASTRUCTURE STACK NAME] \
+        CookbookUrl=https://[COOKBOOK URL] \
+        MastodonFQDN=.... \
+        MastodonVersion=v3.0.1 \
+        SecretKeyBase= \
+        OtpSecret= \
+        UseExistingDB=false \
+        BastionInstanceType=t3.small \
+        EC2KeyPair=.... \
+        PackageS3Bucket=.... \
+        PackageS3Prefix=.... \
+        PackageName=.... \
+        ContentsS3Bucket=.... \
+        ContentsAWSAccessKey=.... \
+        ContentsAWSAccessSecret=.... \
+        SMTPHostName=.... \
+        SMTPHostPort=587 \
+        SMTPUserName=.... \
+        SMTPPassword=.... \
+        SMTPSenderAddress=....
+
     aws cloudformation create-stack --stack-name [BASTION STACK NAME] --region [REGION] --template-url [URL OF mastodon-bastion.template] --cli-input-json file://,parameters-bastion.json
     ```
 
@@ -116,18 +163,31 @@ CloudFormation テンプレートは、インフラ部分 (mastodon-infra.templa
 
 ### アプリケーションスタックの構築
 
-1. `parameters-app.json` をコピーして編集します。設定内容は「テンプレートパラメータ」の項目を参照してください。
-
-    ```
-    cp parameters-app.json ,parameters-app.json
-    # ,parameters-app.json を編集
-    ```
-  
-1. S3 の適当な場所に `mastodon-app.template` をアップロードします。
 1. アプリケーションスタックを作成します。いくつかのリソースにはスタック名を先頭に付与します。同じリージョンに複数の Mastodon を起動することができます。インフラスタックとアプリケーションスタックは 1対1で作成するようにしてください。
 
     ```
-    aws cloudformation create-stack --stack-name [APPLICATION STACK NAME] --region [REGION] --template-url [URL OF mastodon-app.template] --cli-input-json file://,parameters-app.json
+    aws cloudformation deploy \
+    --region us-west-2 \
+    --stack-name [APPLICATION SERVER STACK NAME] \
+    --template-file mastodon-app-opsworks.template.yaml \
+    --capabilities CAPABILITY_IAM \
+    --parameter-overrides \
+        Tag1Key=.... \
+        Tag1Value=.... \
+        Tag2Key=.... \
+        Tag2Value=.... \
+        InfraStackName=[INFRASTRUCTURE STACK NAME] \
+        CookbookUrl=https://[COOKBOOK URL] \
+        MastodonFQDN=.... \
+        InstanceType=t3.small \
+        EC2KeyPair=.... \
+        PackageS3Bucket=.... \
+        PackageS3Prefix=.... \
+        PackageName=.... \
+        ContentsS3Bucket=.... \
+        LBAccessLogS3Bucket=.... \
+        LBAccessLogPrefix=.... \
+        CertArn=....
     ```
 
 1. 構築が完了するとアプリケーションスタックの Output に Load Balancer のホスト名が出力されます。このホスト名にアクセスして動作確認してください。
