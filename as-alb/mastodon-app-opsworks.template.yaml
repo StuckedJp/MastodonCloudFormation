@@ -22,11 +22,6 @@ Parameters:
   MastodonFQDN:
     Description: FQDN of mastodon
     Type: String
-  InstanceType:
-    Description: Mastodon WebServer EC2 instance type
-    Type: String
-    Default: t2.micro
-    ConstraintDescription: must be a valid EC2 instance type.
   EC2KeyPair:
     Description: Mastodon WebServer EC2 Key Pair Name
     Type: 'AWS::EC2::KeyPair::KeyName'
@@ -267,7 +262,7 @@ Resources:
       DefaultRootDeviceType: 'ebs'
       DefaultSshKeyName: !Ref EC2KeyPair
       HostnameTheme: 'Wild_Cats'
-      Name: !Sub '${AWS::StackName}-OpsWorksStack'
+      Name: !Sub '${AWS::StackName}-Stack'
       ServiceRoleArn: !GetAtt [ OpsWorksServiceRole, Arn ]
       Tags:
         - Key: !Ref Tag1Key
@@ -307,7 +302,7 @@ Resources:
             'Fn::Sub': '${InfraStackName}-SecurityGroupMastodonInstance'
       EnableAutoHealing: true
       InstallUpdatesOnBoot: true
-      Name: !Sub '${AWS::StackName}-OpsWorksLayer'
+      Name: !Sub '${AWS::StackName}-Layer'
       Shortname: 'appserver'
       StackId: !Ref AppServerOpsWorksStack
       Tags: 
@@ -318,35 +313,18 @@ Resources:
       Type: custom
       UseEbsOptimizedInstances: true
 
-  AppServerOpsWorksInstance:
-    Type: AWS::OpsWorks::Instance
-    Properties: 
-      AgentVersion: 'INHERIT'
-      Architecture: x86_64
-      AvailabilityZone: 
-        !ImportValue
-          'Fn::Sub': '${InfraStackName}-SubnetAvailabilityZone1'
-      # AutoScalingType: load
-      EbsOptimized: true
-      InstallUpdatesOnBoot: true
-      InstanceType: !Ref InstanceType
-      LayerIds: 
-        - !Ref AppServerOpsWorksLayer
-      Os: 'Ubuntu 18.04 LTS'
-      RootDeviceType: ebs
-      SshKeyName: !Ref EC2KeyPair
-      StackId: !Ref AppServerOpsWorksStack
-      SubnetId:
-        !ImportValue
-          'Fn::Sub': '${InfraStackName}-PrivateSubnet1'
-      Tenancy: default
-      VirtualizationType: hvm
-
-
 Outputs:
   MastodonServerHostName:
     Description: Host name of Mastodon server
     Value: !GetAtt 
       - AppServerApplicationLoadBalancer
       - DNSName
+  AppServerOpsWorksStack:
+    Value: !Ref AppServerOpsWorksStack
+    Export:
+      Name: !Sub "${AWS::StackName}-AppServerOpsWorksStack"
+  AppServerOpsWorksLayer:
+    Value: !Ref AppServerOpsWorksLayer
+    Export:
+      Name: !Sub "${AWS::StackName}-AppServerOpsWorksLayer"
 
