@@ -1,0 +1,78 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: CloudFormation template file for Mastodon (App server).
+Parameters:
+  Tag1Key:
+    Description: Tag key
+    Type: String
+  Tag1Value:
+    Description: Tag value
+    Type: String
+  Tag2Key:
+    Description: Tag key
+    Type: String
+  Tag2Value:
+    Description: Tag value
+    Type: String
+  InfraStackName:
+    Description: Stack name of infrastructure.
+    Type: String
+  AppStackName:
+    Description: Stack name of app.
+    Type: String
+  InstanceType:
+    Description: Mastodon WebServer EC2 instance type
+    Type: String
+    Default: t2.micro
+    ConstraintDescription: must be a valid EC2 instance type.
+  EC2KeyPair:
+    Description: Mastodon WebServer EC2 Key Pair Name
+    Type: 'AWS::EC2::KeyPair::KeyName'
+    ConstraintDescription: must be a valid EC2 Key Pair Name.
+
+Mappings:
+  CIDR:
+    VPC:
+      IP: 10.0.0.0/16
+    PrivateSubnet1:
+      IP: 10.0.10.0/24
+    PrivateSubnet2:
+      IP: 10.0.11.0/24
+    PublicSubnet1:
+      IP: 10.0.20.0/24
+    PublicSubnet2:
+      IP: 10.0.21.0/24
+    All:
+      IP: 0.0.0.0/0
+  InstanceConfig:
+    Storage:
+      ValueByGb: '20'
+Conditions:
+  IsVirginia: !Equals 
+    - !Ref 'AWS::Region'
+    - us-east-1
+
+Resources:
+  AppServerOpsWorksInstance:
+    Type: AWS::OpsWorks::Instance
+    Properties: 
+      AgentVersion: 'INHERIT'
+      Architecture: x86_64
+      AvailabilityZone: 
+        !ImportValue
+          'Fn::Sub': '${InfraStackName}-SubnetAvailabilityZone1'
+      EbsOptimized: true
+      InstallUpdatesOnBoot: true
+      InstanceType: !Ref InstanceType
+      LayerIds:
+        - !ImportValue
+          "Fn::Sub": "${AppStackName}-AppServerOpsWorksLayer"
+      Os: 'Ubuntu 18.04 LTS'
+      RootDeviceType: ebs
+      SshKeyName: !Ref EC2KeyPair
+      StackId: !ImportValue
+        "Fn::Sub": "${AppStackName}-AppServerOpsWorksStack"
+      SubnetId:
+        !ImportValue
+          'Fn::Sub': '${InfraStackName}-PrivateSubnet1'
+      Tenancy: default
+      VirtualizationType: hvm
