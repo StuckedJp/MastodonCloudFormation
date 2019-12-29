@@ -221,6 +221,9 @@ Resources:
             s3_prefix: !Ref PackageS3Prefix
           federation:
             local_domain: !Ref MastodonFQDN
+            otp_secret: !Ref OtpSecret
+            secret_key_base: !Ref SecretKeyBase
+            use_existing_db: !Ref UseExistingDB
           database:
             db_host:
               !ImportValue 
@@ -280,7 +283,7 @@ Resources:
       # ElasticIps: 
       #   - ElasticIp
       HostnameTheme: 'Wild_Cats'
-      Name: !Sub '${AWS::StackName}-OpsWorksStack'
+      Name: !Sub '${AWS::StackName}-Stack'
       # RdsDbInstances: 
       #   - RdsDbInstance
       ServiceRoleArn: !GetAtt [ OpsWorksServiceRole, Arn ]
@@ -314,7 +317,7 @@ Resources:
             'Fn::Sub': '${InfraStackName}-SecurityGroupBastionInstance'
       EnableAutoHealing: false
       InstallUpdatesOnBoot: true
-      Name: !Sub '${AWS::StackName}-OpsWorksLayer'
+      Name: !Sub '${AWS::StackName}-Layer'
       Shortname: 'bastion'
       StackId: !Ref BastionOpsWorksStack
       Tags: 

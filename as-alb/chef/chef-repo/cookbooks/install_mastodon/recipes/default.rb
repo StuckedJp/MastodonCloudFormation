@@ -57,23 +57,50 @@ template "#{home}/#{fqdn}/.env.production" do
     variables   ({:server_data => server_data})
 end
 
-execute "generate_secret" do
+execute "generate_secret_key_base" do
     user        "root"
     command <<-EOL
-        echo "# SECRETS" >> "#{home}/#{fqdn}/.env.production"
-
         SECRET_KEY_BASE=$(sudo -i -u #{user} bash -c "cd #{home}/#{fqdn} && RAILS_ENV=production bundle exec rake secret")
         echo "SECRET_KEY_BASE=$SECRET_KEY_BASE" >> "#{home}/#{fqdn}/.env.production"
-
-        OTP_SECRET=$(sudo -i -u #{user} bash -c "cd #{home}/#{fqdn} && RAILS_ENV=production bundle exec rake secret")
-        echo "OTP_SECRET=$OTP_SECRET" >> "#{home}/#{fqdn}/.env.production"
-
-        sudo -i -u #{user} bash -c "cd #{home}/#{fqdn} && RAILS_ENV=production bundle exec rake mastodon:webpush:generate_vapid_key >> \"#{home}/#{fqdn}/.env.production\""
-
-        echo "# SECRETS" >> "#{home}/#{fqdn}/.env.production"
     EOL
     action :run
-    not_if  "grep \"# SECRETS\" #{home}/#{fqdn}/.env.production"
+    only_if { server_data['federation']['secret_key_base'] == "" }
+end
+execute "set_secret_key_base" do
+    user        "root"
+    command <<-EOL
+        echo "SECRET_KEY_BASE=#{server_data['federation']['secret_key_base']}" >> "#{home}/#{fqdn}/.env.production"
+    EOL
+    action :run
+    not_if { server_data['federation']['secret_key_base'] == "" }
+end
+
+
+execute "generate_otp_secret" do
+    user        "root"
+    command <<-EOL
+        OTP_SECRET=$(sudo -i -u #{user} bash -c "cd #{home}/#{fqdn} && RAILS_ENV=production bundle exec rake secret")
+        echo "OTP_SECRET=$OTP_SECRET" >> "#{home}/#{fqdn}/.env.production"
+    EOL
+    action :run
+    only_if { server_data['federation']['otp_secret'] == "" }
+end
+execute "set_otp_secret" do
+    user        "root"
+    command <<-EOL
+        echo "OTP_SECRET=#{server_data['federation']['otp_secret']}" >> "#{home}/#{fqdn}/.env.production"
+    EOL
+    action :run
+    not_if { server_data['federation']['otp_secret'] == "" }
+end
+
+
+execute "generate_webpush_key" do
+    user        "root"
+    command <<-EOL
+        sudo -i -u #{user} bash -c "cd #{home}/#{fqdn} && RAILS_ENV=production bundle exec rake mastodon:webpush:generate_vapid_key >> \"#{home}/#{fqdn}/.env.production\""
+    EOL
+    action :run
 end
 
 execute "init_database" do
@@ -82,6 +109,7 @@ execute "init_database" do
         sudo -i -u #{user} bash -c "cd #{home}/#{fqdn} && RAILS_ENV=production SAFETY_ASSURED=1 bundle exec rails db:setup"
     EOL
     action :run
+    only_if { server_data['federation']['use_existing_db'] == "false" }
 end
 
 execute "precompile" do
