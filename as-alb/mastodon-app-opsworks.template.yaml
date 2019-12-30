@@ -114,7 +114,7 @@ Resources:
                 Resource: '*'
               - Effect: Allow
                 Action: 'acm:*'
-                Resource: !Ref CertArn
+                Resource: "*"
   AppServerInstanceProfile:
     Type: 'AWS::IAM::InstanceProfile'
     Properties:
