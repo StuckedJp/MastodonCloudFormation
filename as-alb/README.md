@@ -190,9 +190,36 @@ CloudFormation テンプレートは、インフラ部分 (mastodon-infra.templa
         CertArn=....
     ```
 
-1. 構築が完了するとアプリケーションスタックの Output に Load Balancer のホスト名が出力されます。このホスト名にアクセスして動作確認してください。
-    * Mastodon の構築に成功すると EC2 インスタンスを再起動します。アクセスできるようになるまで 3分程度時間がかかります。
+1. 構築が完了するとアプリケーションスタックの Output に Load Balancer のホスト名が出力されます。
     * ドメインをお持ちの場合は、このホスト名をDNS の CNAME レコードに設定します。
+
+
+
+
+### アプリケーションインスタンススタックの構築
+
+1. アプリケーションインスタンススタックを作成します。
+
+    ```
+    aws cloudformation deploy \
+    --region us-east-1 \
+    --stack-name [APPLICATION INSTANCE STACK NAME] \
+    --template-file mastodon-app-instance.template.yaml \
+    --capabilities CAPABILITY_IAM \
+    --parameter-overrides \
+        Tag1Key=.... \
+        Tag1Value=.... \
+        Tag2Key=.... \
+        Tag2Value=.... \
+        InfraStackName=[INFRASTRUCTURE STACK NAME] \
+        AppStackName=[APPLICATION SERVER STACK NAME] \
+        InstanceType=.... \
+        EC2KeyPair=....
+    ```
+
+1. 構築が完了すると Load Balancer のホスト名で Mastodon のサービスが起動します。アクセスして動作確認します。
+
+
 
 
 #### Mastodon EC2 インスタンスへのログイン
