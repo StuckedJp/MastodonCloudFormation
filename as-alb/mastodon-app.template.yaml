@@ -284,8 +284,8 @@ Resources:
       CustomJson:
         alb_helper:
           target_group_arn: !Ref AppServerApplicationLoadBalancerTargetGroupHttp
-          connection_draining_timeout: 750
-          state_check_frequency: 30
+          # connection_draining_timeout: 750
+          # state_check_frequency: 30
       CustomRecipes:
         Setup:
           - pkg_install
