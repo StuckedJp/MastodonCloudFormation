@@ -258,15 +258,7 @@ Resources:
             aws_secret_access_key: !Ref ContentsAWSAccessSecret
             s3_bucket: !Ref ContentsS3Bucket
             s3_region: !Ref 'AWS::Region'
-            s3_hostname:
-              !If
-                - IsVirginia
-                - s3.dualstack.amazonaws.com
-                - !Join
-                  - ''
-                  - - s3.dualstack.
-                    - !Ref 'AWS::Region'
-                    - .amazonaws.com
+            s3_hostname: !Sub "s3.dualstack.${AWS::Region}.amazonaws.com"
         user:
           shell: "/bin/bash"
           home: "/home/mastodon"
