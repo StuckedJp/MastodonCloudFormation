@@ -27,7 +27,7 @@ end
 # Node.js
 execute "add_node_js_repo" do
     user "root"
-    command "curl -sL https://deb.nodesource.com/setup_8.x | bash -"
+    command "curl -sL https://deb.nodesource.com/setup_10.x | bash -"
     action :run
 end
 
