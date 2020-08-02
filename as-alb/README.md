@@ -41,6 +41,19 @@ openssl x509 -req -days 365 -in server.csr -signkey server.key -out server.crt
 
 * Mastodon コンテンツ (画像ファイルなど) 置き場。
   * 専用のバケットを作成することをお勧めします。
+  * 下記の通り CORS の設定を行います。
+    ```xml
+    <?xml version="1.0" encoding="UTF-8"?>  
+    <CORSConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">  
+    <CORSRule>  
+        <AllowedOrigin>*</AllowedOrigin>  
+        <AllowedMethod>GET</AllowedMethod>  
+        <AllowedMethod>HEAD</AllowedMethod>  
+        <MaxAgeSeconds>3000</MaxAgeSeconds>  
+        <AllowedHeader>*</AllowedHeader>  
+    </CORSRule>  
+    </CORSConfiguration>
+    ```
 * Load Balancer アクセスログ置き場。
   * 専用のバケットを作成することをお勧めします。
   * バケットのリージョンと環境を構築するリージョンを合わせてください。
