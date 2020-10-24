@@ -60,6 +60,11 @@ Resources:
       AvailabilityZone: 
         !ImportValue
           'Fn::Sub': '${InfraStackName}-SubnetAvailabilityZone1'
+      BlockDeviceMappings:
+        - DeviceName: ROOT_DEVICE
+          Ebs: 
+            VolumeSize: 20
+            VolumeType: standard
       EbsOptimized: true
       InstallUpdatesOnBoot: true
       InstanceType: !Ref InstanceType
