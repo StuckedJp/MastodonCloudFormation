@@ -104,11 +104,8 @@ Parameters:
     Description: ElastiCache (Redis) engine version
     Type: String
     AllowedValues:
+      - 6.x
       - 5.0.6
-      - 5.0.5
-      - 5.0.4
-      - 5.0.3
-      - 5.0.0
     ConstraintDescription: must be a valid Elasticache engine version.
   EC2KeyPair:
     Description: EC2 Key Pair Name
