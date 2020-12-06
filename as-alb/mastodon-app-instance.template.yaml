@@ -62,7 +62,7 @@ Resources:
           'Fn::Sub': '${InfraStackName}-SubnetAvailabilityZone1'
       BlockDeviceMappings:
         - DeviceName: ROOT_DEVICE
-          Ebs: 
+          Ebs:
             VolumeSize: 20
             VolumeType: standard
       EbsOptimized: true
