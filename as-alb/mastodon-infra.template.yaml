@@ -168,55 +168,49 @@ Mappings:
   RegionConfig:
     us-east-1:
       Principal: '127311923021'
-      NATAMI: ami-0422d936d535c63b1
+      NATAMI: ami-0c09e99c7d9bb3ec3
     us-east-2:
       Principal: 033677994240
-      NATAMI: ami-0f9c61b5a562a16af
+      NATAMI: ami-0434edca72f474cce
     us-west-1:
       Principal: 027434742980
-      NATAMI: ami-0d4027d2cdbca669d
+      NATAMI: ami-056568e1a688a8374
     us-west-2:
       Principal: '797873946194'
-      NATAMI: ami-40d1f038
+      NATAMI: ami-055d2b8433ccb245c
     ca-central-1:
       Principal: '985666609251'
-      NATAMI: ami-b61b96d2
+      NATAMI: ami-0263e201b916f6cad
     eu-west-1:
       Principal: '156460612806'
-      NATAMI: ami-0ea87e2bfa81ca08a
+      NATAMI: ami-03581a4bc9c44cdd3
     eu-west-2:
       Principal: '652711504416'
-      NATAMI: ami-e6768381
+      NATAMI: ami-0bbb886f29931c526
     eu-west-3:
       Principal: '009996457667'
-      NATAMI: ami-0050bb60cea70c5b3
+      NATAMI: ami-0f1241ac00d426db3
     eu-central-1:
       Principal: 054676820928
-      NATAMI: ami-06465d49ba60cf770
+      NATAMI: ami-0e899c48708d2f8b4
     ap-northeast-1:
       Principal: '582318560864'
-      NATAMI: ami-0cf78ae724f63bac0
+      NATAMI: ami-07a79a9aa595c4ae5
     ap-northeast-2:
       Principal: '600734575887'
-      NATAMI: ami-00c1445796bc0a29f
+      NATAMI: ami-00550ccc38e992b78
     ap-southeast-1:
       Principal: '114774131450'
-      NATAMI: ami-0cf24653bcf894797
+      NATAMI: ami-0756fa32889c749e2
     ap-southeast-2:
       Principal: '783225319266'
-      NATAMI: ami-08cfa02141f9e9bee
+      NATAMI: ami-002519e717bb4797a
     ap-south-1:
       Principal: '718504428378'
-      NATAMI: ami-0aba92643213491b9
+      NATAMI: ami-022f0d1a91a02fc8f
     sa-east-1:
       Principal: '507241528517'
-      NATAMI: ami-09c013530239687aa
-    us-gov-west-1:
-      Principal: 048591011584
-      NATAMI: ami-c177eba0
-    cn-north-1:
-      Principal: '638102146993'
-      NATAMI: ami-04cd0cf505fd3295e
+      NATAMI: ami-02149b9f2c727b4de
 Conditions:
   IsVirginia: !Equals 
     - !Ref 'AWS::Region'
