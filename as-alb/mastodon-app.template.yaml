@@ -125,14 +125,14 @@ Resources:
     Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
     Properties:
       HealthCheckIntervalSeconds: 60
-      HealthCheckPath: /about
+      HealthCheckPath: /health
       HealthCheckPort: '80'
       HealthCheckProtocol: HTTP
       HealthCheckTimeoutSeconds: 15
       HealthyThresholdCount: 2
       UnhealthyThresholdCount: 2
       Matcher:
-        HttpCode: 200-399
+        HttpCode: 200-399,403
       Name: !Sub ${AWS::StackName}-alb-tg
       Port: 80
       Protocol: HTTP
