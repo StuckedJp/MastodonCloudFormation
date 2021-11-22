@@ -202,6 +202,14 @@ knife zero -c conf.rb converge 'name:node' -U vagrant --sudo -i ~/.ssh/id_rsa_no
 1. `knife node -c conf.rb run_list add node 'recipe[setup_mastodon_service]'`
 1. `knife zero -c conf.rb converge 'name:node' -U vagrant --sudo -i ~/.ssh/id_rsa_node`
 
+## systemd-timesyncd サービスの設定
+
+1. `cd chef-repo/cookbooks`
+1. `chef generate cookbook setup_timesyncd`
+1. `cd ..`
+1. `knife node -c conf.rb run_list add node 'recipe[setup_timesyncd]'`
+1. `knife zero -c conf.rb converge 'name:node' -U vagrant --sudo -i ~/.ssh/id_rsa_node`
+
 
 
 ## 接続!
@@ -225,6 +233,7 @@ knife node -c conf.rb run_list add node 'recipe[setup_database]'
 knife node -c conf.rb run_list add node 'recipe[install_mastodon]'
 knife node -c conf.rb run_list add node 'recipe[setup_nginx]'
 knife node -c conf.rb run_list add node 'recipe[setup_mastodon_service]'
+knife node -c conf.rb run_list add node 'recipe[setup_timesyncd]'
 
 knife zero -c conf.rb converge 'name:node' -U vagrant --sudo -i ~/.ssh/id_rsa_node
 ```

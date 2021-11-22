@@ -22,6 +22,9 @@ Parameters:
   MastodonFQDN:
     Description: FQDN of mastodon
     Type: String
+  NTPServerHost:
+    Description: Host name of NTP
+    Type: String
   EC2KeyPair:
     Description: Mastodon WebServer EC2 Key Pair Name
     Type: 'AWS::EC2::KeyPair::KeyName'
@@ -248,6 +251,8 @@ Resources:
             s3_prefix: !Ref PackageS3Prefix
           federation:
             local_domain: !Ref MastodonFQDN
+          time:
+            host: !Ref NTPServerHost
         user:
           shell: "/bin/bash"
           home: "/home/mastodon"
@@ -295,6 +300,7 @@ Resources:
           - download_precompiled
           - setup_nginx
           - setup_mastodon_service
+          - setup_timesyncd
         Shutdown:
         - alb_support::detach_from_alb
       CustomSecurityGroupIds: 
