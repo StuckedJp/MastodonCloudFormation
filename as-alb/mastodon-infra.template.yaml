@@ -51,10 +51,8 @@ Parameters:
     Description: RDS (Postgresql) engine version
     Type: String
     AllowedValues:
-      - 12.5
-      - 12.6
-      - 13.1
-      - 13.2
+      - 13.3
+      - 13.4
     ConstraintDescription: must be a valid RDS engine version.
   DBLicenseModel:
     Description: RDS (Postgresql) engine license model
