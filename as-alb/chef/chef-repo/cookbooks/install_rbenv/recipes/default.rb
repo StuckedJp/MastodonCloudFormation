@@ -5,7 +5,7 @@
 # Copyright:: 2019, Sakai Takao, All Rights Reserved.
 
 user_data = node['user']
-ruby_version = '2.7.2'
+ruby_version = '3.0.4'
 user = 'mastodon'
 group = 'mastodon'
 home = user_data['home']
