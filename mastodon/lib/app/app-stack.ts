@@ -114,6 +114,9 @@ export class AppStack extends Construct {
       `./aws/install`,
       // User add
       `useradd --create-home mastodon`,
+      // others に実行権限を付与する
+      // https://github.com/mastodon/mastodon/issues/3584
+      `chmod +x /home/mastodon`,
       // rbenv
       `git clone https://github.com/rbenv/rbenv.git /usr/local/rbenv`,
       `cd /usr/local/rbenv`,
