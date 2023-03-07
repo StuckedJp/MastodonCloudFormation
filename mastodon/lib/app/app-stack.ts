@@ -172,7 +172,7 @@ export class AppStack extends Construct {
 
     // Application Server
     this.autoScalingGroup = new AutoScalingGroup(this, 'mastodon-app-asg', {
-      instanceType: InstanceType.of(InstanceClass.T3, InstanceSize.MEDIUM),
+      instanceType: InstanceType.of(InstanceClass.T3, InstanceSize.SMALL),
       keyName: process.env.BASTON_KEY_PAIR_NAME,
       vpc,
       machineImage,

@@ -183,7 +183,7 @@ export class BastionStack extends Construct {
 
     // Bastion
     new ec2.Instance(this, 'mastodon-bastion-instance', {
-      instanceType: InstanceType.of(InstanceClass.T3, InstanceSize.MEDIUM),
+      instanceType: InstanceType.of(InstanceClass.T3, InstanceSize.SMALL),
       keyName: process.env.BASTON_KEY_PAIR_NAME,
       vpc,
       machineImage,
