@@ -48,6 +48,7 @@ The `cdk.json` file tells the CDK Toolkit how to execute your app.
     cdk deploy MastodonInfraStack MastodonRdsStack MastodonElasticacheStack MastodonBastionStack
     ```
 1. 踏み台で作業する。マネージメントコンソールから、`MastodonBastionStack/bastion/mastodon-bastion-instance` のパブリック IP アドレスを取得して、SSH で接続する。
+1. `tail -f /var/log/cloud-init-output.log` で初期実行スクリプトの実行完了を待つ。20 分ほどかかる。
 1. mastodon ユーザーにスイッチする。
     ```
     sudo -iu mastodon
@@ -55,36 +56,20 @@ The `cdk.json` file tells the CDK Toolkit how to execute your app.
 1. データベースを初期化する。
     ```
     cd mastodon
-    pnpm run init
+    RAILS_ENV=production bundle exec rails db:migrate
     ```
 1. アプリケーションをデプロイする
     ```
     cdk deploy MastodonAppStack
     ```
-1. DNS の設定をする。マネージメントコンソールから、`Missk-appli-********` のロードバランサーの DNS name を取得し、DNS の CNAME に設定する。
+1. DNS の設定をする。マネージメントコンソールから、`Masto-appli-********` のロードバランサーの DNS name を取得し、DNS の CNAME に設定する。
 1. アプリケーションサーバーで作業する。マネージメントコンソールから、`MastodonAppStack/app/mastodon-app-asg` のプライベート IP アドレスを取得して、踏み台をプロキシにして SSH で接続する。
+1. `tail -f /var/log/cloud-init-output.log` で初期実行スクリプトの実行完了を待つ。20 分ほどかかる。
+1. 初期実行スクリプトが実行完了すると、自動で再起動するので、アプリケーションサーバーにログインし直す。
 1. Let's Encrypt で証明書を取得する。まずは dry-run してみる。
     ```
     sudo -i
-    certbot certonly --dry-run
-
-    Saving debug log to /var/log/letsencrypt/letsencrypt.log
-
-    How would you like to authenticate with the ACME CA?
-    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    1: Spin up a temporary webserver (standalone)
-    2: Place files in webroot directory (webroot)
-    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    Select the appropriate number [1-2] then [enter] (press 'c' to cancel): 1 <<<<< 1にする
-    Plugins selected: Authenticator standalone, Installer None
-    Please enter the domain name(s) you would like on your certificate (comma and/or
-    space separated) (Enter 'c' to cancel): mastodon.example.com
-    Simulating a certificate request for mastodon.example.com
-    Performing the following challenges:
-    http-01 challenge for mastodon.example.com
-    Waiting for verification...
-    Cleaning up challenges
-    The dry run was successful.
+    certbot certonly --standalone -d <<ドメイン>> --dry-run
     ```
 1. 本番実行する
     ```
@@ -104,9 +89,11 @@ The `cdk.json` file tells the CDK Toolkit how to execute your app.
 
 ### アップデート
 
-1. `mastodon-infra/lib/app/app-stack.ts` の `minCapacity` を 2 に変更し、`cdk deploy MastodonAppStack` を実行する。
-1. マネージメントコンソールで `MastodonAppStack/app/mastodon-app-asg` インスタンスが 2 つになったら、古い方のインスタンスを終了する。
-1. `MastodonAppStack/app/mastodon-app-asg` インスタンスが再び 2 つになったら、`mastodon-infra/lib/app/app-stack.ts` の `minCapacity` を 1 に変更し、`cdk deploy MastodonAppStack` を実行する。
+1. `mastodon/lib/app/app-stack.ts` の `minCapacity` を 2 に変更し、`cdk deploy MastodonAppStack` を実行する。
+1. マネージメントコンソールで `MastodonAppStack/app/mastodon-app-asg` インスタンスが 2 つになったら、新しい方のインスタンスに踏み台をプロキシにして SSH で接続する。
+1. `tail -f /var/log/cloud-init-output.log` で初期実行スクリプトの実行完了を待つ。20 分ほどかかる。
+1. 古い方のインスタンスを終了する。
+1. `MastodonAppStack/app/mastodon-app-asg` インスタンスが再び 2 つになったら、`mastodon/lib/app/app-stack.ts` の `minCapacity` を 1 に変更し、`cdk deploy MastodonAppStack` を実行する。
 
 
 ### マイグレーション
@@ -117,10 +104,9 @@ The `cdk.json` file tells the CDK Toolkit how to execute your app.
     sudo -iu mastodon
     cd mastodon
     git fetch
-    git pull
-    NODE_ENV=production pnpm install --frozen-lockfile
-    pnpm run clean
-    NODE_ENV=production pnpm run build
-    pnpm run migrate
+    git checkout <<VERSION>>
+    bundle install
+    yarn install
+    RAILS_ENV=production bundle exec rails db:migrate
     ```
 1. 「アップデート」手順に従って Mastodon のアプリケーションサーバーを更新する。
