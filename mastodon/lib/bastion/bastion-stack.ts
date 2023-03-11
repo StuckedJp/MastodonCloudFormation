@@ -165,7 +165,7 @@ export class BastionStack extends Construct {
       `echo 'AWS_ACCESS_KEY_ID=${process.env.AWS_ACCESS_KEY_ID}' >> .env.production`,
       `echo 'AWS_SECRET_ACCESS_KEY=${process.env.AWS_SECRET_ACCESS_KEY}' >> .env.production`,
       `echo 'S3_REGION=${process.env.AWS_REGION}' >> .env.production`,
-      `echo 'S3_HOSTNAME=${contentBucket.bucketDomainName}' >> .env.production`,
+      `echo 'S3_HOSTNAME=s3.dualstack.${process.env.AWS_REGION}.amazonaws.com' >> .env.production`,
       'echo "SECRET_KEY_BASE=${SECRET_KEY_BASE}" >> .env.production',
       `echo "OTP_SECRET=$OTP_SECRET"  >> .env.production`,
       `sudo -u mastodon RAILS_ENV=production /usr/local/rbenv/shims/bundle exec rake mastodon:webpush:generate_vapid_key >> .env.production`,
