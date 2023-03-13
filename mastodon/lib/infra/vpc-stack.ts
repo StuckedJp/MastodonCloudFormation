@@ -1,6 +1,7 @@
 import { aws_ec2 } from 'aws-cdk-lib';
 import { NatInstanceProvider, SubnetType, GatewayVpcEndpointAwsService, CfnVPCCidrBlock } from 'aws-cdk-lib/aws-ec2';
 import { Construct } from 'constructs';
+import { Ipv6Subnet } from './ipv6-subnet';
 
 export class VpcStack extends Construct {
   public readonly vpc: aws_ec2.Vpc;
@@ -34,10 +35,7 @@ export class VpcStack extends Construct {
     });
 
     // IPv6
-    new CfnVPCCidrBlock(this, 'mastodon-infra-vpc-cdir-block', {
-      vpcId: vpc.vpcId,
-      amazonProvidedIpv6CidrBlock: true,
-    });
+    new Ipv6Subnet(this, 'mastodon-infra-vpc-ipv6', { vpc });
 
     this.vpc = vpc;
   }
