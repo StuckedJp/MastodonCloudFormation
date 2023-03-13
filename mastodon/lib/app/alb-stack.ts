@@ -31,6 +31,7 @@ export class ApplicationLoadBalancerStack extends Construct {
       vpc,
       securityGroup,
       internetFacing: true,
+      ipAddressType: IpAddressType.DUAL_STACK,
     });
     alb.logAccessLogs(backyardBucket, process.env.LB_ACCESS_LOG_PREFIX);
 
