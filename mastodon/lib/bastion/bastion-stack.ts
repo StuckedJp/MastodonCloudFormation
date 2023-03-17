@@ -153,6 +153,7 @@ export class BastionStack extends Construct {
       'echo "DB_NAME=${DB_NAME}" >> .env.production',
       'echo "DB_USER=${DB_USER_NAME}" >> .env.production',
       'echo "DB_PASS=${DB_PASSWORD}" >> .env.production',
+      'echo "DB_SSLMODE=prefer" >> .env.production',
       `echo 'REDIS_HOST=${cacheCluster.attrRedisEndpointAddress}' >> .env.production`,
       `echo 'REDIS_PORT=${cacheCluster.attrRedisEndpointPort}' >> .env.production`,
       `echo 'SMTP_SERVER=${process.env.SMTP_SERVER}' >> .env.production`,
