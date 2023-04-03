@@ -59,7 +59,7 @@ export class ApplicationLoadBalancerStack extends Construct {
         enabled: true,
         path: '/health',
         interval: Duration.minutes(1),
-        healthyHttpCodes: '200-399,403',
+        healthyHttpCodes: '200-399',
         port: '80',
         timeout: Duration.seconds(15),
         healthyThresholdCount: 2,
