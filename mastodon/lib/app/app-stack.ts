@@ -15,9 +15,10 @@ import { Construct } from 'constructs';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import { Secret } from 'aws-cdk-lib/aws-secretsmanager';
 import { CfnCacheCluster } from 'aws-cdk-lib/aws-elasticache';
-import { AutoScalingGroup, BlockDeviceVolume } from 'aws-cdk-lib/aws-autoscaling';
+import { AutoScalingGroup, BlockDeviceVolume, HealthCheck } from 'aws-cdk-lib/aws-autoscaling';
 import { Asset } from 'aws-cdk-lib/aws-s3-assets';
 import path = require('path');
+import { Duration } from 'aws-cdk-lib';
 
 export class AppStack extends Construct {
   public readonly autoScalingGroup: AutoScalingGroup;
@@ -186,6 +187,9 @@ export class AppStack extends Construct {
           volume: BlockDeviceVolume.ebs(Number(process.env.MASTODON_STORAGE_GB)),
         },
       ],
+      healthCheck: HealthCheck.elb({
+        grace: Duration.minutes(30),
+      }),
     });
 
     nginxConf.grantRead(this.autoScalingGroup);
