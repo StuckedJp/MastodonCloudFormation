@@ -1,14 +1,3 @@
-import {
-  Vpc,
-  SecurityGroup,
-  Peer,
-  Port,
-  InstanceType,
-  InstanceClass,
-  InstanceSize,
-  SubnetType,
-  UserData,
-} from 'aws-cdk-lib/aws-ec2';
 import { Effect, PolicyDocument, PolicyStatement, Role, ServicePrincipal } from 'aws-cdk-lib/aws-iam';
 import { Bucket } from 'aws-cdk-lib/aws-s3';
 import { Construct } from 'constructs';
@@ -25,7 +14,7 @@ export class AppStack extends Construct {
 
   constructor(
     scope: Construct,
-    vpc: Vpc,
+    vpc: ec2.Vpc,
     contentBucket: Bucket,
     backyardBucket: Bucket,
     dbSecrets: Secret,
@@ -34,13 +23,13 @@ export class AppStack extends Construct {
     super(scope, 'app');
 
     // SecurityGroup(EC2 Instance)
-    const securityGroup = new SecurityGroup(this, 'mastodon-app-instance-security-group', {
+    const securityGroup = new ec2.SecurityGroup(this, 'mastodon-app-instance-security-group', {
       vpc,
       allowAllOutbound: true,
       allowAllIpv6Outbound: true,
     });
-    securityGroup.addIngressRule(Peer.ipv4(vpc.publicSubnets[0].ipv4CidrBlock), Port.tcp(22));
-    securityGroup.addIngressRule(Peer.ipv4(vpc.publicSubnets[1].ipv4CidrBlock), Port.tcp(22));
+    securityGroup.addIngressRule(ec2.Peer.ipv4(vpc.publicSubnets[0].ipv4CidrBlock), ec2.Port.tcp(22));
+    securityGroup.addIngressRule(ec2.Peer.ipv4(vpc.publicSubnets[1].ipv4CidrBlock), ec2.Port.tcp(22));
 
     // IAM Role
     const role = new Role(this, 'mastodon-app-role', {
@@ -91,7 +80,7 @@ export class AppStack extends Construct {
       path: path.join(__dirname, 'assets', 'mastodon-web.service'),
     });
 
-    const userData = UserData.forLinux();
+    const userData = ec2.UserData.forLinux();
     userData.addCommands(
       `apt-get update`,
       `apt-get upgrade -y`,
@@ -135,7 +124,7 @@ export class AppStack extends Construct {
       `cd /home/mastodon`,
       `sudo -u mastodon git clone ${process.env.MASTODON_GIT_URL} mastodon`,
       `cd mastodon`,
-      `sudo -u mastodon git checkout $(sudo -u mastodon git tag -l | grep -v 'rc[0-9]*$' | sort -V | tail -n 1)`,
+      `sudo -u mastodon git checkout ${process.env.MASTODON_GIT_TAG}`,
       `sudo -u mastodon /usr/local/rbenv/shims/bundle config deployment 'true'`,
       `sudo -u mastodon /usr/local/rbenv/shims/bundle config without 'development test'`,
       `sudo -u mastodon /usr/local/rbenv/shims/bundle install -j$(getconf _NPROCESSORS_ONLN)`,
@@ -143,7 +132,6 @@ export class AppStack extends Construct {
       // Configure Mastodon
       `cd /home/mastodon/mastodon`,
       `sudo -u mastodon aws s3 cp s3://${backyardBucket.bucketName}/config/.env.production .env.production`,
-      // `sudo -u mastodon RAILS_ENV=production /usr/local/rbenv/shims/bundle exec rails db:migrate`,
       `sudo -u mastodon RAILS_ENV=production /usr/local/rbenv/shims/bundle exec rails assets:precompile`,
       // Configure Nginx
       `aws s3 cp s3://${nginxConf.s3BucketName}/${nginxConf.s3ObjectKey} /tmp/nginx.conf`,
@@ -162,31 +150,32 @@ export class AppStack extends Construct {
     );
 
     // https://cloud-images.ubuntu.com/locator/ec2/
-    const machineImage = ec2.MachineImage.genericLinux(
-      {
-        'us-east-1': 'ami-0e2162f7f3582e92f',
-      },
-      {
-        userData,
-      },
-    );
+    const machineImage = ec2.MachineImage.genericLinux({
+      'us-east-1': 'ami-0044130ca185d0880',
+    });
 
-    // Application Server
-    this.autoScalingGroup = new AutoScalingGroup(this, 'mastodon-app-asg', {
-      instanceType: InstanceType.of(InstanceClass.T3, InstanceSize.SMALL),
+    const launchTemplate = new ec2.LaunchTemplate(this, 'mastodon-app-launch-template', {
+      instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.SMALL),
       keyName: process.env.BASTON_KEY_PAIR_NAME,
-      vpc,
       machineImage,
+      userData,
       securityGroup,
-      vpcSubnets: vpc.selectSubnets({ subnetType: SubnetType.PRIVATE_WITH_EGRESS }),
       role,
-      minCapacity: 1,
       blockDevices: [
         {
           deviceName: '/dev/sda1',
           volume: BlockDeviceVolume.ebs(Number(process.env.MASTODON_STORAGE_GB)),
         },
       ],
+    });
+
+    // Application Server
+    this.autoScalingGroup = new AutoScalingGroup(this, 'mastodon-app-asg', {
+      vpc,
+      launchTemplate,
+      vpcSubnets: vpc.selectSubnets({ subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS }),
+      minCapacity: 1,
+      maxCapacity: 1,
       healthCheck: HealthCheck.elb({
         grace: Duration.minutes(30),
       }),
