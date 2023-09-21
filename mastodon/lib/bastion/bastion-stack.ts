@@ -175,7 +175,7 @@ export class BastionStack extends Construct {
     // https://cloud-images.ubuntu.com/locator/ec2/
     const machineImage = ec2.MachineImage.genericLinux(
       {
-        'us-east-1': 'ami-0e2162f7f3582e92f',
+        'us-east-1': 'ami-0408adfcef670a71e',
       },
       {
         userData,
@@ -184,7 +184,7 @@ export class BastionStack extends Construct {
 
     // Bastion
     new ec2.Instance(this, 'mastodon-bastion-instance', {
-      instanceType: InstanceType.of(InstanceClass.T3, InstanceSize.SMALL),
+      instanceType: InstanceType.of(InstanceClass.T3, InstanceSize.MEDIUM),
       keyName: process.env.BASTON_KEY_PAIR_NAME,
       vpc,
       machineImage,
