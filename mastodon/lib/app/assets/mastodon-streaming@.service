@@ -11,6 +11,7 @@ User=mastodon
 WorkingDirectory=/home/mastodon/mastodon
 Environment="NODE_ENV=production"
 Environment="PORT=%i"
+Environment="DB_SSLMODE=no-verify"
 ExecStart=/usr/bin/node ./streaming
 TimeoutSec=15
 Restart=always
