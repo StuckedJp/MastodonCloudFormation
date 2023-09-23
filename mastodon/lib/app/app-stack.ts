@@ -76,6 +76,9 @@ export class AppStack extends Construct {
     const systemdStreaming = new Asset(this, 'mastodon-app-asset-systemd-streaming', {
       path: path.join(__dirname, 'assets', 'mastodon-streaming.service'),
     });
+    const systemdStreamingAt = new Asset(this, 'mastodon-app-asset-systemd-streaming-at', {
+      path: path.join(__dirname, 'assets', 'mastodon-streaming@.service'),
+    });
     const systemdWeb = new Asset(this, 'mastodon-app-asset-systemd-web', {
       path: path.join(__dirname, 'assets', 'mastodon-web.service'),
     });
@@ -92,7 +95,11 @@ export class AppStack extends Construct {
       `apt-get update`,
       `apt-get install -y redis-tools`,
       // Node.js
-      `curl -sL https://deb.nodesource.com/setup_16.x | bash -`,
+      `mkdir -p /etc/apt/keyrings`,
+      `curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg`,
+      `NODE_MAJOR=16`,
+      `echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list`,
+      `apt-get update`,
       `apt-get install -y nodejs`,
       // Yarn
       `corepack enable`,
@@ -142,16 +149,17 @@ export class AppStack extends Construct {
       // Configure Daemon
       `aws s3 cp s3://${systemdSideKiq.s3BucketName}/${systemdSideKiq.s3ObjectKey} /etc/systemd/system/mastodon-sidekiq.service`,
       `aws s3 cp s3://${systemdStreaming.s3BucketName}/${systemdStreaming.s3ObjectKey} /etc/systemd/system/mastodon-streaming.service`,
+      `aws s3 cp s3://${systemdStreamingAt.s3BucketName}/${systemdStreamingAt.s3ObjectKey} /etc/systemd/system/mastodon-streaming@.service`,
       `aws s3 cp s3://${systemdWeb.s3BucketName}/${systemdWeb.s3ObjectKey} /etc/systemd/system/mastodon-web.service`,
       // Daemon start
       `systemctl daemon-reload`,
-      `systemctl enable --now mastodon-web mastodon-sidekiq mastodon-streaming`,
+      `systemctl enable --now mastodon-web mastodon-sidekiq mastodon-streaming mastodon-streaming@4000`,
       `reboot`,
     );
 
     // https://cloud-images.ubuntu.com/locator/ec2/
     const machineImage = ec2.MachineImage.genericLinux({
-      'us-east-1': 'ami-0044130ca185d0880',
+      'us-east-1': 'ami-0fc5d935ebf8bc3bc',
     });
 
     const launchTemplate = new ec2.LaunchTemplate(this, 'mastodon-app-launch-template', {
@@ -184,6 +192,7 @@ export class AppStack extends Construct {
     nginxConf.grantRead(this.autoScalingGroup);
     systemdSideKiq.grantRead(this.autoScalingGroup);
     systemdStreaming.grantRead(this.autoScalingGroup);
+    systemdStreamingAt.grantRead(this.autoScalingGroup);
     systemdWeb.grantRead(this.autoScalingGroup);
   }
 }
