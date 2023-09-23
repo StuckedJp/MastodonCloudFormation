@@ -85,7 +85,11 @@ export class BastionStack extends Construct {
       `apt-get update`,
       `apt-get install -y redis-tools`,
       // Node.js
-      `curl -sL https://deb.nodesource.com/setup_16.x | bash -`,
+      `mkdir -p /etc/apt/keyrings`,
+      `curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg`,
+      `NODE_MAJOR=16`,
+      `echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list`,
+      `apt-get update`,
       `apt-get install -y nodejs`,
       // Yarn
       `corepack enable`,
@@ -153,7 +157,6 @@ export class BastionStack extends Construct {
       'echo "DB_NAME=${DB_NAME}" >> .env.production',
       'echo "DB_USER=${DB_USER_NAME}" >> .env.production',
       'echo "DB_PASS=${DB_PASSWORD}" >> .env.production',
-      'echo "DB_SSLMODE=prefer" >> .env.production',
       `echo 'REDIS_HOST=${cacheCluster.attrRedisEndpointAddress}' >> .env.production`,
       `echo 'REDIS_PORT=${cacheCluster.attrRedisEndpointPort}' >> .env.production`,
       `echo 'SMTP_SERVER=${process.env.SMTP_SERVER}' >> .env.production`,
@@ -175,7 +178,7 @@ export class BastionStack extends Construct {
     // https://cloud-images.ubuntu.com/locator/ec2/
     const machineImage = ec2.MachineImage.genericLinux(
       {
-        'us-east-1': 'ami-0408adfcef670a71e',
+        'us-east-1': 'ami-0fc5d935ebf8bc3bc',
       },
       {
         userData,

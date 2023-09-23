@@ -9,6 +9,7 @@ import {
   Port,
 } from 'aws-cdk-lib/aws-ec2';
 import {
+  CaCertificate,
   Credentials,
   DatabaseInstance,
   DatabaseInstanceEngine,
@@ -52,12 +53,13 @@ export class RdsStack extends Construct {
       this.databaseInstance = new DatabaseInstanceFromSnapshot(this, 'mastodon-rds-instance', {
         snapshotIdentifier: process.env.RDS_SNAPSHOT_ID,
         engine: DatabaseInstanceEngine.postgres({
-          version: PostgresEngineVersion.VER_15,
+          version: PostgresEngineVersion.VER_15_4,
         }),
         instanceType: InstanceType.of(InstanceClass.BURSTABLE3, InstanceSize.MICRO),
         allowMajorVersionUpgrade: true,
         autoMinorVersionUpgrade: true,
         allocatedStorage: Number(process.env.RDS_STORAGE_GB),
+        caCertificate: CaCertificate.RDS_CA_RDS4096_G1,
         vpc,
         publiclyAccessible: false,
         vpcSubnets: {
