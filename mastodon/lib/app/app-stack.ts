@@ -164,7 +164,7 @@ export class AppStack extends Construct {
 
     const launchTemplate = new ec2.LaunchTemplate(this, 'mastodon-app-launch-template', {
       instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.MEDIUM),
-      keyName: process.env.BASTON_KEY_PAIR_NAME,
+      keyPair: ec2.KeyPair.fromKeyPairName(this, 'mastodon-app-key-pair', process.env.BASTON_KEY_PAIR_NAME!),
       machineImage,
       userData,
       securityGroup,

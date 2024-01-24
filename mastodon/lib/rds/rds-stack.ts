@@ -53,7 +53,7 @@ export class RdsStack extends Construct {
       this.databaseInstance = new DatabaseInstanceFromSnapshot(this, 'mastodon-rds-instance', {
         snapshotIdentifier: process.env.RDS_SNAPSHOT_ID,
         engine: DatabaseInstanceEngine.postgres({
-          version: PostgresEngineVersion.VER_15_4,
+          version: PostgresEngineVersion.VER_16,
         }),
         instanceType: InstanceType.of(InstanceClass.BURSTABLE3, InstanceSize.MICRO),
         allowMajorVersionUpgrade: true,
