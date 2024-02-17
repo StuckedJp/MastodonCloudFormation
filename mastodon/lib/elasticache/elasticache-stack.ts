@@ -34,7 +34,7 @@ export class ElasticacheStack extends Construct {
       cacheSubnetGroupName: subnetGroup.ref,
       cacheNodeType: 'cache.t2.micro',
       engine: 'redis',
-      engineVersion: '7.0',
+      engineVersion: '7.1',
       numCacheNodes: 1,
       autoMinorVersionUpgrade: true,
       clusterName: 'mastodon-elasticache-cluster',
