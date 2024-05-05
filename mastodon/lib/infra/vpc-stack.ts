@@ -1,12 +1,12 @@
 import { aws_ec2 } from 'aws-cdk-lib';
-import { NatInstanceProvider, SubnetType, GatewayVpcEndpointAwsService, CfnVPCCidrBlock } from 'aws-cdk-lib/aws-ec2';
+import { SubnetType, GatewayVpcEndpointAwsService, NatInstanceProviderV2 } from 'aws-cdk-lib/aws-ec2';
 import { Construct } from 'constructs';
 import { Ipv6Subnet } from './ipv6-subnet';
 
 export class VpcStack extends Construct {
   public readonly vpc: aws_ec2.Vpc;
 
-  constructor(scope: Construct, natGatewayProvider: NatInstanceProvider) {
+  constructor(scope: Construct, natGatewayProvider: NatInstanceProviderV2) {
     super(scope, 'vpc');
 
     const vpc = new aws_ec2.Vpc(this, 'mastodon-infra-vpc', {
