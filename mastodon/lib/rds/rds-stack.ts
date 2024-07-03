@@ -59,7 +59,7 @@ export class RdsStack extends Construct {
         allowMajorVersionUpgrade: true,
         autoMinorVersionUpgrade: true,
         allocatedStorage: Number(process.env.RDS_STORAGE_GB),
-        caCertificate: CaCertificate.RDS_CA_RDS4096_G1,
+        caCertificate: CaCertificate.RDS_CA_RSA4096_G1,
         vpc,
         publiclyAccessible: false,
         vpcSubnets: {
