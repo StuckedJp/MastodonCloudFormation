@@ -1,7 +1,6 @@
 import { aws_ec2 } from 'aws-cdk-lib';
-import { SubnetType, GatewayVpcEndpointAwsService, CfnVPCCidrBlock, NatInstanceProviderV2 } from 'aws-cdk-lib/aws-ec2';
+import { SubnetType, GatewayVpcEndpointAwsService, NatInstanceProviderV2 } from 'aws-cdk-lib/aws-ec2';
 import { Construct } from 'constructs';
-import { Ipv6Subnet } from './ipv6-subnet';
 
 export class VpcStack extends Construct {
   public readonly vpc: aws_ec2.Vpc;
@@ -15,16 +14,19 @@ export class VpcStack extends Construct {
       natGatewayProvider,
       natGateways: 1,
       maxAzs: 2,
+      ipProtocol: aws_ec2.IpProtocol.DUAL_STACK,
       subnetConfiguration: [
         {
           subnetType: SubnetType.PUBLIC,
           name: 'Ingress',
           cidrMask: 24,
+          ipv6AssignAddressOnCreation: true,
         },
         {
           subnetType: SubnetType.PRIVATE_WITH_EGRESS,
           name: 'Application',
           cidrMask: 24,
+          ipv6AssignAddressOnCreation: true,
         },
       ],
       gatewayEndpoints: {
@@ -33,10 +35,6 @@ export class VpcStack extends Construct {
         },
       },
     });
-
-    // IPv6
-    new aws_ec2.CfnEgressOnlyInternetGateway(this, 'mastodon-infra-vpc-eoig', { vpcId: vpc.vpcId });
-    new Ipv6Subnet(this, 'mastodon-infra-vpc-ipv6', { vpc });
 
     this.vpc = vpc;
   }
