@@ -70,7 +70,7 @@ export class RdsStack extends Construct {
     } else {
       this.databaseInstance = new DatabaseInstance(this, 'mastodon-rds-instance', {
         engine: DatabaseInstanceEngine.postgres({
-          version: PostgresEngineVersion.VER_14_6,
+          version: PostgresEngineVersion.VER_16,
         }),
         instanceType: InstanceType.of(InstanceClass.BURSTABLE3, InstanceSize.MICRO),
         credentials: Credentials.fromSecret(this.secret),
