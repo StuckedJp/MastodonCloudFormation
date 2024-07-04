@@ -159,7 +159,7 @@ export class AppStack extends Construct {
 
     // https://cloud-images.ubuntu.com/locator/ec2/
     const machineImage = ec2.MachineImage.genericLinux({
-      'us-east-1': 'ami-0fc5d935ebf8bc3bc',
+      'us-east-1': 'ami-0a0e5d9c7acc336f1',
     });
 
     const launchTemplate = new ec2.LaunchTemplate(this, 'mastodon-app-launch-template', {
