@@ -178,7 +178,7 @@ export class BastionStack extends Construct {
     // https://cloud-images.ubuntu.com/locator/ec2/
     const machineImage = ec2.MachineImage.genericLinux(
       {
-        'us-east-1': 'ami-0fc5d935ebf8bc3bc',
+        'us-east-1': 'ami-0a0e5d9c7acc336f1',
       },
       {
         userData,
