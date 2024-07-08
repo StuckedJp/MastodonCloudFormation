@@ -1,4 +1,4 @@
-import { NatProvider, InstanceType, NatInstanceProviderV2 } from 'aws-cdk-lib/aws-ec2';
+import { NatProvider, InstanceType, NatInstanceProviderV2, NatTrafficDirection } from 'aws-cdk-lib/aws-ec2';
 import { Construct } from 'constructs';
 
 export class NatInstanceStack extends Construct {
@@ -10,6 +10,7 @@ export class NatInstanceStack extends Construct {
     // NatInstance
     const natGatewayProvider = NatProvider.instanceV2({
       instanceType: new InstanceType(process.env.NAT_INSTANCE_TYPE!),
+      defaultAllowedTraffic: NatTrafficDirection.OUTBOUND_ONLY,
     });
     this.natGatewayProvider = natGatewayProvider;
   }
