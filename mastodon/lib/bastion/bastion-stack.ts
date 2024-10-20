@@ -78,7 +78,7 @@ export class BastionStack extends Construct {
     userData.addCommands(
       `apt-get update`,
       `apt-get upgrade -y`,
-      `DEBIAN_FRONTEND=noninteractive apt-get install -y git build-essential curl wget gnupg apt-transport-https lsb-release ca-certificates postgresql-client unzip jq imagemagick ffmpeg libpq-dev libxml2-dev libxslt1-dev file git-core g++ libprotobuf-dev protobuf-compiler pkg-config gcc autoconf bison build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev libgdbm-dev libidn11-dev libicu-dev libjemalloc-dev`,
+      `DEBIAN_FRONTEND=noninteractive apt-get install -y git build-essential curl wget gnupg apt-transport-https lsb-release ca-certificates postgresql-client unzip jq imagemagick libvips-tools ffmpeg libpq-dev libxml2-dev libxslt1-dev file git-core g++ libprotobuf-dev protobuf-compiler pkg-config gcc autoconf bison build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev libgdbm-dev libidn11-dev libicu-dev libjemalloc-dev`,
       // Redis client
       `curl -fsSL https://packages.redis.io/gpg | gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg`,
       `echo "deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/redis.list`,
@@ -93,7 +93,8 @@ export class BastionStack extends Construct {
       `apt-get install -y nodejs`,
       // Yarn
       `corepack enable`,
-      `yarn set version classic`,
+      `corepack prepare`,
+      // `yarn set version latest`,
       // AWS CLI
       `cd /root`,
       `curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"`,
@@ -118,11 +119,11 @@ export class BastionStack extends Construct {
       `cd /home/mastodon`,
       `sudo -u mastodon git clone ${process.env.MASTODON_GIT_URL} mastodon`,
       `cd mastodon`,
-      `sudo -u mastodon git checkout $(sudo -u mastodon git tag -l | grep -v 'rc[0-9]*$' | sort -V | tail -n 1)`,
+      `sudo -u mastodon git checkout ${process.env.MASTODON_GIT_TAG}`,
       `sudo -u mastodon /usr/local/rbenv/shims/bundle config deployment 'true'`,
       `sudo -u mastodon /usr/local/rbenv/shims/bundle config without 'development test'`,
       `sudo -u mastodon /usr/local/rbenv/shims/bundle install -j$(getconf _NPROCESSORS_ONLN)`,
-      `sudo -u mastodon yarn install --pure-lockfile`,
+      `sudo -u mastodon yarn install --immutable`,
       // Retreve Secrets
       `cd /home/mastodon/mastodon`,
       `SECRET_ID=${dbSecrets.secretArn}`,
@@ -151,6 +152,15 @@ export class BastionStack extends Construct {
       // Configure
       `cd /home/mastodon/mastodon`,
       `sudo -u mastodon touch .env.production`,
+      process.env.ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY
+        ? `echo 'ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY=${process.env.ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY}' >> .env.production`
+        : `sudo -u mastodon RAILS_ENV=production bin/rails db:encryption:init > .env.production`,
+      process.env.ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT
+        ? `echo 'ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT=${process.env.ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT}' >> .env.production`
+        : '',
+      process.env.ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY
+        ? `echo 'ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY=${process.env.ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY}' >> .env.production`
+        : '',
       `echo 'LOCAL_DOMAIN=${process.env.MASTODON_FQDN}' >> .env.production`,
       'echo "DB_HOST=${DB_HOST}" >> .env.production',
       'echo "DB_PORT=${DB_PORT}" >> .env.production',
@@ -172,13 +182,14 @@ export class BastionStack extends Construct {
       `echo 'S3_HOSTNAME=s3.dualstack.${process.env.AWS_REGION}.amazonaws.com' >> .env.production`,
       'echo "SECRET_KEY_BASE=${SECRET_KEY_BASE}" >> .env.production',
       `echo "OTP_SECRET=$OTP_SECRET"  >> .env.production`,
+      `echo "MASTODON_USE_LIBVIPS=true"  >> .env.production`,
       `sudo -u mastodon RAILS_ENV=production /usr/local/rbenv/shims/bundle exec rake mastodon:webpush:generate_vapid_key >> .env.production`,
       `aws s3 cp .env.production s3://${backyardBucket.bucketName}/config/.env.production`,
     );
-    // https://cloud-images.ubuntu.com/locator/ec2/
+
     const machineImage = ec2.MachineImage.genericLinux(
       {
-        'us-east-1': 'ami-0a0e5d9c7acc336f1',
+        'us-east-1': process.env.BASTION_AMI!,
       },
       {
         userData,
@@ -186,9 +197,13 @@ export class BastionStack extends Construct {
     );
 
     // Bastion
-    new ec2.Instance(this, 'mastodon-bastion-instance', {
-      instanceType: InstanceType.of(InstanceClass.T3, InstanceSize.MEDIUM),
-      keyPair: ec2.KeyPair.fromKeyPairName(this, 'mastodon-bastion-instance-key-pair', process.env.BASTON_KEY_PAIR_NAME!),
+    new ec2.Instance(this, 'mastodon-bastion-instance-20241020', {
+      instanceType: InstanceType.of(InstanceClass.T3A, InstanceSize.MEDIUM),
+      keyPair: ec2.KeyPair.fromKeyPairName(
+        this,
+        'mastodon-bastion-instance-key-pair',
+        process.env.BASTON_KEY_PAIR_NAME!,
+      ),
       vpc,
       machineImage,
       securityGroup,
