@@ -87,7 +87,7 @@ export class AppStack extends Construct {
     userData.addCommands(
       `apt-get update`,
       `apt-get upgrade -y`,
-      `DEBIAN_FRONTEND=noninteractive apt-get install -y git build-essential curl wget gnupg apt-transport-https lsb-release ca-certificates postgresql-client unzip jq imagemagick ffmpeg libpq-dev libxml2-dev libxslt1-dev file git-core g++ libprotobuf-dev protobuf-compiler pkg-config gcc autoconf bison build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev libgdbm-dev libidn11-dev libicu-dev libjemalloc-dev`,
+      `DEBIAN_FRONTEND=noninteractive apt-get install -y git build-essential curl wget gnupg apt-transport-https lsb-release ca-certificates postgresql-client unzip jq imagemagick ffmpeg libvips-tools libpq-dev libxml2-dev libxslt1-dev file git-core g++ libprotobuf-dev protobuf-compiler pkg-config gcc autoconf bison build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev libgdbm-dev libidn11-dev libicu-dev libjemalloc-dev`,
       `DEBIAN_FRONTEND=noninteractive apt-get install -y nginx certbot python3-certbot-nginx`,
       // Redis client
       `curl -fsSL https://packages.redis.io/gpg | gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg`,
@@ -103,7 +103,7 @@ export class AppStack extends Construct {
       `apt-get install -y nodejs`,
       // Yarn
       `corepack enable`,
-      `yarn set version classic`,
+      `yarn set version latest`,
       // AWS CLI
       `cd /root`,
       `curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"`,
@@ -135,7 +135,7 @@ export class AppStack extends Construct {
       `sudo -u mastodon /usr/local/rbenv/shims/bundle config deployment 'true'`,
       `sudo -u mastodon /usr/local/rbenv/shims/bundle config without 'development test'`,
       `sudo -u mastodon /usr/local/rbenv/shims/bundle install -j$(getconf _NPROCESSORS_ONLN)`,
-      `sudo -u mastodon yarn install --pure-lockfile`,
+      `sudo -u mastodon yarn install --immutable`,
       // Configure Mastodon
       `cd /home/mastodon/mastodon`,
       `sudo -u mastodon aws s3 cp s3://${backyardBucket.bucketName}/config/.env.production .env.production`,
@@ -159,11 +159,11 @@ export class AppStack extends Construct {
 
     // https://cloud-images.ubuntu.com/locator/ec2/
     const machineImage = ec2.MachineImage.genericLinux({
-      'us-east-1': 'ami-0a0e5d9c7acc336f1',
+      'us-east-1': process.env.MASTODON_AMI!,
     });
 
     const launchTemplate = new ec2.LaunchTemplate(this, 'mastodon-app-launch-template', {
-      instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.MEDIUM),
+      instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3A, ec2.InstanceSize.MEDIUM),
       keyPair: ec2.KeyPair.fromKeyPairName(this, 'mastodon-app-key-pair', process.env.BASTON_KEY_PAIR_NAME!),
       machineImage,
       userData,
