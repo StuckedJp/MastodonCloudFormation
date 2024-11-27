@@ -28,12 +28,16 @@ export class AppStack extends Construct {
       allowAllOutbound: true,
       allowAllIpv6Outbound: true,
     });
-    securityGroup.addIngressRule(ec2.Peer.ipv4(vpc.publicSubnets[0].ipv4CidrBlock), ec2.Port.tcp(22));
-    securityGroup.addIngressRule(ec2.Peer.ipv4(vpc.publicSubnets[1].ipv4CidrBlock), ec2.Port.tcp(22));
+    securityGroup.addIngressRule(ec2.Peer.ipv4(vpc.vpcCidrBlock), ec2.Port.tcp(443));
 
     // IAM Role
     const role = new Role(this, 'mastodon-app-role', {
       assumedBy: new ServicePrincipal('ec2.amazonaws.com'),
+      managedPolicies: [
+        {
+          managedPolicyArn: 'arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore',
+        },
+      ],
       inlinePolicies: {
         codeBuildServicePolicies: new PolicyDocument({
           statements: [
