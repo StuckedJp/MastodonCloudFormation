@@ -7,6 +7,8 @@ import {
   Vpc,
   IpAddresses,
   IpProtocol,
+  SecurityGroup,
+  InterfaceVpcEndpoint,
   InterfaceVpcEndpointAwsService,
 } from 'aws-cdk-lib/aws-ec2';
 import { Construct } from 'constructs';
@@ -20,6 +22,8 @@ export class VpcStack extends Construct {
     const vpc = new Vpc(this, 'mastodon-infra-vpc', {
       ipAddresses: IpAddresses.cidr(process.env.VPC_CIDR!),
       vpcName: 'mastodon-infra-vpc',
+      enableDnsSupport: true,
+      enableDnsHostnames: true,
       natGatewayProvider,
       natGateways: 1,
       maxAzs: 2,
@@ -47,6 +51,38 @@ export class VpcStack extends Construct {
     });
 
     natGatewayProvider.securityGroup.addIngressRule(Peer.ipv4(vpc.vpcCidrBlock), Port.allTraffic());
+
+    const securityGroup = new SecurityGroup(this, 'mastodon-infra-vpc-ssm-security-group', {
+      vpc,
+      allowAllOutbound: true,
+      allowAllIpv6Outbound: true,
+    });
+    securityGroup.addIngressRule(Peer.ipv4(vpc.vpcCidrBlock), Port.tcp(443));
+
+    const privateSubnets = vpc.selectSubnets({ subnetType: SubnetType.PRIVATE_WITH_EGRESS });
+    const endpoints = [
+      new InterfaceVpcEndpoint(this, 'mastodon-infra-vpc-endpoint-ssm', {
+        vpc,
+        service: InterfaceVpcEndpointAwsService.SSM,
+        privateDnsEnabled: true,
+        securityGroups: [securityGroup],
+        subnets: privateSubnets,
+      }),
+      new InterfaceVpcEndpoint(this, 'mastodon-infra-vpc-endpoint-ssm-messages', {
+        vpc,
+        service: InterfaceVpcEndpointAwsService.SSM_MESSAGES,
+        privateDnsEnabled: true,
+        securityGroups: [securityGroup],
+        subnets: privateSubnets,
+      }),
+      new InterfaceVpcEndpoint(this, 'mastodon-infra-vpc-endpoint-ec2-messages', {
+        vpc,
+        service: InterfaceVpcEndpointAwsService.EC2_MESSAGES,
+        privateDnsEnabled: true,
+        securityGroups: [securityGroup],
+        subnets: privateSubnets,
+      }),
+    ];
 
     this.vpc = vpc;
   }
