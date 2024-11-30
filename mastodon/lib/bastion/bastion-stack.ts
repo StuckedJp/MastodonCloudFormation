@@ -35,16 +35,10 @@ export class BastionStack extends Construct {
       allowAllOutbound: true,
       allowAllIpv6Outbound: true,
     });
-    securityGroup.addIngressRule(ec2.Peer.ipv4(vpc.vpcCidrBlock), ec2.Port.tcp(443));
 
     // IAM Role
     const role = new Role(this, 'mastodon-bastion-role', {
       assumedBy: new ServicePrincipal('ec2.amazonaws.com'),
-      managedPolicies: [
-        {
-          managedPolicyArn: 'arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore',
-        },
-      ],
       inlinePolicies: {
         codeBuildServicePolicies: new PolicyDocument({
           statements: [
@@ -220,6 +214,7 @@ export class BastionStack extends Construct {
           volume: BlockDeviceVolume.ebs(20),
         },
       ],
+      ssmSessionPermissions: true,
     });
   }
 }
