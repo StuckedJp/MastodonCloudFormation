@@ -1,11 +1,10 @@
-import { Vpc, SecurityGroup, Peer, Port, SubnetType } from 'aws-cdk-lib/aws-ec2';
+import { Vpc, SecurityGroup, SubnetType } from 'aws-cdk-lib/aws-ec2';
 import { Construct } from 'constructs';
 import {
   ApplicationLoadBalancer,
   ApplicationProtocol,
   ApplicationProtocolVersion,
   IpAddressType,
-  ListenerCertificate,
 } from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import { AutoScalingGroup } from 'aws-cdk-lib/aws-autoscaling';
 import { Duration } from 'aws-cdk-lib';
@@ -21,36 +20,35 @@ export class ApplicationLoadBalancerStack extends Construct {
       allowAllOutbound: true,
       allowAllIpv6Outbound: true,
     });
-    securityGroup.addIngressRule(Peer.anyIpv4(), Port.tcp(443));
-    securityGroup.addIngressRule(Peer.anyIpv4(), Port.tcp(80));
-    securityGroup.addIngressRule(Peer.anyIpv6(), Port.tcp(443));
-    securityGroup.addIngressRule(Peer.anyIpv6(), Port.tcp(80));
 
     // ALB
     const alb = new ApplicationLoadBalancer(this, 'mastodon-alb', {
       vpc,
       securityGroup,
+      vpcSubnets: vpc.selectSubnets({ subnetType: SubnetType.PUBLIC }),
       internetFacing: true,
       ipAddressType: IpAddressType.DUAL_STACK,
+      http2Enabled: true,
     });
     alb.logAccessLogs(backyardBucket, process.env.LB_ACCESS_LOG_PREFIX);
 
     // Listeners
-    const listenerHttp = alb.addListener('mastodon-alb-listener-http', {
+    // Cloudflare の DNS で Proxied を選んだ場合 80 番で通信される
+    const listener = alb.addListener('mastodon-alb-listener-http', {
       port: 80,
       open: true,
       protocol: ApplicationProtocol.HTTP,
     });
-    const listenerHttps = alb.addListener('mastodon-alb-listener-https', {
-      port: 443,
-      open: true,
-      certificates: [ListenerCertificate.fromArn(process.env.LB_CERTIFICATE_ARN!)],
-      protocol: ApplicationProtocol.HTTPS,
-    });
+    // 直接アクセス
+    // const listener = alb.addListener('mastodon-alb-listener-https', {
+    //   port: 443,
+    //   open: true,
+    //   certificates: [ListenerCertificate.fromArn(process.env.LB_CERTIFICATE_ARN!)],
+    //   protocol: ApplicationProtocol.HTTPS,
+    // });
 
     // Targets
-    // For Application
-    const props = {
+    listener.addTargets('mastodon-alb-listener-target', {
       port: 80,
       targets: [asg],
       protocol: ApplicationProtocol.HTTP,
@@ -65,8 +63,6 @@ export class ApplicationLoadBalancerStack extends Construct {
         healthyThresholdCount: 2,
         unhealthyThresholdCount: 2,
       },
-    };
-    listenerHttp.addTargets('mastodon-alb-target-http', props);
-    listenerHttps.addTargets('mastodon-alb-target-https', props);
+    });
   }
 }
