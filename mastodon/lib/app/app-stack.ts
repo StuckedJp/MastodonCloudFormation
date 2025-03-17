@@ -4,10 +4,9 @@ import { Construct } from 'constructs';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import { Secret } from 'aws-cdk-lib/aws-secretsmanager';
 import { CfnCacheCluster } from 'aws-cdk-lib/aws-elasticache';
-import { AutoScalingGroup, BlockDeviceVolume, HealthCheck } from 'aws-cdk-lib/aws-autoscaling';
+import { AdditionalHealthCheckType, AutoScalingGroup, BlockDeviceVolume, HealthChecks } from 'aws-cdk-lib/aws-autoscaling';
 import { Asset } from 'aws-cdk-lib/aws-s3-assets';
 import path = require('path');
-import { Duration } from 'aws-cdk-lib';
 
 export class AppStack extends Construct {
   public readonly autoScalingGroup: AutoScalingGroup;
@@ -187,9 +186,9 @@ export class AppStack extends Construct {
       vpcSubnets: vpc.selectSubnets({ subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS }),
       minCapacity: 1,
       maxCapacity: 1,
-      healthCheck: HealthCheck.elb({
-        grace: Duration.minutes(30),
-      }),
+      healthChecks: HealthChecks.withAdditionalChecks({
+        additionalTypes: [AdditionalHealthCheckType.ELB],
+      })
     });
 
     nginxConf.grantRead(this.autoScalingGroup);
