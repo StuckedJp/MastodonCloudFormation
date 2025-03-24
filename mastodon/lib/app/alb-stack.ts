@@ -5,6 +5,7 @@ import {
   ApplicationProtocol,
   ApplicationProtocolVersion,
   IpAddressType,
+  ListenerCertificate,
 } from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import { AutoScalingGroup } from 'aws-cdk-lib/aws-autoscaling';
 import { Duration } from 'aws-cdk-lib';
@@ -33,19 +34,12 @@ export class ApplicationLoadBalancerStack extends Construct {
     alb.logAccessLogs(backyardBucket, process.env.LB_ACCESS_LOG_PREFIX);
 
     // Listeners
-    // Cloudflare の DNS で Proxied を選んだ場合 80 番で通信される
-    const listener = alb.addListener('mastodon-alb-listener-http', {
-      port: 80,
+    const listener = alb.addListener('mastodon-alb-listener-https', {
+      port: 443,
       open: true,
-      protocol: ApplicationProtocol.HTTP,
+      certificates: [ListenerCertificate.fromArn(process.env.LB_CERTIFICATE_ARN!)],
+      protocol: ApplicationProtocol.HTTPS,
     });
-    // 直接アクセス
-    // const listener = alb.addListener('mastodon-alb-listener-https', {
-    //   port: 443,
-    //   open: true,
-    //   certificates: [ListenerCertificate.fromArn(process.env.LB_CERTIFICATE_ARN!)],
-    //   protocol: ApplicationProtocol.HTTPS,
-    // });
 
     // Targets
     listener.addTargets('mastodon-alb-listener-target', {
