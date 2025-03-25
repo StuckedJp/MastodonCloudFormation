@@ -34,7 +34,7 @@ export class VpcStack extends Construct {
           name: 'Ingress',
           cidrMask: 24,
           ipv6AssignAddressOnCreation: true,
-          mapPublicIpOnLaunch: true,
+          mapPublicIpOnLaunch: false,
         },
         {
           subnetType: SubnetType.PRIVATE_WITH_EGRESS,

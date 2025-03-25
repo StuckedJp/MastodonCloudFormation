@@ -15,6 +15,7 @@ export class CloudFrontStack extends Construct {
       defaultBehavior: {
         origin: S3BucketOrigin.withOriginAccessControl(bucket),
       },
+      defaultRootObject: '',
       domainNames: [process.env.MASTODON_ATTACHMENT_FQDN!],
       certificate: Certificate.fromCertificateArn(
         this,
