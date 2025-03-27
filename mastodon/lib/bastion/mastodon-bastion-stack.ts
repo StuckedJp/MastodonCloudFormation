@@ -5,7 +5,7 @@ import { DatabaseInstance } from 'aws-cdk-lib/aws-rds';
 import { Bucket } from 'aws-cdk-lib/aws-s3';
 import { Secret } from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
-import { BastionStack } from './bastion-stack';
+import { BastionConstruct } from './bastion.construct';
 
 export interface BastionStackProps extends cdk.StackProps {
   vpc: Vpc;
@@ -17,12 +17,12 @@ export interface BastionStackProps extends cdk.StackProps {
 }
 
 export class MastodonBastionStack extends cdk.Stack {
-  public readonly bastion: BastionStack;
+  public readonly bastion: BastionConstruct;
 
   constructor(scope: Construct, id: string, props: BastionStackProps) {
     super(scope, id, props);
 
-    this.bastion = new BastionStack(
+    this.bastion = new BastionConstruct(
       this,
       props.vpc,
       props.contents,

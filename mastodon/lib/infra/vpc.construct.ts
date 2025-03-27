@@ -13,7 +13,7 @@ import {
 } from 'aws-cdk-lib/aws-ec2';
 import { Construct } from 'constructs';
 
-export class VpcStack extends Construct {
+export class VpcConstruct extends Construct {
   public readonly vpc: Vpc;
 
   constructor(scope: Construct, natGatewayProvider: NatInstanceProviderV2) {

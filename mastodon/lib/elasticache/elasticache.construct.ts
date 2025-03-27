@@ -2,7 +2,7 @@ import { Vpc, SecurityGroup, Peer, Port } from 'aws-cdk-lib/aws-ec2';
 import { CfnCacheCluster, CfnSubnetGroup } from 'aws-cdk-lib/aws-elasticache';
 import { Construct } from 'constructs';
 
-export class ElasticacheStack extends Construct {
+export class ElasticacheConstruct extends Construct {
   public readonly cacheCluster: CfnCacheCluster;
 
   constructor(scope: Construct, vpc: Vpc) {
