@@ -4,7 +4,7 @@ import { S3BucketOrigin } from 'aws-cdk-lib/aws-cloudfront-origins';
 import { Bucket } from 'aws-cdk-lib/aws-s3';
 import { Construct } from 'constructs';
 
-export class CloudFrontStack extends Construct {
+export class CloudFrontConstruct extends Construct {
   public readonly distribution: Distribution;
 
   constructor(scope: Construct, bucket: Bucket) {

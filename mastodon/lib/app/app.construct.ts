@@ -8,7 +8,7 @@ import { AdditionalHealthCheckType, AutoScalingGroup, BlockDeviceVolume, HealthC
 import { Asset } from 'aws-cdk-lib/aws-s3-assets';
 import path = require('path');
 
-export class AppStack extends Construct {
+export class AppConstruct extends Construct {
   public readonly autoScalingGroup: AutoScalingGroup;
 
   constructor(

@@ -11,7 +11,7 @@ import { AutoScalingGroup } from 'aws-cdk-lib/aws-autoscaling';
 import { Duration } from 'aws-cdk-lib';
 import { Bucket } from 'aws-cdk-lib/aws-s3';
 
-export class ApplicationLoadBalancerStack extends Construct {
+export class ApplicationLoadBalancerConstruct extends Construct {
   constructor(scope: Construct, vpc: Vpc, asg: AutoScalingGroup, backyardBucket: Bucket) {
     super(scope, 'application-load-balancer');
 

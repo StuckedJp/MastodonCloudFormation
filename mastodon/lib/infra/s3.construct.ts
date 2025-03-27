@@ -3,7 +3,7 @@ import { AccountPrincipal, AccountRootPrincipal, ArnPrincipal, Effect, PolicySta
 import { BlockPublicAccess, Bucket, CfnBucketPolicy } from 'aws-cdk-lib/aws-s3';
 import { Construct } from 'constructs';
 
-export class S3Stack extends Construct {
+export class S3Construct extends Construct {
   public readonly backyard: Bucket;
   public readonly accessLog: Bucket;
   public readonly contents: Bucket;

@@ -17,7 +17,7 @@ import { Secret } from 'aws-cdk-lib/aws-secretsmanager';
 import { CfnCacheCluster } from 'aws-cdk-lib/aws-elasticache';
 import { DatabaseInstance } from 'aws-cdk-lib/aws-rds';
 
-export class BastionStack extends Construct {
+export class BastionConstruct extends Construct {
   constructor(
     scope: Construct,
     vpc: Vpc,
