@@ -16,8 +16,11 @@ import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import { Secret } from 'aws-cdk-lib/aws-secretsmanager';
 import { CfnCacheCluster } from 'aws-cdk-lib/aws-elasticache';
 import { DatabaseInstance } from 'aws-cdk-lib/aws-rds';
+import { CfnOutput } from 'aws-cdk-lib';
 
 export class BastionConstruct extends Construct {
+  readonly keyPair: ec2.KeyPair;
+
   constructor(
     scope: Construct,
     vpc: Vpc,
@@ -72,6 +75,9 @@ export class BastionConstruct extends Construct {
       },
     });
 
+    const attachmentDistFqdn = [process.env.MASTODON_ATTACHMENT_HOST, process.env.ZONE_DOMAIN]
+      .filter((v) => !!v)
+      .join('.');
     const userData = ec2.UserData.forLinux();
     userData.addCommands(
       `apt-get update`,
@@ -178,7 +184,7 @@ export class BastionConstruct extends Construct {
       `echo 'S3_BUCKET=${contentBucket.bucketName}' >> .env.production`,
       `echo 'S3_REGION=${process.env.AWS_REGION}' >> .env.production`,
       `echo 'S3_HOSTNAME=s3.dualstack.${process.env.AWS_REGION}.amazonaws.com' >> .env.production`,
-      `echo 'S3_ALIAS_HOST=${process.env.MASTODON_ATTACHMENT_FQDN}' >> .env.production `,
+      `echo 'S3_ALIAS_HOST=${attachmentDistFqdn}' >> .env.production `,
       'echo "SECRET_KEY_BASE=${SECRET_KEY_BASE}" >> .env.production',
       `echo "OTP_SECRET=$OTP_SECRET"  >> .env.production`,
       `echo "MASTODON_USE_LIBVIPS=true"  >> .env.production`,
@@ -195,14 +201,12 @@ export class BastionConstruct extends Construct {
       },
     );
 
+    this.keyPair = new ec2.KeyPair(this, 'mastodon-bastion-instance-keypair');
+
     // Bastion
     new ec2.Instance(this, 'mastodon-bastion-instance-20241020', {
       instanceType: InstanceType.of(InstanceClass.T3A, InstanceSize.MEDIUM),
-      keyPair: ec2.KeyPair.fromKeyPairName(
-        this,
-        'mastodon-bastion-instance-key-pair',
-        process.env.BASTON_KEY_PAIR_NAME!,
-      ),
+      keyPair: this.keyPair,
       vpc,
       machineImage,
       securityGroup,
@@ -215,6 +219,11 @@ export class BastionConstruct extends Construct {
         },
       ],
       ssmSessionPermissions: true,
+    });
+
+    new CfnOutput(this, 'mastodon-bastion-instance-keypair-output', {
+      key: 'getKeypairCommand',
+      value: `aws ssm get-parameter --name /ec2/keypair/${this.keyPair.keyPairId} --region ${process.env.CDK_DEFAULT_REGION} --with-decryption --query Parameter.Value --output text`,
     });
   }
 }
