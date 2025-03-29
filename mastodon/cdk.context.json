@@ -7,5 +7,9 @@
     "us-east-1e",
     "us-east-1f"
   ],
-  "ami:account=256384507413:filters.image-type.0=machine:filters.name.0=amzn-ami-vpc-nat-*:filters.state.0=available:owners.0=amazon:region=us-east-1": "ami-0c1062d67d276c699"
+  "ami:account=256384507413:filters.image-type.0=machine:filters.name.0=amzn-ami-vpc-nat-*:filters.state.0=available:owners.0=amazon:region=us-east-1": "ami-0c1062d67d276c699",
+  "hosted-zone:account=256384507413:domainName=fedi.fullstuck.net:region=us-east-1": {
+    "Id": "/hostedzone/Z07995342L1GLJ0HBG7AF",
+    "Name": "fedi.fullstuck.net."
+  }
 }
