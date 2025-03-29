@@ -18,13 +18,19 @@ import {
 } from 'aws-cdk-lib/aws-rds';
 import { Secret } from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
+import { SsmParameterReaderCustomResource } from '../custom-resources/ssm-parameter-reader.construct';
+import { StringParameter } from 'aws-cdk-lib/aws-ssm';
 
-export class RdsStack extends Construct {
+export class RdsConstruct extends Construct {
   public readonly databaseInstance: DatabaseInstance;
   public readonly secret: Secret;
 
-  constructor(scope: Construct, vpc: Vpc) {
+  constructor(scope: Construct, vpcIdParameterName: string) {
     super(scope, 'rds');
+
+    const vpc = Vpc.fromLookup(this, 'mastodon-rds-vpc', {
+      vpcId: StringParameter.valueFromLookup(this, vpcIdParameterName),
+    });
 
     // SecurityGroup
     const securityGroup = new SecurityGroup(this, 'mastodon-rds-security-group', {
