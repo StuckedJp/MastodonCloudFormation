@@ -1,6 +1,6 @@
 import { RemovalPolicy } from 'aws-cdk-lib';
-import { AccountPrincipal, AccountRootPrincipal, ArnPrincipal, Effect, PolicyStatement } from 'aws-cdk-lib/aws-iam';
-import { BlockPublicAccess, Bucket, CfnBucketPolicy } from 'aws-cdk-lib/aws-s3';
+import { AccountPrincipal, Effect, PolicyStatement } from 'aws-cdk-lib/aws-iam';
+import { BlockPublicAccess, Bucket, ObjectOwnership } from 'aws-cdk-lib/aws-s3';
 import { Construct } from 'constructs';
 
 export class S3Construct extends Construct {
@@ -20,15 +20,16 @@ export class S3Construct extends Construct {
     this.accessLog = new Bucket(this, 'mastodon-infra-s3-access-log', {
       removalPolicy: RemovalPolicy.DESTROY,
       blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
+      objectOwnership: ObjectOwnership.BUCKET_OWNER_PREFERRED,
     });
-    this.accessLog.addToResourcePolicy(
-      new PolicyStatement({
-        actions: ['s3:PutObject'],
-        effect: Effect.ALLOW,
-        principals: [new AccountPrincipal('127311923021')],
-        resources: [this.accessLog.arnForObjects('*')],
-      }),
-    );
+    // this.accessLog.addToResourcePolicy(
+    //   new PolicyStatement({
+    //     actions: ['s3:PutObject'],
+    //     effect: Effect.ALLOW,
+    //     principals: [new AccountPrincipal('127311923021')],
+    //     resources: [this.accessLog.arnForObjects('*')],
+    //   }),
+    // );
 
     this.contents = new Bucket(this, 'mastodon-infra-s3-contents', {
       removalPolicy: RemovalPolicy.DESTROY,
