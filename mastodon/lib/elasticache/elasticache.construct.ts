@@ -1,12 +1,17 @@
-import { Vpc, SecurityGroup, Peer, Port } from 'aws-cdk-lib/aws-ec2';
+import { Vpc, SecurityGroup, Peer, Port, SubnetType } from 'aws-cdk-lib/aws-ec2';
 import { CfnCacheCluster, CfnSubnetGroup } from 'aws-cdk-lib/aws-elasticache';
+import { StringParameter } from 'aws-cdk-lib/aws-ssm';
 import { Construct } from 'constructs';
 
 export class ElasticacheConstruct extends Construct {
   public readonly cacheCluster: CfnCacheCluster;
 
-  constructor(scope: Construct, vpc: Vpc) {
+  constructor(scope: Construct, vpcIdParameterName: string) {
     super(scope, 'elasticache');
+
+    const vpc = Vpc.fromLookup(this, 'mastodon-elasticache-vpc', {
+      vpcId: StringParameter.valueFromLookup(this, vpcIdParameterName),
+    });
 
     // SecurityGroup
     const securityGroup = new SecurityGroup(this, 'mastodon-elasticache-security-group', {
@@ -21,12 +26,9 @@ export class ElasticacheConstruct extends Construct {
 
     // SubnetGroup
     const subnetGroup = new CfnSubnetGroup(this, 'mastodon-elasticache-subnet-group', {
-      subnetIds: [
-        vpc.privateSubnets[0].subnetId,
-        vpc.privateSubnets[1].subnetId
-      ],
-      description: 'mastodon-elasticache-subnet-group'
-    })
+      subnetIds: vpc.selectSubnets({subnetType: SubnetType.PRIVATE_WITH_EGRESS}).subnetIds,
+      description: 'mastodon-elasticache-subnet-group',
+    });
 
     // Using the templated secret as credentials
     this.cacheCluster = new CfnCacheCluster(this, 'mastodon-elasticache-cluster', {

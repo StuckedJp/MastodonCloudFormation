@@ -4,7 +4,7 @@ import { Construct } from 'constructs';
 import { ElasticacheConstruct } from './elasticache.construct';
 
 export interface ElasticacheStackProps extends cdk.StackProps {
-  vpc: Vpc;
+  vpcIdParameterName: string;
 }
 
 export class MastodonElasticacheStack extends cdk.Stack {
@@ -13,6 +13,6 @@ export class MastodonElasticacheStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: ElasticacheStackProps) {
     super(scope, id, props);
 
-    this.elasticache = new ElasticacheConstruct(this, props.vpc);
+    this.elasticache = new ElasticacheConstruct(this, props.vpcIdParameterName);
   }
 }
