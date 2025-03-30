@@ -1,8 +1,6 @@
 import {
   Vpc,
   SecurityGroup,
-  Peer,
-  Port,
   InstanceType,
   InstanceClass,
   InstanceSize,
@@ -13,9 +11,8 @@ import { Effect, PolicyDocument, PolicyStatement, Role, ServicePrincipal } from 
 import { Bucket } from 'aws-cdk-lib/aws-s3';
 import { Construct } from 'constructs';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
-import { Secret } from 'aws-cdk-lib/aws-secretsmanager';
+import { ISecret } from 'aws-cdk-lib/aws-secretsmanager';
 import { CfnCacheCluster } from 'aws-cdk-lib/aws-elasticache';
-import { DatabaseInstance } from 'aws-cdk-lib/aws-rds';
 import { CfnOutput } from 'aws-cdk-lib';
 
 export class BastionConstruct extends Construct {
@@ -26,8 +23,7 @@ export class BastionConstruct extends Construct {
     vpc: Vpc,
     contentBucket: Bucket,
     backyardBucket: Bucket,
-    dbSecrets: Secret,
-    dbInstance: DatabaseInstance,
+    dbSecrets: ISecret,
     cacheCluster: CfnCacheCluster,
   ) {
     super(scope, 'bastion');
@@ -132,21 +128,11 @@ export class BastionConstruct extends Construct {
       `cd /home/mastodon/mastodon`,
       `SECRET_ID=${dbSecrets.secretArn}`,
       'JSON=$(aws secretsmanager get-secret-value --secret-id ${SECRET_ID} | jq -cM ".SecretString | fromjson")',
-      process.env.RDS_SNAPSHOT_ID
-        ? `DB_HOST=${dbInstance.dbInstanceEndpointAddress}`
-        : 'DB_HOST=$(echo ${JSON} | jq -rM .host)',
-      process.env.RDS_SNAPSHOT_ID
-        ? `DB_PORT=${dbInstance.dbInstanceEndpointPort}`
-        : 'DB_PORT=$(echo ${JSON} | jq -rM .port)',
-      process.env.RDS_SNAPSHOT_ID
-        ? `DB_NAME=${process.env.RDS_SNAPSHOT_DB_NAME}`
-        : 'DB_NAME=$(echo ${JSON} | jq -rM .dbname)',
-      process.env.RDS_SNAPSHOT_ID
-        ? `DB_USER_NAME=${process.env.RDS_SNAPSHOT_DB_USER_NAME}`
-        : 'DB_USER_NAME=$(echo ${JSON} | jq -rM .username)',
-      process.env.RDS_SNAPSHOT_ID
-        ? `DB_PASSWORD=${process.env.RDS_SNAPSHOT_DB_PASSWORD}`
-        : 'DB_PASSWORD=$(echo ${JSON} | jq -rM .password)',
+      'DB_HOST=$(echo ${JSON} | jq -rM .host)',
+      'DB_PORT=$(echo ${JSON} | jq -rM .port)',
+      // 'DB_NAME=$(echo ${JSON} | jq -rM .dbname)',
+      'DB_USER_NAME=$(echo ${JSON} | jq -rM .username)',
+      'DB_PASSWORD=$(echo ${JSON} | jq -rM .password)',
       process.env.MASTODON_SECRET_KEY_BASE
         ? `SECRET_KEY_BASE=${process.env.MASTODON_SECRET_KEY_BASE}`
         : 'SECRET_KEY_BASE=$(sudo -u mastodon RAILS_ENV=production /usr/local/rbenv/shims/bundle exec rake secret)',
@@ -168,7 +154,7 @@ export class BastionConstruct extends Construct {
       `echo 'LOCAL_DOMAIN=${process.env.MASTODON_FQDN}' >> .env.production`,
       'echo "DB_HOST=${DB_HOST}" >> .env.production',
       'echo "DB_PORT=${DB_PORT}" >> .env.production',
-      'echo "DB_NAME=${DB_NAME}" >> .env.production',
+      `echo "DB_NAME=${process.env.RDS_DATABASE_NAME}" >> .env.production`,
       'echo "DB_USER=${DB_USER_NAME}" >> .env.production',
       'echo "DB_PASS=${DB_PASSWORD}" >> .env.production',
       `echo 'REDIS_HOST=${cacheCluster.attrRedisEndpointAddress}' >> .env.production`,
@@ -204,7 +190,7 @@ export class BastionConstruct extends Construct {
     this.keyPair = new ec2.KeyPair(this, 'mastodon-bastion-instance-keypair');
 
     // Bastion
-    new ec2.Instance(this, 'mastodon-bastion-instance-20241020', {
+    new ec2.Instance(this, 'mastodon-bastion-instance', {
       instanceType: InstanceType.of(InstanceClass.T3A, InstanceSize.MEDIUM),
       keyPair: this.keyPair,
       vpc,
