@@ -130,7 +130,7 @@ export class BastionConstruct extends Construct {
       'JSON=$(aws secretsmanager get-secret-value --secret-id ${SECRET_ID} | jq -cM ".SecretString | fromjson")',
       'DB_HOST=$(echo ${JSON} | jq -rM .host)',
       'DB_PORT=$(echo ${JSON} | jq -rM .port)',
-      // 'DB_NAME=$(echo ${JSON} | jq -rM .dbname)',
+      'DB_NAME=$(echo ${JSON} | jq -rM .dbname)',
       'DB_USER_NAME=$(echo ${JSON} | jq -rM .username)',
       'DB_PASSWORD=$(echo ${JSON} | jq -rM .password)',
       process.env.MASTODON_SECRET_KEY_BASE
@@ -154,7 +154,7 @@ export class BastionConstruct extends Construct {
       `echo 'LOCAL_DOMAIN=${process.env.MASTODON_FQDN}' >> .env.production`,
       'echo "DB_HOST=${DB_HOST}" >> .env.production',
       'echo "DB_PORT=${DB_PORT}" >> .env.production',
-      `echo "DB_NAME=${process.env.RDS_DATABASE_NAME}" >> .env.production`,
+      'echo "DB_NAME=${DB_NAME}" >> .env.production',
       'echo "DB_USER=${DB_USER_NAME}" >> .env.production',
       'echo "DB_PASS=${DB_PASSWORD}" >> .env.production',
       `echo 'REDIS_HOST=${cacheCluster.attrRedisEndpointAddress}' >> .env.production`,
