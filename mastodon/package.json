@@ -9,6 +9,7 @@
     "watch": "tsc -w",
     "test": "jest",
     "deploy": "cdk deploy",
+    "deploy:all": "cdk deploy --all",
     "deploy:only": "cdk deploy -e",
     "cdk": "cdk"
   },

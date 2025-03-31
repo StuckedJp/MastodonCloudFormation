@@ -92,6 +92,7 @@ export class AppConstruct extends Construct {
       path: path.join(__dirname, 'assets', 'mastodon-web.service'),
     });
 
+    const fqdn = [process.env.MASTODON_HOST, process.env.ZONE_DOMAIN].filter((v) => !!v).join('.');
     const userData = UserData.forLinux();
     userData.addCommands(
       `apt-get update`,
@@ -151,7 +152,7 @@ export class AppConstruct extends Construct {
       `sudo -u mastodon RAILS_ENV=production /usr/local/rbenv/shims/bundle exec rails assets:precompile`,
       // Configure Nginx
       `aws s3 cp s3://${nginxConf.s3BucketName}/${nginxConf.s3ObjectKey} /tmp/nginx.conf`,
-      `cat /tmp/nginx.conf | sed -e 's/example\\.com/${process.env.MASTODON_FQDN}/g' > /etc/nginx/sites-available/mastodon`,
+      `cat /tmp/nginx.conf | sed -e 's/example\\.com/${fqdn}/g' > /etc/nginx/sites-available/mastodon`,
       `ln -s /etc/nginx/sites-available/mastodon /etc/nginx/sites-enabled/mastodon`,
       `rm /etc/nginx/sites-enabled/default`,
       `systemctl reload nginx`,
