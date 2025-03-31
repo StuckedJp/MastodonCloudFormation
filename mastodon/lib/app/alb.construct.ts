@@ -10,9 +10,13 @@ import {
 import { AutoScalingGroup } from 'aws-cdk-lib/aws-autoscaling';
 import { Duration } from 'aws-cdk-lib';
 import { Bucket } from 'aws-cdk-lib/aws-s3';
+import { Certificate } from 'aws-cdk-lib/aws-certificatemanager';
+import { StringParameter } from 'aws-cdk-lib/aws-ssm';
 
 export class ApplicationLoadBalancerConstruct extends Construct {
-  constructor(scope: Construct, vpc: Vpc, asg: AutoScalingGroup, backyardBucket: Bucket) {
+  public readonly applicationLoadBalancer: ApplicationLoadBalancer;
+
+  constructor(scope: Construct, vpc: Vpc, asg: AutoScalingGroup, certArnParamName: string) {
     super(scope, 'application-load-balancer');
 
     // SecurityGroup(ALB)
@@ -22,8 +26,15 @@ export class ApplicationLoadBalancerConstruct extends Construct {
       allowAllIpv6Outbound: true,
     });
 
+    // certificate
+    const certificate = Certificate.fromCertificateArn(
+      this,
+      'mastodon-alb-cert-acm',
+      StringParameter.valueFromLookup(this, certArnParamName),
+    );
+
     // ALB
-    const alb = new ApplicationLoadBalancer(this, 'mastodon-alb', {
+    this.applicationLoadBalancer = new ApplicationLoadBalancer(this, 'mastodon-alb', {
       vpc,
       securityGroup,
       vpcSubnets: vpc.selectSubnets({ subnetType: SubnetType.PUBLIC }),
@@ -31,14 +42,13 @@ export class ApplicationLoadBalancerConstruct extends Construct {
       ipAddressType: IpAddressType.DUAL_STACK,
       http2Enabled: true,
     });
-    alb.logAccessLogs(backyardBucket, process.env.LB_ACCESS_LOG_PREFIX);
 
     // Listeners
-    const listener = alb.addListener('mastodon-alb-listener-https', {
+    const listener = this.applicationLoadBalancer.addListener('mastodon-alb-listener-https', {
+      protocol: ApplicationProtocol.HTTPS,
       port: 443,
       open: true,
-      certificates: [ListenerCertificate.fromArn(process.env.LB_CERTIFICATE_ARN!)],
-      protocol: ApplicationProtocol.HTTPS,
+      certificates: [certificate],
     });
 
     // Targets
