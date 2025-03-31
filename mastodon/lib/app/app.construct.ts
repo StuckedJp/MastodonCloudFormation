@@ -1,28 +1,35 @@
+import * as path from 'path';
 import { Effect, PolicyDocument, PolicyStatement, Role, ServicePrincipal } from 'aws-cdk-lib/aws-iam';
 import { Bucket } from 'aws-cdk-lib/aws-s3';
 import { Construct } from 'constructs';
-import * as ec2 from 'aws-cdk-lib/aws-ec2';
-import { Secret } from 'aws-cdk-lib/aws-secretsmanager';
-import { CfnCacheCluster } from 'aws-cdk-lib/aws-elasticache';
-import { AdditionalHealthCheckType, AutoScalingGroup, BlockDeviceVolume, HealthChecks } from 'aws-cdk-lib/aws-autoscaling';
+import {
+  InstanceClass,
+  InstanceSize,
+  InstanceType,
+  KeyPair,
+  LaunchTemplate,
+  MachineImage,
+  SecurityGroup,
+  SubnetType,
+  UserData,
+  Vpc,
+} from 'aws-cdk-lib/aws-ec2';
+import {
+  AdditionalHealthCheckType,
+  AutoScalingGroup,
+  BlockDeviceVolume,
+  HealthChecks,
+} from 'aws-cdk-lib/aws-autoscaling';
 import { Asset } from 'aws-cdk-lib/aws-s3-assets';
-import path = require('path');
 
 export class AppConstruct extends Construct {
   public readonly autoScalingGroup: AutoScalingGroup;
 
-  constructor(
-    scope: Construct,
-    vpc: ec2.Vpc,
-    contentBucket: Bucket,
-    backyardBucket: Bucket,
-    dbSecrets: Secret,
-    cacheCluster: CfnCacheCluster,
-  ) {
+  constructor(scope: Construct, vpc: Vpc, contentBucket: Bucket, backyardBucket: Bucket, keyPair: KeyPair) {
     super(scope, 'app');
 
     // SecurityGroup(EC2 Instance)
-    const securityGroup = new ec2.SecurityGroup(this, 'mastodon-app-instance-security-group', {
+    const securityGroup = new SecurityGroup(this, 'mastodon-app-instance-security-group', {
       vpc,
       allowAllOutbound: true,
       allowAllIpv6Outbound: true,
@@ -85,7 +92,7 @@ export class AppConstruct extends Construct {
       path: path.join(__dirname, 'assets', 'mastodon-web.service'),
     });
 
-    const userData = ec2.UserData.forLinux();
+    const userData = UserData.forLinux();
     userData.addCommands(
       `apt-get update`,
       `apt-get upgrade -y`,
@@ -160,13 +167,13 @@ export class AppConstruct extends Construct {
     );
 
     // https://cloud-images.ubuntu.com/locator/ec2/
-    const machineImage = ec2.MachineImage.genericLinux({
+    const machineImage = MachineImage.genericLinux({
       'us-east-1': process.env.MASTODON_AMI!,
     });
 
-    const launchTemplate = new ec2.LaunchTemplate(this, 'mastodon-app-launch-template', {
-      instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3A, ec2.InstanceSize.MEDIUM),
-      keyPair: ec2.KeyPair.fromKeyPairName(this, 'mastodon-app-key-pair', process.env.BASTON_KEY_PAIR_NAME!),
+    const launchTemplate = new LaunchTemplate(this, 'mastodon-app-launch-template', {
+      instanceType: InstanceType.of(InstanceClass.T3A, InstanceSize.MEDIUM),
+      keyPair,
       machineImage,
       userData,
       securityGroup,
@@ -183,12 +190,12 @@ export class AppConstruct extends Construct {
     this.autoScalingGroup = new AutoScalingGroup(this, 'mastodon-app-asg', {
       vpc,
       launchTemplate,
-      vpcSubnets: vpc.selectSubnets({ subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS }),
+      vpcSubnets: vpc.selectSubnets({ subnetType: SubnetType.PRIVATE_WITH_EGRESS }),
       minCapacity: 1,
       maxCapacity: 1,
       healthChecks: HealthChecks.withAdditionalChecks({
         additionalTypes: [AdditionalHealthCheckType.ELB],
-      })
+      }),
     });
 
     nginxConf.grantRead(this.autoScalingGroup);
