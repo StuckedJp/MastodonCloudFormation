@@ -17,7 +17,7 @@ import {
   PostgresEngineVersion,
   SnapshotCredentials,
 } from 'aws-cdk-lib/aws-rds';
-import { ISecret } from 'aws-cdk-lib/aws-secretsmanager';
+import { ISecret, Secret } from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
 import { StringParameter } from 'aws-cdk-lib/aws-ssm';
 
@@ -38,24 +38,28 @@ export class RdsConstruct extends Construct {
       allowAllOutbound: true,
       allowAllIpv6Outbound: true,
     });
-    securityGroup.addIngressRule(Peer.ipv4(vpc.privateSubnets[0].ipv4CidrBlock), Port.tcp(5432));
-    securityGroup.addIngressRule(Peer.ipv4(vpc.privateSubnets[1].ipv4CidrBlock), Port.tcp(5432));
-    securityGroup.addIngressRule(Peer.ipv4(vpc.publicSubnets[0].ipv4CidrBlock), Port.tcp(5432));
-    securityGroup.addIngressRule(Peer.ipv4(vpc.publicSubnets[1].ipv4CidrBlock), Port.tcp(5432));
+    vpc.selectSubnets({ subnetType: SubnetType.PRIVATE_WITH_EGRESS }).subnets.forEach((subnet) => {
+      securityGroup.addIngressRule(Peer.ipv4(subnet.ipv4CidrBlock), Port.tcp(5432));
+    });
 
-    // パスワードに使わない文字
-    const excludeCharacters = ';&|^<>?*$`\'"\\!/@';
+    // パスワード生成
+    const secret = new Secret(this, 'mastodon-rds-secret', {
+      generateSecretString: {
+        excludePunctuation: true,
+        passwordLength: 40,
+        includeSpace: false,
+        secretStringTemplate: `{"username": "${process.env.RDS_USER_NAME}", "dbname": "${process.env.RDS_DATABASE_NAME}"}`,
+        generateStringKey: 'password',
+      },
+    });
 
     if (process.env.RDS_SNAPSHOT_ID) {
-      const credentials = SnapshotCredentials.fromGeneratedSecret(process.env.RDS_USER_NAME!, {
-        excludeCharacters,
-      });
       this.databaseInstance = new DatabaseInstanceFromSnapshot(this, 'mastodon-rds-instance', {
         snapshotIdentifier: process.env.RDS_SNAPSHOT_ID,
         engine: DatabaseInstanceEngine.postgres({
           version: PostgresEngineVersion.VER_17_2,
         }),
-        credentials,
+        credentials: SnapshotCredentials.fromSecret(secret),
         instanceType: InstanceType.of(InstanceClass.BURSTABLE3, InstanceSize.MICRO),
         allowMajorVersionUpgrade: true,
         autoMinorVersionUpgrade: true,
@@ -69,15 +73,12 @@ export class RdsConstruct extends Construct {
         securityGroups: [securityGroup],
       });
     } else {
-      const credentials = Credentials.fromGeneratedSecret(process.env.RDS_USER_NAME!, {
-        excludeCharacters,
-      });
       this.databaseInstance = new DatabaseInstance(this, 'mastodon-rds-instance', {
         engine: DatabaseInstanceEngine.postgres({
           version: PostgresEngineVersion.VER_17,
         }),
         instanceType: InstanceType.of(InstanceClass.BURSTABLE3, InstanceSize.MICRO),
-        credentials,
+        credentials: Credentials.fromSecret(secret),
         databaseName: process.env.RDS_DATABASE_NAME,
         allowMajorVersionUpgrade: true,
         autoMinorVersionUpgrade: true,
