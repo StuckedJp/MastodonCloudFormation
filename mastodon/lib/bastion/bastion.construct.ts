@@ -71,6 +71,7 @@ export class BastionConstruct extends Construct {
       },
     });
 
+    const fqdn = [process.env.MASTODON_HOST, process.env.ZONE_DOMAIN].filter((v) => !!v).join('.');
     const attachmentDistFqdn = [process.env.MASTODON_ATTACHMENT_HOST, process.env.ZONE_DOMAIN]
       .filter((v) => !!v)
       .join('.');
@@ -151,7 +152,7 @@ export class BastionConstruct extends Construct {
       process.env.ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY
         ? `echo 'ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY=${process.env.ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY}' >> .env.production`
         : '',
-      `echo 'LOCAL_DOMAIN=${process.env.MASTODON_FQDN}' >> .env.production`,
+      `echo 'LOCAL_DOMAIN=${fqdn}' >> .env.production`,
       'echo "DB_HOST=${DB_HOST}" >> .env.production',
       'echo "DB_PORT=${DB_PORT}" >> .env.production',
       'echo "DB_NAME=${DB_NAME}" >> .env.production',
