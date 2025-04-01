@@ -48,7 +48,10 @@ export class RdsConstruct extends Construct {
         excludePunctuation: true,
         passwordLength: 40,
         includeSpace: false,
-        secretStringTemplate: `{"username": "${process.env.RDS_USER_NAME}", "dbname": "${process.env.RDS_DATABASE_NAME}"}`,
+        secretStringTemplate: JSON.stringify({
+          username: process.env.RDS_USER_NAME,
+          dbname: process.env.RDS_DATABASE_NAME,
+        }),
         generateStringKey: 'password',
       },
     });
