@@ -1,6 +1,5 @@
 import * as cdk from 'aws-cdk-lib';
 import { Vpc } from 'aws-cdk-lib/aws-ec2';
-import { CfnCacheCluster } from 'aws-cdk-lib/aws-elasticache';
 import { Bucket } from 'aws-cdk-lib/aws-s3';
 import { ISecret } from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
@@ -11,7 +10,10 @@ export interface BastionStackProps extends cdk.StackProps {
   contents: Bucket;
   backyard: Bucket;
   dbSecrets: ISecret;
-  cacheCluster: CfnCacheCluster;
+  cache: {
+    endpointAddress: string;
+    endpointPort: string;
+  };
 }
 
 export class MastodonBastionStack extends cdk.Stack {
@@ -26,7 +28,7 @@ export class MastodonBastionStack extends cdk.Stack {
       props.contents,
       props.backyard,
       props.dbSecrets,
-      props.cacheCluster,
+      props.cache,
     );
   }
 }
