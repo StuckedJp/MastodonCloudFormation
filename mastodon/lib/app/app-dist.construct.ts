@@ -41,7 +41,6 @@ export class ApplicationDistributionConstruct extends Construct {
         responseHeadersPolicy: ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS,
         originRequestPolicy: OriginRequestPolicy.ALL_VIEWER,
       },
-      defaultRootObject: 'index.html',
       domainNames: [fqdn],
       certificate,
       logBucket,
