@@ -6,33 +6,36 @@ import {
   InstanceSize,
   BlockDeviceVolume,
   SubnetType,
+  KeyPair,
+  UserData,
+  MachineImage,
+  Instance,
 } from 'aws-cdk-lib/aws-ec2';
 import { Effect, PolicyDocument, PolicyStatement, Role, ServicePrincipal } from 'aws-cdk-lib/aws-iam';
 import { Bucket } from 'aws-cdk-lib/aws-s3';
 import { Construct } from 'constructs';
-import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import { ISecret } from 'aws-cdk-lib/aws-secretsmanager';
-import { CfnOutput } from 'aws-cdk-lib';
 
 export class BastionConstruct extends Construct {
-  readonly keyPair: ec2.KeyPair;
-
   constructor(
     scope: Construct,
-    vpc: Vpc,
-    contentBucket: Bucket,
-    backyardBucket: Bucket,
-    dbSecrets: ISecret,
-    cache: {
-      endpointAddress: string;
-      endpointPort: string;
+    props: {
+      vpc: Vpc;
+      contentBucket: Bucket;
+      backyardBucket: Bucket;
+      dbSecrets: ISecret;
+      keyPair: KeyPair;
+      cache: {
+        endpointAddress: string;
+        endpointPort: string;
+      };
     },
   ) {
     super(scope, 'bastion');
 
     // SecurityGroup
     const securityGroup = new SecurityGroup(this, 'mastodon-bastion-security-group', {
-      vpc,
+      vpc: props.vpc,
       allowAllOutbound: true,
       allowAllIpv6Outbound: true,
     });
@@ -46,22 +49,22 @@ export class BastionConstruct extends Construct {
             new PolicyStatement({
               effect: Effect.ALLOW,
               actions: ['s3:*'],
-              resources: [`${contentBucket.bucketArn}`],
+              resources: [`${props.contentBucket.bucketArn}`],
             }),
             new PolicyStatement({
               effect: Effect.ALLOW,
               actions: ['s3:*'],
-              resources: [`${contentBucket.bucketArn}/*`],
+              resources: [`${props.contentBucket.bucketArn}/*`],
             }),
             new PolicyStatement({
               effect: Effect.ALLOW,
               actions: ['s3:*'],
-              resources: [`${backyardBucket.bucketArn}`],
+              resources: [`${props.backyardBucket.bucketArn}`],
             }),
             new PolicyStatement({
               effect: Effect.ALLOW,
               actions: ['s3:*'],
-              resources: [`${backyardBucket.bucketArn}/*`],
+              resources: [`${props.backyardBucket.bucketArn}/*`],
             }),
             new PolicyStatement({
               effect: Effect.ALLOW,
@@ -77,7 +80,7 @@ export class BastionConstruct extends Construct {
     const attachmentDistFqdn = [process.env.MASTODON_ATTACHMENT_HOST, process.env.ZONE_DOMAIN]
       .filter((v) => !!v)
       .join('.');
-    const userData = ec2.UserData.forLinux();
+    const userData = UserData.forLinux();
     userData.addCommands(
       `apt-get update`,
       `apt-get upgrade -y`,
@@ -129,7 +132,7 @@ export class BastionConstruct extends Construct {
       `sudo -u mastodon yarn install --immutable`,
       // Retreve Secrets
       `cd /home/mastodon/mastodon`,
-      `SECRET_ID=${dbSecrets.secretArn}`,
+      `SECRET_ID=${props.dbSecrets.secretArn}`,
       'JSON=$(aws secretsmanager get-secret-value --secret-id ${SECRET_ID} | jq -cM ".SecretString | fromjson")',
       'DB_HOST=$(echo ${JSON} | jq -rM .host)',
       'DB_PORT=$(echo ${JSON} | jq -rM .port)',
@@ -160,15 +163,15 @@ export class BastionConstruct extends Construct {
       'echo "DB_NAME=${DB_NAME}" >> .env.production',
       'echo "DB_USER=${DB_USER_NAME}" >> .env.production',
       'echo "DB_PASS=${DB_PASSWORD}" >> .env.production',
-      `echo 'REDIS_HOST=${cache.endpointAddress}' >> .env.production`,
-      `echo 'REDIS_PORT=${cache.endpointPort}' >> .env.production`,
+      `echo 'REDIS_HOST=${props.cache.endpointAddress}' >> .env.production`,
+      `echo 'REDIS_PORT=${props.cache.endpointPort}' >> .env.production`,
       `echo 'SMTP_SERVER=${process.env.SMTP_SERVER}' >> .env.production`,
       `echo 'SMTP_PORT=${process.env.SMTP_PORT}' >> .env.production`,
       `echo 'SMTP_LOGIN=${process.env.SMTP_LOGIN}' >> .env.production`,
       `echo 'SMTP_PASSWORD=${process.env.SMTP_PASSWORD}' >> .env.production`,
       `echo 'SMTP_FROM_ADDRESS=${process.env.SMTP_FROM_ADDRESS}' >> .env.production`,
       `echo 'S3_ENABLED=true' >> .env.production`,
-      `echo 'S3_BUCKET=${contentBucket.bucketName}' >> .env.production`,
+      `echo 'S3_BUCKET=${props.contentBucket.bucketName}' >> .env.production`,
       `echo 'S3_REGION=${process.env.AWS_REGION}' >> .env.production`,
       `echo 'S3_HOSTNAME=s3.dualstack.${process.env.AWS_REGION}.amazonaws.com' >> .env.production`,
       `echo 'S3_ALIAS_HOST=${attachmentDistFqdn}' >> .env.production `,
@@ -176,10 +179,10 @@ export class BastionConstruct extends Construct {
       `echo "OTP_SECRET=$OTP_SECRET"  >> .env.production`,
       `echo "MASTODON_USE_LIBVIPS=true"  >> .env.production`,
       `sudo -u mastodon RAILS_ENV=production /usr/local/rbenv/shims/bundle exec rake mastodon:webpush:generate_vapid_key >> .env.production`,
-      `aws s3 cp .env.production s3://${backyardBucket.bucketName}/config/.env.production`,
+      `aws s3 cp .env.production s3://${props.backyardBucket.bucketName}/config/.env.production`,
     );
 
-    const machineImage = ec2.MachineImage.genericLinux(
+    const machineImage = MachineImage.genericLinux(
       {
         'us-east-1': process.env.BASTION_AMI!,
       },
@@ -188,16 +191,14 @@ export class BastionConstruct extends Construct {
       },
     );
 
-    this.keyPair = new ec2.KeyPair(this, 'mastodon-bastion-instance-keypair');
-
     // Bastion
-    new ec2.Instance(this, 'mastodon-bastion-instance', {
+    new Instance(this, 'mastodon-bastion-instance', {
       instanceType: InstanceType.of(InstanceClass.T3A, InstanceSize.MEDIUM),
-      keyPair: this.keyPair,
-      vpc,
+      keyPair: props.keyPair,
+      vpc: props.vpc,
       machineImage,
       securityGroup,
-      vpcSubnets: vpc.selectSubnets({ subnetType: SubnetType.PRIVATE_WITH_EGRESS }),
+      vpcSubnets: props.vpc.selectSubnets({ subnetType: SubnetType.PRIVATE_WITH_EGRESS }),
       role,
       blockDevices: [
         {
@@ -206,11 +207,6 @@ export class BastionConstruct extends Construct {
         },
       ],
       ssmSessionPermissions: true,
-    });
-
-    new CfnOutput(this, 'mastodon-bastion-instance-keypair-output', {
-      key: 'getKeypairCommand',
-      value: `aws ssm get-parameter --name /ec2/keypair/${this.keyPair.keyPairId} --region ${process.env.CDK_DEFAULT_REGION} --with-decryption --query Parameter.Value --output text`,
     });
   }
 }
