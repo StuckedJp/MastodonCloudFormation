@@ -4,6 +4,7 @@ import { S3Construct } from './s3.construct';
 import { VpcConstruct } from './vpc.construct';
 import { NatInstanceConstruct } from './nat-instance.construct';
 import { AttachmentDistributionConstruct } from './attachment-dist-construct';
+import { KeyPairConstruct } from './key-pair.construct';
 
 export interface InfraStackProps extends cdk.StackProps {
   attachmentCertArnParamName: string;
@@ -11,6 +12,7 @@ export interface InfraStackProps extends cdk.StackProps {
 
 export class MastodonInfraStack extends cdk.Stack {
   public readonly nat: NatInstanceConstruct;
+  public readonly keyPair: KeyPairConstruct;
   public readonly vpc: VpcConstruct;
   public readonly s3: S3Construct;
   public readonly attachmentDistribution: AttachmentDistributionConstruct;
@@ -19,6 +21,7 @@ export class MastodonInfraStack extends cdk.Stack {
     super(scope, id, props);
 
     this.nat = new NatInstanceConstruct(this);
+    this.keyPair = new KeyPairConstruct(this);
     this.vpc = new VpcConstruct(this, this.nat.natGatewayProvider);
     this.s3 = new S3Construct(this);
     this.attachmentDistribution = new AttachmentDistributionConstruct(

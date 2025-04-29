@@ -1,5 +1,5 @@
 import * as cdk from 'aws-cdk-lib';
-import { Vpc } from 'aws-cdk-lib/aws-ec2';
+import { KeyPair, Vpc } from 'aws-cdk-lib/aws-ec2';
 import { Bucket } from 'aws-cdk-lib/aws-s3';
 import { ISecret } from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
@@ -7,9 +7,10 @@ import { BastionConstruct } from './bastion.construct';
 
 export interface BastionStackProps extends cdk.StackProps {
   vpc: Vpc;
-  contents: Bucket;
-  backyard: Bucket;
+  contentBucket: Bucket;
+  backyardBucket: Bucket;
   dbSecrets: ISecret;
+  keyPair: KeyPair;
   cache: {
     endpointAddress: string;
     endpointPort: string;
@@ -24,11 +25,7 @@ export class MastodonBastionStack extends cdk.Stack {
 
     this.bastion = new BastionConstruct(
       this,
-      props.vpc,
-      props.contents,
-      props.backyard,
-      props.dbSecrets,
-      props.cache,
+      props,
     );
   }
 }

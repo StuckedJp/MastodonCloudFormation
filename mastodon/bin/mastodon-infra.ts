@@ -62,9 +62,10 @@ const elasticacheStack = new MastodonElasticacheStack(app, 'MastodonElasticacheS
 const bastionStack = new MastodonBastionStack(app, 'MastodonBastionStack', {
   ...config,
   vpc: infraStack.vpc.vpc,
-  backyard: infraStack.s3.backyard,
-  contents: infraStack.s3.contents,
+  contentBucket: infraStack.s3.contents,
+  backyardBucket: infraStack.s3.backyard,
   dbSecrets: rdsStack.rds.secret,
+  keyPair: infraStack.keyPair.keyPair,
   cache: {
     endpointAddress: elasticacheStack.valkey.replicationGroup.attrPrimaryEndPointAddress,
     endpointPort: elasticacheStack.valkey.replicationGroup.attrPrimaryEndPointPort,
@@ -78,6 +79,6 @@ const appStack = new MastodonAppStack(app, 'MastodonAppStack', {
   backyard: infraStack.s3.backyard,
   contents: infraStack.s3.contents,
   accessLog: infraStack.s3.accessLog,
-  keyPair: bastionStack.bastion.keyPair,
+  keyPair: infraStack.keyPair.keyPair,
   certArnParamName: globalCertStack.appCert.appCertArnParameterName,
 });
