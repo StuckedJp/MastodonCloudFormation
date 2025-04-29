@@ -65,7 +65,10 @@ const bastionStack = new MastodonBastionStack(app, 'MastodonBastionStack', {
   backyard: infraStack.s3.backyard,
   contents: infraStack.s3.contents,
   dbSecrets: rdsStack.rds.secret,
-  cacheCluster: elasticacheStack.elasticache.cacheCluster,
+  cache: {
+    endpointAddress: elasticacheStack.valkey.replicationGroup.attrPrimaryEndPointAddress,
+    endpointPort: elasticacheStack.valkey.replicationGroup.attrPrimaryEndPointPort,
+  },
 });
 
 // アプリ

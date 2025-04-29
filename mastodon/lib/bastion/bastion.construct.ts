@@ -12,7 +12,6 @@ import { Bucket } from 'aws-cdk-lib/aws-s3';
 import { Construct } from 'constructs';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import { ISecret } from 'aws-cdk-lib/aws-secretsmanager';
-import { CfnCacheCluster } from 'aws-cdk-lib/aws-elasticache';
 import { CfnOutput } from 'aws-cdk-lib';
 
 export class BastionConstruct extends Construct {
@@ -24,7 +23,10 @@ export class BastionConstruct extends Construct {
     contentBucket: Bucket,
     backyardBucket: Bucket,
     dbSecrets: ISecret,
-    cacheCluster: CfnCacheCluster,
+    cache: {
+      endpointAddress: string;
+      endpointPort: string;
+    },
   ) {
     super(scope, 'bastion');
 
@@ -158,15 +160,13 @@ export class BastionConstruct extends Construct {
       'echo "DB_NAME=${DB_NAME}" >> .env.production',
       'echo "DB_USER=${DB_USER_NAME}" >> .env.production',
       'echo "DB_PASS=${DB_PASSWORD}" >> .env.production',
-      `echo 'REDIS_HOST=${cacheCluster.attrRedisEndpointAddress}' >> .env.production`,
-      `echo 'REDIS_PORT=${cacheCluster.attrRedisEndpointPort}' >> .env.production`,
+      `echo 'REDIS_HOST=${cache.endpointAddress}' >> .env.production`,
+      `echo 'REDIS_PORT=${cache.endpointPort}' >> .env.production`,
       `echo 'SMTP_SERVER=${process.env.SMTP_SERVER}' >> .env.production`,
       `echo 'SMTP_PORT=${process.env.SMTP_PORT}' >> .env.production`,
       `echo 'SMTP_LOGIN=${process.env.SMTP_LOGIN}' >> .env.production`,
       `echo 'SMTP_PASSWORD=${process.env.SMTP_PASSWORD}' >> .env.production`,
       `echo 'SMTP_FROM_ADDRESS=${process.env.SMTP_FROM_ADDRESS}' >> .env.production`,
-      `echo 'AWS_ACCESS_KEY_ID=${process.env.AWS_ACCESS_KEY_ID}' >> .env.production`,
-      `echo 'AWS_SECRET_ACCESS_KEY=${process.env.AWS_SECRET_ACCESS_KEY}' >> .env.production`,
       `echo 'S3_ENABLED=true' >> .env.production`,
       `echo 'S3_BUCKET=${contentBucket.bucketName}' >> .env.production`,
       `echo 'S3_REGION=${process.env.AWS_REGION}' >> .env.production`,
