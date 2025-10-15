@@ -1,5 +1,5 @@
 import * as path from 'path';
-import { Effect, PolicyDocument, PolicyStatement, Role, ServicePrincipal } from 'aws-cdk-lib/aws-iam';
+import { Effect, ManagedPolicy, PolicyDocument, PolicyStatement, Role, ServicePrincipal } from 'aws-cdk-lib/aws-iam';
 import { Bucket } from 'aws-cdk-lib/aws-s3';
 import { Construct } from 'constructs';
 import {
@@ -39,9 +39,7 @@ export class AppConstruct extends Construct {
     const role = new Role(this, 'mastodon-app-role', {
       assumedBy: new ServicePrincipal('ec2.amazonaws.com'),
       managedPolicies: [
-        {
-          managedPolicyArn: 'arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore',
-        },
+        ManagedPolicy.fromManagedPolicyArn(this, 'mastodon-app-ssm-managed-policy', 'arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore')
       ],
       inlinePolicies: {
         codeBuildServicePolicies: new PolicyDocument({
