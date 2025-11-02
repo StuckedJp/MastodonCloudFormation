@@ -18,11 +18,23 @@ The `cdk.json` file tells the CDK Toolkit how to execute your app.
 ### 設定ファイルを作成
 
 `lib/param-type.ts` に沿って `params.環境名.json` ファイルを作成する。
+
 `環境名` には `dev` と `prod` が利用できる。
-`環境名` は増やすこともできる。`環境名` を追加した場合は、`ENV_NAME=環境名 npm run deploy ...` とする。
 
+`環境名` は増やすこともできる。例えば `環境名` に `stg` を追加した場合の実行コマンドは、`ENV_NAME=stg npm run deploy Mastodon***Stack-stg` となる。
 
-### デプロイ
+初期デプロイの場合は、以下の項目は `null` を設定する。
+```
+app.secretKeyBase
+app.otpSecret
+app.activeRecord.encryption.deterministicKey
+app.activeRecord.encryption.keyDerivationSalt
+app.activeRecord.encryption.primaryKey
+```
+
+### 初期デプロイ
+
+`環境名` が `dev` の場合の構築例を示す。
 
 1. Route53 をデプロイする。
     ```
@@ -37,7 +49,7 @@ The `cdk.json` file tells the CDK Toolkit how to execute your app.
     ```
     npm run deploy MastodonRegionalCertStack-dev
     ```
-1. インフラをデプロイする。
+1. インフラ (VPC, S3, コンテンツ配信 CDN) をデプロイする。
     ```
     npm run deploy MastodonInfraStack-dev
     ```
@@ -73,36 +85,50 @@ The `cdk.json` file tells the CDK Toolkit how to execute your app.
     RAILS_ENV=production bin/tootctl accounts create アカウント名 --email メールアドレス --confirmed --role Owner
     RAILS_ENV=production bin/tootctl accounts modify アカウント名 --approve
     ```
+1. スタックの更新に備えて様々なキーを保存する。
+    ```
+    SECRET_KEY_BASE → app.secretKeyBase
+    OTP_SECRET → app.otpSecret
+    ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY → app.activeRecord.encryption.deterministicKey
+    ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT → app.activeRecord.encryption.keyDerivationSalt
+    ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY → app.activeRecord.encryption.primaryKey
+    ```
 1. アプリケーションをデプロイする
     ```
     npm run deploy MastodonAppStack-dev
     ```
 1. アプリケーションサーバーで作業する。マネージメントコンソールから、SSM で接続する。
 1. `tail -f /var/log/cloud-init-output.log` で初期実行スクリプトの実行完了を待つ。30 分ほどかかる。
-1. 設定したドメインのホストにブラウザで接続して動作確認をする。
-1. マネージメントコンソールで、踏み台のインスタンスを停止する。
+1. 設定したドメインのホストにブラウザで接続して動作確認をする。`journalctl -f` で Mastodon サーバーのログを監視できる。
+1. 課金を抑えるため、マネージメントコンソールで、踏み台のインスタンスを停止する。
+
+本番環境の場合は、各デプロイコマンドは `npm run deploy:prod Mastodon******Stack-prod` となる。
 
 
 ### アップデート
 
-1. `mastodon/lib/app/app-stack.ts` の `minCapacity` を 2 に変更し、`cdk deploy MastodonAppStack` を実行する。
-1. マネージメントコンソールで `MastodonAppStack/app/mastodon-app-asg` インスタンスが 2 つになったら、新しい方のインスタンスに踏み台をプロキシにして SSH で接続する。
-1. `tail -f /var/log/cloud-init-output.log` で初期実行スクリプトの実行完了を待つ。30 分ほどかかる。
-1. 古い方のインスタンスを終了する。
-1. `MastodonAppStack/app/mastodon-app-asg` インスタンスが再び 2 つになったら、`mastodon/lib/app/app-stack.ts` の `minCapacity` を 1 に変更し、`cdk deploy MastodonAppStack` を実行する。
+1. params.*.json の `mastodon.git.tag` を目的のリリースタグに変更する。
+1. `npm run deploy MastodonAppStack-dev` を実行してスタックを更新する。(本番環境の場合は `npm run deploy:prod MastodonAppStack-prod`)
+1. マネージメントコンソール → EC2 → Auto Scaling グループで `MastodonAppStack` で始まる Auto Scaling グループを選択し、「希望するキャパシティ」「最小の希望する容量」「最大の希望する容量」をすべて 2 に設定する。
+1. マネージメントコンソール → EC2 → ターゲットグループで `Mastod-appli` で始まるターゲットグループを選択し、「登録済みターゲット」を監視する。
+1. 「起動時間」が直近のインスタンスが、「Healthy」になるまで待つ。30分ほどかかる。
+1. 古い方のインスタンスを登録解除し、インスタンスを終了(破棄)する。
+1. ターゲットグループの「Healthy」インスタンスが再び 2 つになったら、Autho Scaling グループのキャパシティをすべて 1 に変更する。
 
 
 ### マイグレーション
 
 1. マネージメントコンソールで、踏み台のインスタンスを起動する。
-1. 踏み台にログインする。
+1. SSM などで踏み台にログインする。
+1. Mastodon のリリースノートの指示に従い作業する。
     ```
     sudo -iu mastodon
     cd mastodon
     git fetch
     git checkout <<VERSION>>
+    # ここ以下は Mastodon のリリースノートの指示に従う
     bundle install
     yarn install
     RAILS_ENV=production bundle exec rails db:migrate
     ```
-1. 「アップデート」手順に従って Mastodon のアプリケーションサーバーを更新する。
+1. [アップデート](#アップデート) 手順に従って Mastodon のアプリケーションサーバーを更新する。
