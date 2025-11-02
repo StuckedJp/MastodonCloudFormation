@@ -15,48 +15,71 @@ The `cdk.json` file tells the CDK Toolkit how to execute your app.
 
 ## デプロイ手順
 
-### .env ファイルを作成
+### 設定ファイルを作成
 
-1. `.env.sample` をコピーして `.env` ファイルを作成する。
-1. `.env` ファイルの内容をサーバーの構成に合わせて編集する。
-
-### ACM に証明書を作る
-
-1. AWS マネージメントコンソールにログインする。
-1. 証明書をリクエストする。
-1. 「パブリック証明書をリクエスト」を選択して「次へ」を押す。
-1. 「完全修飾ドメイン名」に Mastodon の　FQDN と Mastodon の添付ファイルを配信するホストの FQDN を設定する。
-1. 検証方法は「DNS 検証」にする
-1. キーアルゴリズムは「RSA 2048」にする。
-1. 「リクエスト」ボタンを押す。
-1. DNS サーバーに、AWS が提示した CNAME を設定する。
-1. 証明書が「発行済」になったら、証明書の ARN を .env ファイルの `LB_CERTIFICATE_ARN`、`MASTODON_ATTACHMENT_CERTIFICATE_ARN` に設定する。
+`lib/param-type.ts` に沿って `params.環境名.json` ファイルを作成する。
+`環境名` には `dev` と `prod` が利用できる。
+`環境名` は増やすこともできる。`環境名` を追加した場合は、`ENV_NAME=環境名 npm run deploy ...` とする。
 
 
 ### デプロイ
 
-1. 踏み台までデプロイする。
+1. Route53 をデプロイする。
     ```
-    cdk deploy MastodonInfraStack MastodonRdsStack MastodonElasticacheStack MastodonBastionStack
+    npm run deploy MastodonRoute53Stack-dev
     ```
-1. 踏み台で作業する。マネージメントコンソールから、`MastodonBastionStack/bastion/mastodon-bastion-instance` のパブリック IP アドレスを取得して、SSH で接続する。
-1. `tail -f /var/log/cloud-init-output.log` で初期実行スクリプトの実行完了を待つ。20 分ほどかかる。
+1. Route53 にホストゾーンが作られるので、NS レコードを DNS プロバイダに設定する。
+1. グローバル証明書をデプロイする
+    ```
+    npm run deploy MastodonGlobalCertStack-dev
+    ```
+1. リージョナル証明書をデプロイする
+    ```
+    npm run deploy MastodonRegionalCertStack-dev
+    ```
+1. インフラをデプロイする。
+    ```
+    npm run deploy MastodonInfraStack-dev
+    ```
+1. RDS をデプロイする。
+    ```
+    npm run deploy MastodonRdsStack-dev
+    ```
+1. ElastiCache をデプロイする。
+    ```
+    npm run deploy MastodonElasticacheStack-dev
+    ```
+1. 踏み台をデプロイする。
+    ```
+    npm run deploy MastodonBastionStack-dev
+    ```
+1. 踏み台で作業する。マネージメントコンソールから SSM で接続する。
+1. スーパーユーザーにスイッチする。
+    ```
+    sudo -i
+    ```
+1. `tail -f /var/log/cloud-init-output.log` で初期実行スクリプトの実行完了を待つ。30 分ほどかかる。
 1. mastodon ユーザーにスイッチする。
     ```
-    sudo -iu mastodon
+    su - mastodon
     ```
 1. データベースを初期化する。
     ```
     cd mastodon
-    RAILS_ENV=production bundle exec rails db:migrate
+    RAILS_ENV=production bundle exec rails db:setup
+    ```
+1. オーナーユーザーを作成する。
+    ```
+    RAILS_ENV=production bin/tootctl accounts create アカウント名 --email メールアドレス --confirmed --role Owner
+    RAILS_ENV=production bin/tootctl accounts modify アカウント名 --approve
     ```
 1. アプリケーションをデプロイする
     ```
-    cdk deploy MastodonAppStack
+    npm run deploy MastodonAppStack-dev
     ```
-1. DNS の設定をする。マネージメントコンソールから、`Masto-appli-********` のロードバランサーの DNS name を取得し、DNS の CNAME に設定する。
-1. アプリケーションサーバーで作業する。マネージメントコンソールから、`MastodonAppStack/app/mastodon-app-asg` のプライベート IP アドレスを取得して、踏み台をプロキシにして SSH で接続する。
+1. アプリケーションサーバーで作業する。マネージメントコンソールから、SSM で接続する。
 1. `tail -f /var/log/cloud-init-output.log` で初期実行スクリプトの実行完了を待つ。30 分ほどかかる。
+1. 設定したドメインのホストにブラウザで接続して動作確認をする。
 1. マネージメントコンソールで、踏み台のインスタンスを停止する。
 
 

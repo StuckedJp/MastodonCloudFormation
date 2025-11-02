@@ -20,12 +20,13 @@ import {
 import { ISecret, Secret } from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
 import { StringParameter } from 'aws-cdk-lib/aws-ssm';
+import { ParamsType } from '../param-type';
 
 export class RdsConstruct extends Construct {
   public readonly databaseInstance: DatabaseInstance;
   public readonly secret: ISecret;
 
-  constructor(scope: Construct, vpcIdParameterName: string) {
+  constructor(scope: Construct, vpcIdParameterName: string, params: ParamsType) {
     super(scope, 'rds');
 
     const vpc = Vpc.fromLookup(this, 'mastodon-rds-vpc', {
@@ -49,24 +50,24 @@ export class RdsConstruct extends Construct {
         passwordLength: 40,
         includeSpace: false,
         secretStringTemplate: JSON.stringify({
-          username: process.env.RDS_USER_NAME,
-          dbname: process.env.RDS_DATABASE_NAME,
+          username: params.rds.userName,
+          dbname: params.rds.databaseName,
         }),
         generateStringKey: 'password',
       },
     });
 
-    if (process.env.RDS_SNAPSHOT_ID) {
+    if (params.rds.snapshotId) {
       this.databaseInstance = new DatabaseInstanceFromSnapshot(this, 'mastodon-rds-instance', {
-        snapshotIdentifier: process.env.RDS_SNAPSHOT_ID,
+        snapshotIdentifier: params.rds.snapshotId,
         engine: DatabaseInstanceEngine.postgres({
-          version: PostgresEngineVersion.VER_17_2,
+          version: PostgresEngineVersion.VER_17_4,
         }),
         credentials: SnapshotCredentials.fromSecret(secret),
         instanceType: InstanceType.of(InstanceClass.BURSTABLE3, InstanceSize.MICRO),
         allowMajorVersionUpgrade: true,
         autoMinorVersionUpgrade: true,
-        allocatedStorage: Number(process.env.RDS_STORAGE_GB),
+        allocatedStorage: params.rds.storageGB,
         caCertificate: CaCertificate.RDS_CA_RSA4096_G1,
         vpc,
         publiclyAccessible: false,
@@ -82,10 +83,10 @@ export class RdsConstruct extends Construct {
         }),
         instanceType: InstanceType.of(InstanceClass.BURSTABLE3, InstanceSize.MICRO),
         credentials: Credentials.fromSecret(secret),
-        databaseName: process.env.RDS_DATABASE_NAME,
+        databaseName: params.rds.databaseName,
         allowMajorVersionUpgrade: true,
         autoMinorVersionUpgrade: true,
-        allocatedStorage: Number(process.env.RDS_STORAGE_GB),
+        allocatedStorage: params.rds.storageGB,
         caCertificate: CaCertificate.RDS_CA_RSA4096_G1,
         vpc,
         publiclyAccessible: false,
