@@ -4,6 +4,7 @@ import { Bucket } from 'aws-cdk-lib/aws-s3';
 import { ISecret } from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
 import { BastionConstruct } from './bastion.construct';
+import { ParamsType } from '../param-type';
 
 export interface BastionStackProps extends cdk.StackProps {
   vpc: Vpc;
@@ -20,12 +21,9 @@ export interface BastionStackProps extends cdk.StackProps {
 export class MastodonBastionStack extends cdk.Stack {
   public readonly bastion: BastionConstruct;
 
-  constructor(scope: Construct, id: string, props: BastionStackProps) {
+  constructor(scope: Construct, id: string, props: BastionStackProps, params: ParamsType) {
     super(scope, id, props);
 
-    this.bastion = new BastionConstruct(
-      this,
-      props,
-    );
+    this.bastion = new BastionConstruct(this, props, params);
   }
 }

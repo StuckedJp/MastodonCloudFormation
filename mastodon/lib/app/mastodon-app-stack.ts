@@ -5,6 +5,7 @@ import { Construct } from 'constructs';
 import { ApplicationLoadBalancerConstruct } from './alb.construct';
 import { AppConstruct } from './app.construct';
 import { ApplicationDistributionConstruct } from './app-dist.construct';
+import { ParamsType } from '../param-type';
 
 export interface AppStackProps extends cdk.StackProps {
   vpc: Vpc;
@@ -12,7 +13,8 @@ export interface AppStackProps extends cdk.StackProps {
   backyard: Bucket;
   accessLog: Bucket;
   keyPair: KeyPair;
-  certArnParamName: string;
+  globalCertArnParamName: string;
+  regionalCertArnParamName: string;
 }
 
 export class MastodonAppStack extends cdk.Stack {
@@ -20,21 +22,23 @@ export class MastodonAppStack extends cdk.Stack {
   public readonly applicationLoadBalancer: ApplicationLoadBalancerConstruct;
   public readonly applicationDistribution: ApplicationDistributionConstruct;
 
-  constructor(scope: Construct, id: string, props: AppStackProps) {
+  constructor(scope: Construct, id: string, props: AppStackProps, params: ParamsType) {
     super(scope, id, props);
 
-    this.app = new AppConstruct(this, props.vpc, props.contents, props.backyard, props.keyPair);
+    this.app = new AppConstruct(this, props.vpc, props.contents, props.backyard, props.keyPair, params);
     this.applicationLoadBalancer = new ApplicationLoadBalancerConstruct(
       this,
       props.vpc,
       this.app.autoScalingGroup,
-      props.certArnParamName,
+      props.regionalCertArnParamName ? props.regionalCertArnParamName : props.globalCertArnParamName,
+      params,
     );
     this.applicationDistribution = new ApplicationDistributionConstruct(
       this,
       this.applicationLoadBalancer.applicationLoadBalancer,
       props.accessLog,
-      props.certArnParamName,
+      props.globalCertArnParamName,
+      params,
     );
   }
 }
