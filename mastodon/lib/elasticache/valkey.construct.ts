@@ -2,11 +2,12 @@ import { Vpc, SecurityGroup, Peer, Port, SubnetType } from 'aws-cdk-lib/aws-ec2'
 import { CfnParameterGroup, CfnReplicationGroup, CfnSubnetGroup } from 'aws-cdk-lib/aws-elasticache';
 import { StringParameter } from 'aws-cdk-lib/aws-ssm';
 import { Construct } from 'constructs';
+import { ParamsType } from '../param-type';
 
 export class ValkeyConstruct extends Construct {
   public readonly replicationGroup: CfnReplicationGroup;
 
-  constructor(scope: Construct, vpcIdParameterName: string) {
+  constructor(scope: Construct, vpcIdParameterName: string, params: ParamsType) {
     super(scope, 'valkey');
 
     const vpc = Vpc.fromLookup(this, 'mastodon-valkey-vpc', {

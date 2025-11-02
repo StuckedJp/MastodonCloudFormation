@@ -5,18 +5,17 @@ import {
   ApplicationProtocol,
   ApplicationProtocolVersion,
   IpAddressType,
-  ListenerCertificate,
 } from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import { AutoScalingGroup } from 'aws-cdk-lib/aws-autoscaling';
 import { Duration } from 'aws-cdk-lib';
-import { Bucket } from 'aws-cdk-lib/aws-s3';
 import { Certificate } from 'aws-cdk-lib/aws-certificatemanager';
 import { StringParameter } from 'aws-cdk-lib/aws-ssm';
+import { ParamsType } from '../param-type';
 
 export class ApplicationLoadBalancerConstruct extends Construct {
   public readonly applicationLoadBalancer: ApplicationLoadBalancer;
 
-  constructor(scope: Construct, vpc: Vpc, asg: AutoScalingGroup, certArnParamName: string) {
+  constructor(scope: Construct, vpc: Vpc, asg: AutoScalingGroup, certArnParamName: string, params: ParamsType) {
     super(scope, 'application-load-balancer');
 
     // SecurityGroup(ALB)

@@ -7,23 +7,21 @@ import {
   Vpc,
   IpAddresses,
   IpProtocol,
-  SecurityGroup,
-  InterfaceVpcEndpoint,
-  InterfaceVpcEndpointAwsService,
 } from 'aws-cdk-lib/aws-ec2';
 import { ParameterDataType, StringParameter } from 'aws-cdk-lib/aws-ssm';
 import { Construct } from 'constructs';
+import { ParamsType } from '../param-type';
 
 export class VpcConstruct extends Construct {
   public readonly vpc: Vpc;
   public readonly vpcIdParameterName: string;
 
-  constructor(scope: Construct, natGatewayProvider: NatInstanceProviderV2) {
+  constructor(scope: Construct, natGatewayProvider: NatInstanceProviderV2, params: ParamsType) {
     super(scope, 'vpc');
 
     const vpc = new Vpc(this, 'mastodon-infra-vpc', {
-      ipAddresses: IpAddresses.cidr(process.env.VPC_CIDR!),
-      vpcName: 'mastodon-infra-vpc',
+      ipAddresses: IpAddresses.cidr(params.vpc.cidr),
+      vpcName: `mastodon-infra-vpc-${params.envName}`,
       enableDnsSupport: true,
       enableDnsHostnames: true,
       natGatewayProvider,
@@ -55,7 +53,7 @@ export class VpcConstruct extends Construct {
     natGatewayProvider.securityGroup.addIngressRule(Peer.ipv4(vpc.vpcCidrBlock), Port.allTraffic());
 
     // SSM に保存
-    this.vpcIdParameterName = `/mastodon/vpcId`;
+    this.vpcIdParameterName = `/mastodon/${params.aws.region}/${params.envName}/vpcId`;
     new StringParameter(this, 'mastodon-infra-vpc-param', {
       dataType: ParameterDataType.TEXT,
       parameterName: this.vpcIdParameterName,

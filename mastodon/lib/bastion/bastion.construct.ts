@@ -15,6 +15,7 @@ import { Effect, PolicyDocument, PolicyStatement, Role, ServicePrincipal } from 
 import { Bucket } from 'aws-cdk-lib/aws-s3';
 import { Construct } from 'constructs';
 import { ISecret } from 'aws-cdk-lib/aws-secretsmanager';
+import { ParamsType } from '../param-type';
 
 export class BastionConstruct extends Construct {
   constructor(
@@ -30,6 +31,7 @@ export class BastionConstruct extends Construct {
         endpointPort: string;
       };
     },
+    params: ParamsType,
   ) {
     super(scope, 'bastion');
 
@@ -76,10 +78,8 @@ export class BastionConstruct extends Construct {
       },
     });
 
-    const fqdn = [process.env.MASTODON_HOST, process.env.ZONE_DOMAIN].filter((v) => !!v).join('.');
-    const attachmentDistFqdn = [process.env.MASTODON_ATTACHMENT_HOST, process.env.ZONE_DOMAIN]
-      .filter((v) => !!v)
-      .join('.');
+    const fqdn = [params.domain.hostName, params.domain.name].filter((v) => !!v).join('.');
+    const attachmentDistFqdn = [params.domain.attachmentHost, params.domain.name].filter((v) => !!v).join('.');
     const userData = UserData.forLinux();
     userData.addCommands(
       `apt-get update`,
@@ -93,7 +93,7 @@ export class BastionConstruct extends Construct {
       // Node.js
       `mkdir -p /etc/apt/keyrings`,
       `curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg`,
-      `NODE_MAJOR=${process.env.NODE_VERSION}`,
+      `NODE_MAJOR=${params.node.version}`,
       `echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list`,
       `apt-get update`,
       `apt-get install -y nodejs`,
@@ -108,6 +108,15 @@ export class BastionConstruct extends Construct {
       `./aws/install`,
       // User add
       `useradd --create-home mastodon`,
+      // others に実行権限を付与する
+      // https://github.com/mastodon/mastodon/issues/3584
+      `chmod +x /home/mastodon`,
+      // Mastodon
+      `cd /home/mastodon`,
+      `sudo -u mastodon git clone ${params.mastodon.git.url} mastodon`,
+      `cd mastodon`,
+      `sudo -u mastodon git checkout ${params.mastodon.git.tag}`,
+      `RUBY_VERSION=$(cat .ruby-version)`,
       // rbenv
       `git clone https://github.com/rbenv/rbenv.git /usr/local/rbenv`,
       `cd /usr/local/rbenv`,
@@ -118,14 +127,11 @@ export class BastionConstruct extends Construct {
       `echo 'eval "$(rbenv init -)"' >> /etc/profile`,
       `source /etc/profile`,
       `git clone https://github.com/rbenv/ruby-build.git /usr/local/rbenv/plugins/ruby-build`,
-      `RUBY_CONFIGURE_OPTS=--with-jemalloc bash -c "rbenv install ${process.env.RUBY_VERSION}"`,
-      `rbenv global ${process.env.RUBY_VERSION}`,
+      `RUBY_CONFIGURE_OPTS=--with-jemalloc bash -c "rbenv install $RUBY_VERSION"`,
+      `rbenv global $RUBY_VERSION`,
       `gem install bundler --no-document`,
       // Mastodon
-      `cd /home/mastodon`,
-      `sudo -u mastodon git clone ${process.env.MASTODON_GIT_URL} mastodon`,
-      `cd mastodon`,
-      `sudo -u mastodon git checkout ${process.env.MASTODON_GIT_TAG}`,
+      `cd /home/mastodon/mastodon`,
       `sudo -u mastodon /usr/local/rbenv/shims/bundle config deployment 'true'`,
       `sudo -u mastodon /usr/local/rbenv/shims/bundle config without 'development test'`,
       `sudo -u mastodon /usr/local/rbenv/shims/bundle install -j$(getconf _NPROCESSORS_ONLN)`,
@@ -139,23 +145,27 @@ export class BastionConstruct extends Construct {
       'DB_NAME=$(echo ${JSON} | jq -rM .dbname)',
       'DB_USER_NAME=$(echo ${JSON} | jq -rM .username)',
       'DB_PASSWORD=$(echo ${JSON} | jq -rM .password)',
-      process.env.MASTODON_SECRET_KEY_BASE
-        ? `SECRET_KEY_BASE=${process.env.MASTODON_SECRET_KEY_BASE}`
-        : 'SECRET_KEY_BASE=$(sudo -u mastodon RAILS_ENV=production /usr/local/rbenv/shims/bundle exec rake secret)',
-      process.env.MASTODON_OTP_SECRET
-        ? `OTP_SECRET=${process.env.MASTODON_OTP_SECRET}`
-        : 'OTP_SECRET=$(sudo -u mastodon RAILS_ENV=production /usr/local/rbenv/shims/bundle exec rake secret)',
+      params.app.secretKeyBase
+        ? `SECRET_KEY_BASE=${params.app.secretKeyBase}`
+        : 'SECRET_KEY_BASE=$(sudo -u mastodon RAILS_ENV=production /usr/local/rbenv/shims/bundle exec rails secret)',
+      params.app.otpSecret
+        ? `OTP_SECRET=${params.app.otpSecret}`
+        : 'OTP_SECRET=$(sudo -u mastodon RAILS_ENV=production /usr/local/rbenv/shims/bundle exec rails secret)',
       // Configure
       `cd /home/mastodon/mastodon`,
+      `rm -f .env.production`,
       `sudo -u mastodon touch .env.production`,
-      process.env.ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY
-        ? `echo 'ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY=${process.env.ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY}' >> .env.production`
-        : `sudo -u mastodon RAILS_ENV=production bin/rails db:encryption:init > .env.production`,
-      process.env.ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT
-        ? `echo 'ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT=${process.env.ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT}' >> .env.production`
+      params.app.activeRecord.encryption.deterministicKey
+        ? `echo 'ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY=${params.app.activeRecord.encryption.deterministicKey}' >> .env.production`
+        : `sudo -u mastodon RAILS_ENV=production /usr/local/rbenv/shims/bundle exec rails db:encryption:init | tail -n +2 >> .env.production`,
+      params.app.activeRecord.encryption.keyDerivationSalt
+        ? `echo 'ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT=${params.app.activeRecord.encryption.keyDerivationSalt}' >> .env.production`
         : '',
-      process.env.ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY
-        ? `echo 'ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY=${process.env.ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY}' >> .env.production`
+      params.app.activeRecord.encryption.primaryKey
+        ? `echo 'ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY=${params.app.activeRecord.encryption.primaryKey}' >> .env.production`
+        : '',
+      params.app.versionMetadata
+        ? `echo 'MASTODON_VERSION_METADATA=${params.app.versionMetadata}' >> .env.production`
         : '',
       `echo 'LOCAL_DOMAIN=${fqdn}' >> .env.production`,
       'echo "DB_HOST=${DB_HOST}" >> .env.production',
@@ -165,15 +175,15 @@ export class BastionConstruct extends Construct {
       'echo "DB_PASS=${DB_PASSWORD}" >> .env.production',
       `echo 'REDIS_HOST=${props.cache.endpointAddress}' >> .env.production`,
       `echo 'REDIS_PORT=${props.cache.endpointPort}' >> .env.production`,
-      `echo 'SMTP_SERVER=${process.env.SMTP_SERVER}' >> .env.production`,
-      `echo 'SMTP_PORT=${process.env.SMTP_PORT}' >> .env.production`,
-      `echo 'SMTP_LOGIN=${process.env.SMTP_LOGIN}' >> .env.production`,
-      `echo 'SMTP_PASSWORD=${process.env.SMTP_PASSWORD}' >> .env.production`,
-      `echo 'SMTP_FROM_ADDRESS=${process.env.SMTP_FROM_ADDRESS}' >> .env.production`,
+      `echo 'SMTP_SERVER=${params.mail.smtp.hostName}' >> .env.production`,
+      `echo 'SMTP_PORT=${params.mail.smtp.port}' >> .env.production`,
+      `echo 'SMTP_LOGIN=${params.mail.smtp.userName}' >> .env.production`,
+      `echo 'SMTP_PASSWORD=${params.mail.smtp.password}' >> .env.production`,
+      `echo 'SMTP_FROM_ADDRESS=${params.mail.fromAddress}' >> .env.production`,
       `echo 'S3_ENABLED=true' >> .env.production`,
       `echo 'S3_BUCKET=${props.contentBucket.bucketName}' >> .env.production`,
-      `echo 'S3_REGION=${process.env.AWS_REGION}' >> .env.production`,
-      `echo 'S3_HOSTNAME=s3.dualstack.${process.env.AWS_REGION}.amazonaws.com' >> .env.production`,
+      `echo 'S3_REGION=${params.aws.region}' >> .env.production`,
+      `echo 'S3_HOSTNAME=s3.dualstack.${params.aws.region}.amazonaws.com' >> .env.production`,
       `echo 'S3_ALIAS_HOST=${attachmentDistFqdn}' >> .env.production `,
       'echo "SECRET_KEY_BASE=${SECRET_KEY_BASE}" >> .env.production',
       `echo "OTP_SECRET=$OTP_SECRET"  >> .env.production`,
@@ -182,14 +192,11 @@ export class BastionConstruct extends Construct {
       `aws s3 cp .env.production s3://${props.backyardBucket.bucketName}/config/.env.production`,
     );
 
-    const machineImage = MachineImage.genericLinux(
-      {
-        'us-east-1': process.env.BASTION_AMI!,
-      },
-      {
-        userData,
-      },
-    );
+    const amiMap = new Map();
+    amiMap.set(params.aws.region, params.bastion.ami);
+    const machineImage = MachineImage.genericLinux(Object.fromEntries(amiMap), {
+      userData,
+    });
 
     // Bastion
     new Instance(this, 'mastodon-bastion-instance', {

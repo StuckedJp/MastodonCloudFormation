@@ -21,11 +21,20 @@ import {
   HealthChecks,
 } from 'aws-cdk-lib/aws-autoscaling';
 import { Asset } from 'aws-cdk-lib/aws-s3-assets';
+import { ParamsType } from '../param-type';
+import { Duration } from 'aws-cdk-lib';
 
 export class AppConstruct extends Construct {
   public readonly autoScalingGroup: AutoScalingGroup;
 
-  constructor(scope: Construct, vpc: Vpc, contentBucket: Bucket, backyardBucket: Bucket, keyPair: KeyPair) {
+  constructor(
+    scope: Construct,
+    vpc: Vpc,
+    contentBucket: Bucket,
+    backyardBucket: Bucket,
+    keyPair: KeyPair,
+    params: ParamsType,
+  ) {
     super(scope, 'app');
 
     // SecurityGroup(EC2 Instance)
@@ -39,7 +48,11 @@ export class AppConstruct extends Construct {
     const role = new Role(this, 'mastodon-app-role', {
       assumedBy: new ServicePrincipal('ec2.amazonaws.com'),
       managedPolicies: [
-        ManagedPolicy.fromManagedPolicyArn(this, 'mastodon-app-ssm-managed-policy', 'arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore')
+        ManagedPolicy.fromManagedPolicyArn(
+          this,
+          'mastodon-app-ssm-managed-policy',
+          'arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore',
+        ),
       ],
       inlinePolicies: {
         codeBuildServicePolicies: new PolicyDocument({
@@ -90,7 +103,7 @@ export class AppConstruct extends Construct {
       path: path.join(__dirname, 'assets', 'mastodon-web.service'),
     });
 
-    const fqdn = [process.env.MASTODON_HOST, process.env.ZONE_DOMAIN].filter((v) => !!v).join('.');
+    const fqdn = [params.domain.hostName, params.domain.name].filter((v) => !!v).join('.');
     const userData = UserData.forLinux();
     userData.addCommands(
       `apt-get update`,
@@ -105,13 +118,14 @@ export class AppConstruct extends Construct {
       // Node.js
       `mkdir -p /etc/apt/keyrings`,
       `curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg`,
-      `NODE_MAJOR=${process.env.NODE_VERSION}`,
+      `NODE_MAJOR=${params.node.version}`,
       `echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list`,
       `apt-get update`,
       `apt-get install -y nodejs`,
       // Yarn
       `corepack enable`,
-      `yarn set version latest`,
+      `corepack prepare`,
+      // `yarn set version latest`,
       // AWS CLI
       `cd /root`,
       `curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"`,
@@ -122,6 +136,12 @@ export class AppConstruct extends Construct {
       // others に実行権限を付与する
       // https://github.com/mastodon/mastodon/issues/3584
       `chmod +x /home/mastodon`,
+      // Mastodon
+      `cd /home/mastodon`,
+      `sudo -u mastodon git clone ${params.mastodon.git.url} mastodon`,
+      `cd mastodon`,
+      `sudo -u mastodon git checkout ${params.mastodon.git.tag}`,
+      `RUBY_VERSION=$(cat .ruby-version)`,
       // rbenv
       `git clone https://github.com/rbenv/rbenv.git /usr/local/rbenv`,
       `cd /usr/local/rbenv`,
@@ -132,14 +152,11 @@ export class AppConstruct extends Construct {
       `echo 'eval "$(rbenv init -)"' >> /etc/profile`,
       `source /etc/profile`,
       `git clone https://github.com/rbenv/ruby-build.git /usr/local/rbenv/plugins/ruby-build`,
-      `RUBY_CONFIGURE_OPTS=--with-jemalloc bash -c "rbenv install ${process.env.RUBY_VERSION}"`,
-      `rbenv global ${process.env.RUBY_VERSION}`,
+      `RUBY_CONFIGURE_OPTS=--with-jemalloc bash -c "rbenv install $RUBY_VERSION"`,
+      `rbenv global $RUBY_VERSION`,
       `gem install bundler --no-document`,
       // Mastodon
-      `cd /home/mastodon`,
-      `sudo -u mastodon git clone ${process.env.MASTODON_GIT_URL} mastodon`,
-      `cd mastodon`,
-      `sudo -u mastodon git checkout ${process.env.MASTODON_GIT_TAG}`,
+      `cd /home/mastodon/mastodon`,
       `sudo -u mastodon /usr/local/rbenv/shims/bundle config deployment 'true'`,
       `sudo -u mastodon /usr/local/rbenv/shims/bundle config without 'development test'`,
       `sudo -u mastodon /usr/local/rbenv/shims/bundle install -j$(getconf _NPROCESSORS_ONLN)`,
@@ -166,10 +183,9 @@ export class AppConstruct extends Construct {
     );
 
     // https://cloud-images.ubuntu.com/locator/ec2/
-    const machineImage = MachineImage.genericLinux({
-      'us-east-1': process.env.MASTODON_AMI!,
-    });
-
+    const amiMap = new Map();
+    amiMap.set(params.aws.region, params.bastion.ami);
+    const machineImage = MachineImage.genericLinux(Object.fromEntries(amiMap));
     const launchTemplate = new LaunchTemplate(this, 'mastodon-app-launch-template', {
       instanceType: InstanceType.of(InstanceClass.T3A, InstanceSize.MEDIUM),
       keyPair,
@@ -180,7 +196,7 @@ export class AppConstruct extends Construct {
       blockDevices: [
         {
           deviceName: '/dev/sda1',
-          volume: BlockDeviceVolume.ebs(Number(process.env.MASTODON_STORAGE_GB)),
+          volume: BlockDeviceVolume.ebs(params.app.storageGB),
         },
       ],
     });
@@ -194,6 +210,7 @@ export class AppConstruct extends Construct {
       maxCapacity: 1,
       healthChecks: HealthChecks.withAdditionalChecks({
         additionalTypes: [AdditionalHealthCheckType.ELB],
+        gracePeriod: Duration.minutes(60),
       }),
     });
 
