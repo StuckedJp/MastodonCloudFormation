@@ -7,12 +7,8 @@ import { ParamsType } from '../param-type';
 export class ValkeyConstruct extends Construct {
   public readonly replicationGroup: CfnReplicationGroup;
 
-  constructor(scope: Construct, vpcIdParameterName: string, params: ParamsType) {
+  constructor(scope: Construct, vpc: Vpc, params: ParamsType) {
     super(scope, 'valkey');
-
-    const vpc = Vpc.fromLookup(this, 'mastodon-valkey-vpc', {
-      vpcId: StringParameter.valueFromLookup(this, vpcIdParameterName),
-    });
 
     // SecurityGroup
     const securityGroup = new SecurityGroup(this, 'mastodon-valkey-security-group', {

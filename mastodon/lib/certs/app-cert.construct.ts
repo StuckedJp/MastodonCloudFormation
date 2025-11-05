@@ -24,7 +24,7 @@ export class ApplicationCertConstruct extends Construct {
     });
 
     // SSM に保存
-    this.appCertArnParameterName = `/mastodon/${params.aws.region}/${params.envName}/certificate_arn/app`;
+    this.appCertArnParameterName = `/mastodon/${props.env?.region}/${params.envName}/certificate_arn/app`;
     new StringParameter(this, 'application-cert-param', {
       dataType: ParameterDataType.TEXT,
       parameterName: this.appCertArnParameterName,

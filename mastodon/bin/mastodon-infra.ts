@@ -65,7 +65,7 @@ const rdsStack = new MastodonRdsStack(
   `MastodonRdsStack-${params.envName}`,
   {
     ...config,
-    vpcIdParameterName: infraStack.vpc.vpcIdParameterName,
+    vpc: infraStack.vpc.vpc,
   },
   params,
 );
@@ -76,7 +76,7 @@ const elasticacheStack = new MastodonElasticacheStack(
   `MastodonElasticacheStack-${params.envName}`,
   {
     ...config,
-    vpcIdParameterName: infraStack.vpc.vpcIdParameterName,
+    vpc: infraStack.vpc.vpc,
   },
   params,
 );

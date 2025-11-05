@@ -14,7 +14,6 @@ import { ParamsType } from '../param-type';
 
 export class VpcConstruct extends Construct {
   public readonly vpc: Vpc;
-  public readonly vpcIdParameterName: string;
 
   constructor(scope: Construct, natGatewayProvider: NatInstanceProviderV2, params: ParamsType) {
     super(scope, 'vpc');
@@ -51,14 +50,6 @@ export class VpcConstruct extends Construct {
     });
 
     natGatewayProvider.securityGroup.addIngressRule(Peer.ipv4(vpc.vpcCidrBlock), Port.allTraffic());
-
-    // SSM に保存
-    this.vpcIdParameterName = `/mastodon/${params.aws.region}/${params.envName}/vpcId`;
-    new StringParameter(this, 'mastodon-infra-vpc-param', {
-      dataType: ParameterDataType.TEXT,
-      parameterName: this.vpcIdParameterName,
-      stringValue: vpc.vpcId,
-    });
 
     this.vpc = vpc;
   }

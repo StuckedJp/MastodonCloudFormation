@@ -26,7 +26,7 @@ export class AttachmentCertConstruct extends Construct {
     });
 
     // SSM に保存
-    this.attachmentCertArnParameterName = `/mastodon/${params.aws.region}/${params.envName}/certificate_arn/attachment`;
+    this.attachmentCertArnParameterName = `/mastodon/${props.env?.region}/${params.envName}/certificate_arn/attachment`;
     new StringParameter(this, 'attachment-cert-param', {
       dataType: ParameterDataType.TEXT,
       parameterName: this.attachmentCertArnParameterName,

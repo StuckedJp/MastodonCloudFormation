@@ -5,7 +5,7 @@ import { ValkeyConstruct } from './valkey.construct';
 import { ParamsType } from '../param-type';
 
 export interface ElasticacheStackProps extends cdk.StackProps {
-  vpcIdParameterName: string;
+  vpc: Vpc;
 }
 
 export class MastodonElasticacheStack extends cdk.Stack {
@@ -14,6 +14,6 @@ export class MastodonElasticacheStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: ElasticacheStackProps, params: ParamsType) {
     super(scope, id, props);
 
-    this.valkey = new ValkeyConstruct(this, props.vpcIdParameterName, params);
+    this.valkey = new ValkeyConstruct(this, props.vpc, params);
   }
 }

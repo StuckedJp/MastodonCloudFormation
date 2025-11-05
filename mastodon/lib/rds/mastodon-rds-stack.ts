@@ -5,7 +5,7 @@ import { RdsConstruct } from './rds.construct';
 import { ParamsType } from '../param-type';
 
 export interface RdsStackProps extends cdk.StackProps {
-  vpcIdParameterName: string;
+  vpc: Vpc;
 }
 
 export class MastodonRdsStack extends cdk.Stack {
@@ -14,6 +14,6 @@ export class MastodonRdsStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: RdsStackProps, params: ParamsType) {
     super(scope, id, props);
 
-    this.rds = new RdsConstruct(this, props.vpcIdParameterName, params);
+    this.rds = new RdsConstruct(this, props.vpc, params);
   }
 }

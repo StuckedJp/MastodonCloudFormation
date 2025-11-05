@@ -26,12 +26,8 @@ export class RdsConstruct extends Construct {
   public readonly databaseInstance: DatabaseInstance;
   public readonly secret: ISecret;
 
-  constructor(scope: Construct, vpcIdParameterName: string, params: ParamsType) {
+  constructor(scope: Construct, vpc: Vpc, params: ParamsType) {
     super(scope, 'rds');
-
-    const vpc = Vpc.fromLookup(this, 'mastodon-rds-vpc', {
-      vpcId: StringParameter.valueFromLookup(this, vpcIdParameterName),
-    });
 
     // SecurityGroup
     const securityGroup = new SecurityGroup(this, 'mastodon-rds-security-group', {
@@ -61,7 +57,7 @@ export class RdsConstruct extends Construct {
       this.databaseInstance = new DatabaseInstanceFromSnapshot(this, 'mastodon-rds-instance', {
         snapshotIdentifier: params.rds.snapshotId,
         engine: DatabaseInstanceEngine.postgres({
-          version: PostgresEngineVersion.VER_17_4,
+          version: PostgresEngineVersion.VER_17_6,
         }),
         credentials: SnapshotCredentials.fromSecret(secret),
         instanceType: InstanceType.of(InstanceClass.BURSTABLE3, InstanceSize.MICRO),
