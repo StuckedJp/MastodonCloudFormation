@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import 'source-map-support/register';
 import * as cdk from 'aws-cdk-lib';
-import { MastodonInfraStack } from '../lib/infra/mastodon-infra-stack';
+import { MastodonInfraStack } from '../lib/infra/mastodon-infra.stack';
 import { MastodonRdsStack } from '../lib/rds/mastodon-rds-stack';
 import { MastodonElasticacheStack } from '../lib/elasticache/mastodon-elasticache-stack';
 import { MastodonBastionStack } from '../lib/bastion/mastodon-bastion-stack';

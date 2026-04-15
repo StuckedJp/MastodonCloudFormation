@@ -14,6 +14,7 @@ import {
   DatabaseInstance,
   DatabaseInstanceEngine,
   DatabaseInstanceFromSnapshot,
+  IDatabaseInstance,
   PostgresEngineVersion,
   SnapshotCredentials,
 } from 'aws-cdk-lib/aws-rds';
@@ -23,7 +24,7 @@ import { StringParameter } from 'aws-cdk-lib/aws-ssm';
 import { ParamsType } from '../param-type';
 
 export class RdsConstruct extends Construct {
-  public readonly databaseInstance: DatabaseInstance;
+  public readonly databaseInstance: IDatabaseInstance;
   public readonly secret: ISecret;
 
   constructor(scope: Construct, vpc: Vpc, params: ParamsType) {
@@ -54,7 +55,7 @@ export class RdsConstruct extends Construct {
     });
 
     if (params.rds.snapshotId) {
-      this.databaseInstance = new DatabaseInstanceFromSnapshot(this, 'mastodon-rds-instance', {
+      const databaseInstance = new DatabaseInstanceFromSnapshot(this, 'mastodon-rds-instance', {
         snapshotIdentifier: params.rds.snapshotId,
         engine: DatabaseInstanceEngine.postgres({
           version: PostgresEngineVersion.VER_17_6,
@@ -72,8 +73,10 @@ export class RdsConstruct extends Construct {
         },
         securityGroups: [securityGroup],
       });
+      this.secret = databaseInstance.secret!;
+      this.databaseInstance = databaseInstance;
     } else {
-      this.databaseInstance = new DatabaseInstance(this, 'mastodon-rds-instance', {
+      const databaseInstance = new DatabaseInstance(this, 'mastodon-rds-instance', {
         engine: DatabaseInstanceEngine.postgres({
           version: PostgresEngineVersion.VER_17,
         }),
@@ -91,8 +94,8 @@ export class RdsConstruct extends Construct {
         },
         securityGroups: [securityGroup],
       });
+      this.secret = databaseInstance.secret!;
+      this.databaseInstance = databaseInstance;
     }
-
-    this.secret = this.databaseInstance.secret!;
   }
 }

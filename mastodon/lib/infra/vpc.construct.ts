@@ -8,7 +8,6 @@ import {
   IpAddresses,
   IpProtocol,
 } from 'aws-cdk-lib/aws-ec2';
-import { ParameterDataType, StringParameter } from 'aws-cdk-lib/aws-ssm';
 import { Construct } from 'constructs';
 import { ParamsType } from '../param-type';
 
