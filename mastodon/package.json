@@ -18,12 +18,12 @@
   "devDependencies": {
     "@types/jest": "^30.0.0",
     "@types/node": "^22.19.17",
-    "aws-cdk": "^2.1118.0",
+    "aws-cdk": "^2.1118.2",
     "jest": "^30.3.0",
     "prettier": "^3.8.3",
     "ts-jest": "^29.4.9",
     "ts-node": "^10.9.2",
-    "typescript": "^6.0.2"
+    "typescript": "^6.0.3"
   },
   "dependencies": {
     "aws-cdk-lib": "^2.250.0",
