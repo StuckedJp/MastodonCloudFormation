@@ -58,7 +58,7 @@ export class RdsConstruct extends Construct {
       const databaseInstance = new DatabaseInstanceFromSnapshot(this, 'mastodon-rds-instance', {
         snapshotIdentifier: params.rds.snapshotId,
         engine: DatabaseInstanceEngine.postgres({
-          version: PostgresEngineVersion.VER_17_6,
+          version: PostgresEngineVersion.VER_18,
         }),
         credentials: SnapshotCredentials.fromSecret(secret),
         instanceType: InstanceType.of(InstanceClass.BURSTABLE3, InstanceSize.MICRO),
@@ -78,7 +78,7 @@ export class RdsConstruct extends Construct {
     } else {
       const databaseInstance = new DatabaseInstance(this, 'mastodon-rds-instance', {
         engine: DatabaseInstanceEngine.postgres({
-          version: PostgresEngineVersion.VER_17,
+          version: PostgresEngineVersion.VER_18,
         }),
         instanceType: InstanceType.of(InstanceClass.BURSTABLE3, InstanceSize.MICRO),
         credentials: Credentials.fromSecret(secret),
