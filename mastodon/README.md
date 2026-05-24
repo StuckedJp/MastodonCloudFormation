@@ -21,9 +21,10 @@ The `cdk.json` file tells the CDK Toolkit how to execute your app.
 
 `環境名` には `dev` と `prod` が利用できる。
 
-`環境名` は増やすこともできる。例えば `環境名` に `stg` を追加した場合の実行コマンドは、`ENV_NAME=stg npm run deploy Mastodon***Stack-stg` となる。
+`環境名` は増やすこともできる。例えば `環境名` に `stg` を追加する場合は、`params.stg.json` ファイルを作成する。実行コマンドは、`ENV_NAME=stg npm run deploy Mastodon***Stack-stg` となる。
 
 初期デプロイの場合は、以下の項目は `null` を設定する。
+
 ```
 app.secretKeyBase
 app.otpSecret
@@ -37,66 +38,68 @@ app.activeRecord.encryption.primaryKey
 `環境名` が `dev` の場合の構築例を示す。
 
 1. Route53 をデプロイする。
-    ```
-    npm run deploy MastodonRoute53Stack-dev
-    ```
+   ```
+   npm run deploy MastodonRoute53Stack-dev
+   ```
 1. Route53 にホストゾーンが作られるので、NS レコードを DNS プロバイダに設定する。
 1. グローバル証明書をデプロイする
-    ```
-    npm run deploy MastodonGlobalCertStack-dev
-    ```
+   ```
+   npm run deploy MastodonGlobalCertStack-dev
+   ```
 1. リージョナル証明書をデプロイする
-    ```
-    npm run deploy MastodonRegionalCertStack-dev
-    ```
+   ```
+   npm run deploy MastodonRegionalCertStack-dev
+   ```
 1. インフラ (VPC, S3, コンテンツ配信 CDN) をデプロイする。
-    ```
-    npm run deploy MastodonInfraStack-dev
-    ```
+   ```
+   npm run deploy MastodonInfraStack-dev
+   ```
 1. RDS をデプロイする。
-    ```
-    npm run deploy MastodonRdsStack-dev
-    ```
+   ```
+   npm run deploy MastodonRdsStack-dev
+   ```
 1. ElastiCache をデプロイする。
-    ```
-    npm run deploy MastodonElasticacheStack-dev
-    ```
+   ```
+   npm run deploy MastodonElasticacheStack-dev
+   ```
+1. ElasticSearch/OpenSearch を建てる場合 ElasticSearch をデプロイする。
+   ```
+   npm run deploy MastodonElasticSearchStack-dev
+   ```
 1. 踏み台をデプロイする。
-    ```
-    npm run deploy MastodonBastionStack-dev
-    ```
+   ```
+   npm run deploy MastodonBastionStack-dev
+   ```
 1. 踏み台で作業する。マネージメントコンソールから SSM で接続する。
 1. スーパーユーザーにスイッチする。
-    ```
-    sudo -i
-    ```
+   ```
+   sudo -i
+   ```
 1. `tail -f /var/log/cloud-init-output.log` で初期実行スクリプトの実行完了を待つ。30 分ほどかかる。
 1. mastodon ユーザーにスイッチする。
-    ```
-    su - mastodon
-    ```
+   ```
+   su - mastodon
+   ```
 1. データベースを初期化する。
-    ```
-    cd mastodon
-    RAILS_ENV=production bundle exec rails db:setup
-    ```
+   ```
+   cd mastodon
+   RAILS_ENV=production bundle exec rails db:setup
+   ```
 1. オーナーユーザーを作成する。
-    ```
-    RAILS_ENV=production bin/tootctl accounts create アカウント名 --email メールアドレス --confirmed --role Owner
-    RAILS_ENV=production bin/tootctl accounts modify アカウント名 --approve
-    ```
-1. スタックの更新に備えて様々なキーを保存する。
-    ```
-    SECRET_KEY_BASE → app.secretKeyBase
-    OTP_SECRET → app.otpSecret
-    ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY → app.activeRecord.encryption.deterministicKey
-    ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT → app.activeRecord.encryption.keyDerivationSalt
-    ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY → app.activeRecord.encryption.primaryKey
-    ```
+   ```
+   RAILS_ENV=production bin/tootctl accounts create アカウント名 --email メールアドレス --confirmed --role Owner
+   RAILS_ENV=production bin/tootctl accounts modify アカウント名 --approve
+   ```
+1. スタックの更新に備えて以下の値を `.env.production` ファイルから `params.dev.json` ファイルに転記する。
+   - `SECRET_KEY_BASE` → `app.secretKeyBase`
+   - `OTP_SECRET` → `app.otpSecret`
+   - `ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY` → `app.activeRecord.encryption.deterministicKey`
+   - `ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT` → `app.activeRecord.encryption.keyDerivationSalt`
+   - `ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY` → `app.activeRecord.encryption.primaryKey`
 1. アプリケーションをデプロイする
-    ```
-    npm run deploy MastodonAppStack-dev
-    ```
+   ```
+   npm run deploy MastodonAppStack-dev
+   ```
 1. アプリケーションサーバーで作業する。マネージメントコンソールから、SSM で接続する。
 1. `tail -f /var/log/cloud-init-output.log` で初期実行スクリプトの実行完了を待つ。30 分ほどかかる。
 1. 設定したドメインのホストにブラウザで接続して動作確認をする。`journalctl -f` で Mastodon サーバーのログを監視できる。
@@ -104,10 +107,9 @@ app.activeRecord.encryption.primaryKey
 
 本番環境の場合は、各デプロイコマンドは `npm run deploy:prod Mastodon******Stack-prod` となる。
 
-
 ### アップデート
 
-1. params.*.json の `mastodon.git.tag` を目的のリリースタグに変更する。
+1. params.\*.json の `mastodon.git.tag` を目的のリリースタグに変更する。
 1. `npm run deploy MastodonAppStack-dev` を実行してスタックを更新する。(本番環境の場合は `npm run deploy:prod MastodonAppStack-prod`)
 1. マネージメントコンソール → EC2 → Auto Scaling グループで `MastodonAppStack` で始まる Auto Scaling グループを選択し、「希望するキャパシティ」「最小の希望する容量」「最大の希望する容量」をすべて 2 に設定する。
 1. マネージメントコンソール → EC2 → ターゲットグループで `Mastod-appli` で始まるターゲットグループを選択し、「登録済みターゲット」を監視する。
@@ -115,20 +117,19 @@ app.activeRecord.encryption.primaryKey
 1. 古い方のインスタンスを登録解除し、インスタンスを終了(破棄)する。
 1. ターゲットグループの「Healthy」インスタンスが再び 2 つになったら、Autho Scaling グループのキャパシティをすべて 1 に変更する。
 
-
 ### マイグレーション
 
 1. マネージメントコンソールで、踏み台のインスタンスを起動する。
 1. SSM などで踏み台にログインする。
 1. Mastodon のリリースノートの指示に従い作業する。
-    ```
-    sudo -iu mastodon
-    cd mastodon
-    git fetch
-    git checkout <<VERSION>>
-    # ここ以下は Mastodon のリリースノートの指示に従う
-    bundle install
-    yarn install
-    RAILS_ENV=production bundle exec rails db:migrate
-    ```
+   ```
+   sudo -iu mastodon
+   cd mastodon
+   git fetch
+   git checkout <<VERSION>>
+   # ここ以下は Mastodon のリリースノートの指示に従う
+   bundle install
+   yarn install
+   RAILS_ENV=production bundle exec rails db:migrate
+   ```
 1. [アップデート](#アップデート) 手順に従って Mastodon のアプリケーションサーバーを更新する。

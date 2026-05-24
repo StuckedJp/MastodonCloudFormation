@@ -5,6 +5,7 @@ import { ISecret } from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
 import { BastionConstruct } from './bastion.construct';
 import { ParamsType } from '../param-type';
+import { Domain } from 'aws-cdk-lib/aws-opensearchservice';
 
 export interface BastionStackProps extends cdk.StackProps {
   vpc: Vpc;
@@ -16,6 +17,7 @@ export interface BastionStackProps extends cdk.StackProps {
     endpointAddress: string;
     endpointPort: string;
   };
+  elasticSearch?: Domain;
 }
 
 export class MastodonBastionStack extends cdk.Stack {

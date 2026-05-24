@@ -16,6 +16,7 @@ import { Bucket } from 'aws-cdk-lib/aws-s3';
 import { Construct } from 'constructs';
 import { ISecret } from 'aws-cdk-lib/aws-secretsmanager';
 import { ParamsType } from '../param-type';
+import { Domain } from 'aws-cdk-lib/aws-opensearchservice';
 
 export class BastionConstruct extends Construct {
   constructor(
@@ -30,6 +31,7 @@ export class BastionConstruct extends Construct {
         endpointAddress: string;
         endpointPort: string;
       };
+      elasticSearch?: Domain;
     },
     params: ParamsType,
   ) {
@@ -139,25 +141,11 @@ export class BastionConstruct extends Construct {
       `sudo -u mastodon /usr/local/rbenv/shims/bundle config without 'development test'`,
       `sudo -u mastodon /usr/local/rbenv/shims/bundle install -j$(getconf _NPROCESSORS_ONLN)`,
       `sudo -u mastodon yarn install --immutable`,
-      // Retreve Secrets
-      `cd /home/mastodon/mastodon`,
-      `SECRET_ID=${props.dbSecrets.secretArn}`,
-      'JSON=$(aws secretsmanager get-secret-value --secret-id ${SECRET_ID} | jq -cM ".SecretString | fromjson")',
-      'DB_HOST=$(echo ${JSON} | jq -rM .host)',
-      'DB_PORT=$(echo ${JSON} | jq -rM .port)',
-      'DB_NAME=$(echo ${JSON} | jq -rM .dbname)',
-      'DB_USER_NAME=$(echo ${JSON} | jq -rM .username)',
-      'DB_PASSWORD=$(echo ${JSON} | jq -rM .password)',
-      params.app.secretKeyBase
-        ? `SECRET_KEY_BASE=${params.app.secretKeyBase}`
-        : 'SECRET_KEY_BASE=$(sudo -u mastodon RAILS_ENV=production /usr/local/rbenv/shims/bundle exec rails secret)',
-      params.app.otpSecret
-        ? `OTP_SECRET=${params.app.otpSecret}`
-        : 'OTP_SECRET=$(sudo -u mastodon RAILS_ENV=production /usr/local/rbenv/shims/bundle exec rails secret)',
       // Configure
       `cd /home/mastodon/mastodon`,
       `rm -f .env.production`,
       `sudo -u mastodon touch .env.production`,
+      // ActiveRecord
       params.app.activeRecord.encryption.deterministicKey
         ? `echo 'ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY=${params.app.activeRecord.encryption.deterministicKey}' >> .env.production`
         : `sudo -u mastodon RAILS_ENV=production /usr/local/rbenv/shims/bundle exec rails db:encryption:init | tail -n +2 >> .env.production`,
@@ -171,27 +159,61 @@ export class BastionConstruct extends Construct {
         ? `echo 'MASTODON_VERSION_METADATA=${params.app.versionMetadata}' >> .env.production`
         : '',
       `echo 'LOCAL_DOMAIN=${fqdn}' >> .env.production`,
+      // Database
+      `SECRET_ID=${props.dbSecrets.secretArn}`,
+      'JSON=$(aws secretsmanager get-secret-value --secret-id ${SECRET_ID} | jq -cM ".SecretString | fromjson")',
+      'DB_HOST=$(echo ${JSON} | jq -rM .host)',
+      'DB_PORT=$(echo ${JSON} | jq -rM .port)',
+      'DB_NAME=$(echo ${JSON} | jq -rM .dbname)',
+      'DB_USER_NAME=$(echo ${JSON} | jq -rM .username)',
+      'DB_PASSWORD=$(echo ${JSON} | jq -rM .password)',
       'echo "DB_HOST=${DB_HOST}" >> .env.production',
       'echo "DB_PORT=${DB_PORT}" >> .env.production',
       'echo "DB_NAME=${DB_NAME}" >> .env.production',
       'echo "DB_USER=${DB_USER_NAME}" >> .env.production',
       'echo "DB_PASS=${DB_PASSWORD}" >> .env.production',
+      // Redis/Valkey
       `echo 'REDIS_HOST=${props.cache.endpointAddress}' >> .env.production`,
       `echo 'REDIS_PORT=${props.cache.endpointPort}' >> .env.production`,
+      // ElasticSearch
+      ...(() => {
+        if (params.elasticSearch && props.elasticSearch) {
+          return [
+            `echo 'ES_ENABLED=true' >> .env.production`,
+            `echo 'ES_HOST=https://${props.elasticSearch.domainEndpoint}' >> .env.production`,
+            `echo 'ES_USER=${params.elasticSearch.masterUserName}' >> .env.production`,
+            `echo 'ES_PASS=${props.elasticSearch.masterUserPassword}' >> .env.production`,
+            `echo 'ES_PRESET=single_node_cluster' >> .env.production`,
+          ];
+        } else {
+          return [];
+        }
+      })(),
+      // Mail
       `echo 'SMTP_SERVER=${params.mail.smtp.hostName}' >> .env.production`,
       `echo 'SMTP_PORT=${params.mail.smtp.port}' >> .env.production`,
       `echo 'SMTP_LOGIN=${params.mail.smtp.userName}' >> .env.production`,
       `echo 'SMTP_PASSWORD=${params.mail.smtp.password}' >> .env.production`,
       `echo 'SMTP_FROM_ADDRESS=${params.mail.fromAddress}' >> .env.production`,
+      // S3
       `echo 'S3_ENABLED=true' >> .env.production`,
       `echo 'S3_BUCKET=${props.contentBucket.bucketName}' >> .env.production`,
       `echo 'S3_REGION=${params.aws.region}' >> .env.production`,
       `echo 'S3_HOSTNAME=s3.dualstack.${params.aws.region}.amazonaws.com' >> .env.production`,
       `echo 'S3_ALIAS_HOST=${attachmentDistFqdn}' >> .env.production `,
+      // Secret
+      params.app.secretKeyBase
+        ? `SECRET_KEY_BASE=${params.app.secretKeyBase}`
+        : 'SECRET_KEY_BASE=$(sudo -u mastodon RAILS_ENV=production /usr/local/rbenv/shims/bundle exec rails secret)',
+      params.app.otpSecret
+        ? `OTP_SECRET=${params.app.otpSecret}`
+        : 'OTP_SECRET=$(sudo -u mastodon RAILS_ENV=production /usr/local/rbenv/shims/bundle exec rails secret)',
       'echo "SECRET_KEY_BASE=${SECRET_KEY_BASE}" >> .env.production',
       `echo "OTP_SECRET=$OTP_SECRET"  >> .env.production`,
+      // Misc.
       `echo "MASTODON_USE_LIBVIPS=true"  >> .env.production`,
       `sudo -u mastodon RAILS_ENV=production /usr/local/rbenv/shims/bundle exec rake mastodon:webpush:generate_vapid_key >> .env.production`,
+      // Upload To S3
       `aws s3 cp .env.production s3://${props.backyardBucket.bucketName}/config/.env.production`,
     );
 

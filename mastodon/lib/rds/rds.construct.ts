@@ -20,7 +20,6 @@ import {
 } from 'aws-cdk-lib/aws-rds';
 import { ISecret, Secret } from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
-import { StringParameter } from 'aws-cdk-lib/aws-ssm';
 import { ParamsType } from '../param-type';
 
 export class RdsConstruct extends Construct {
@@ -58,7 +57,7 @@ export class RdsConstruct extends Construct {
       const databaseInstance = new DatabaseInstanceFromSnapshot(this, 'mastodon-rds-instance', {
         snapshotIdentifier: params.rds.snapshotId,
         engine: DatabaseInstanceEngine.postgres({
-          version: PostgresEngineVersion.VER_18,
+          version: PostgresEngineVersion.VER_17_9,
         }),
         credentials: SnapshotCredentials.fromSecret(secret),
         instanceType: InstanceType.of(InstanceClass.BURSTABLE3, InstanceSize.MICRO),

@@ -10,6 +10,7 @@ import { MastodonRoute53Stack } from '../lib/route53/mastodon-route53-stack';
 import { GlobalCertStack } from '../lib/certs/global-cert.stack';
 import { RegionalCertStack } from '../lib/certs/regional-cert.stack';
 import { ParamsType } from '../lib/param-type';
+import { MastodonOpenSearchStack } from '../lib/open-search/mastodon-open-search-stack';
 
 const envName = process.env.ENV_NAME ?? 'dev';
 const parameterFile = `${__dirname}/../params.${envName}.json`;
@@ -81,6 +82,20 @@ const elasticacheStack = new MastodonElasticacheStack(
   params,
 );
 
+// ElasticSearch
+const elasticSearchStack = (() => {
+  if (params.elasticSearch) {
+    return new MastodonOpenSearchStack(
+      app,
+      `MastodonElasticSearchStack-${params.envName}`,
+      { ...config, vpc: infraStack.vpc.vpc },
+      params,
+    );
+  } else {
+    return null;
+  }
+})();
+
 // 踏み台
 const bastionStack = new MastodonBastionStack(
   app,
@@ -96,6 +111,7 @@ const bastionStack = new MastodonBastionStack(
       endpointAddress: elasticacheStack.valkey.replicationGroup.attrPrimaryEndPointAddress,
       endpointPort: elasticacheStack.valkey.replicationGroup.attrPrimaryEndPointPort,
     },
+    elasticSearch: elasticSearchStack?.openSearch.domain ?? undefined,
   },
   params,
 );

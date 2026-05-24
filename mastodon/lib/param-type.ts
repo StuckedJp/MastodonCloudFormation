@@ -100,4 +100,22 @@ export type ParamsType = {
       password: string;
     };
   };
+  // ElasticSearch 設定。省略されたときはサーバーを立てない
+  elasticSearch?: {
+    // インスタンスタイプ
+    dataNodeInstanceType: string;
+    // ボリュームサイズ (GB)
+    storageGB: number;
+    // ユーザー名
+    masterUserName: string;
+    // LogGroup 設定
+    logGroupName: {
+      // appLog
+      app: string;
+      // slow search
+      slowSearch: string;
+      // slow index
+      slowIndex: string;
+    };
+  };
 };
