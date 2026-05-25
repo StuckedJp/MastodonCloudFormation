@@ -108,6 +108,8 @@ export type ParamsType = {
     storageGB: number;
     // ユーザー名
     masterUserName: string;
+    // パッケージ
+    packages: string[];
     // LogGroup 設定
     logGroupName: {
       // appLog

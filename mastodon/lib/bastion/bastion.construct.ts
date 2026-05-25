@@ -182,7 +182,7 @@ export class BastionConstruct extends Construct {
             `echo 'ES_ENABLED=true' >> .env.production`,
             `echo 'ES_HOST=https://${props.elasticSearch.domainEndpoint}' >> .env.production`,
             `echo 'ES_USER=${params.elasticSearch.masterUserName}' >> .env.production`,
-            `echo 'ES_PASS=${props.elasticSearch.masterUserPassword}' >> .env.production`,
+            `echo 'ES_PASS=${props.elasticSearch.masterUserPassword?.unsafeUnwrap()}' >> .env.production`,
             `echo 'ES_PRESET=single_node_cluster' >> .env.production`,
           ];
         } else {

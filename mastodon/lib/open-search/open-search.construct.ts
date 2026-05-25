@@ -2,7 +2,9 @@ import { Vpc, SecurityGroup, Peer, Port, SubnetType, EbsDeviceVolumeType } from 
 import { Domain, EngineVersion, IpAddressType } from 'aws-cdk-lib/aws-opensearchservice';
 import { Construct } from 'constructs';
 import { ParamsType } from '../param-type';
-import { LogGroup } from 'aws-cdk-lib/aws-logs';
+import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
+import { RemovalPolicy } from 'aws-cdk-lib';
+import { AwsCustomResource, AwsCustomResourcePolicy, PhysicalResourceId } from 'aws-cdk-lib/custom-resources';
 
 export class OpenSearchConstruct extends Construct {
   public readonly domain: Domain;
@@ -26,6 +28,7 @@ export class OpenSearchConstruct extends Construct {
 
     // ElasticSearch
     this.domain = new Domain(this, 'mastodon-open-search-domain', {
+      domainName: `mastodon-open-search-${params.envName}`,
       version: EngineVersion.OPENSEARCH_3_5,
       enableVersionUpgrade: true,
       enforceHttps: true,
@@ -47,21 +50,44 @@ export class OpenSearchConstruct extends Construct {
         dataNodeInstanceType: params.elasticSearch.dataNodeInstanceType,
       },
       securityGroups: [securityGroup],
-      vpcSubnets: [vpc.selectSubnets({ subnetType: SubnetType.PRIVATE_WITH_EGRESS })],
+      vpcSubnets: [{ subnets: [vpc.selectSubnets({ subnetType: SubnetType.PRIVATE_WITH_EGRESS }).subnets[0]] }],
       logging: {
         slowSearchLogEnabled: true,
         slowSearchLogGroup: new LogGroup(this, 'mastodon-open-search-domain-slow-search-log', {
           logGroupName: params.elasticSearch.logGroupName.slowSearch,
+          removalPolicy: RemovalPolicy.DESTROY,
+          retention: RetentionDays.ONE_YEAR,
         }),
         appLogEnabled: true,
         appLogGroup: new LogGroup(this, 'mastodon-open-search-domain-app-log', {
           logGroupName: params.elasticSearch.logGroupName.app,
+          removalPolicy: RemovalPolicy.DESTROY,
+          retention: RetentionDays.ONE_YEAR,
         }),
         slowIndexLogEnabled: true,
         slowIndexLogGroup: new LogGroup(this, 'mastodon-open-search-domain-slow-index-log', {
           logGroupName: params.elasticSearch.logGroupName.slowIndex,
+          removalPolicy: RemovalPolicy.DESTROY,
+          retention: RetentionDays.ONE_YEAR,
         }),
       },
+    });
+
+    params.elasticSearch.packages.forEach((packageId) => {
+      new AwsCustomResource(this, 'mastodon-open-search-domain-package-associate', {
+        onCreate: {
+          service: 'OpenSearch',
+          action: 'associatePackage',
+          parameters: {
+            PackageID: packageId,
+            DomainName: this.domain.domainName,
+          },
+          physicalResourceId: PhysicalResourceId.of(`opensearch-plugin-${packageId}`),
+        },
+        policy: AwsCustomResourcePolicy.fromSdkCalls({
+          resources: AwsCustomResourcePolicy.ANY_RESOURCE,
+        }),
+      });
     });
   }
 }
