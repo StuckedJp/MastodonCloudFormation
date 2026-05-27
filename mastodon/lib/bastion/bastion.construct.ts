@@ -31,7 +31,9 @@ export class BastionConstruct extends Construct {
         endpointAddress: string;
         endpointPort: string;
       };
-      elasticSearch?: Domain;
+      elasticSearch?: {
+        domain: Domain;
+      };
     },
     params: ParamsType,
   ) {
@@ -120,7 +122,7 @@ export class BastionConstruct extends Construct {
       `cd /home/mastodon`,
       `sudo -u mastodon git clone ${params.mastodon.git.url} mastodon`,
       `cd mastodon`,
-      `sudo -u mastodon git checkout ${params.mastodon.git.tag}`,
+      `sudo -u mastodon git switch ${params.mastodon.git.tag}`,
       `RUBY_VERSION=$(cat .ruby-version)`,
       // rbenv
       `git clone https://github.com/rbenv/rbenv.git /usr/local/rbenv`,
@@ -160,18 +162,18 @@ export class BastionConstruct extends Construct {
         : '',
       `echo 'LOCAL_DOMAIN=${fqdn}' >> .env.production`,
       // Database
-      `SECRET_ID=${props.dbSecrets.secretArn}`,
-      'JSON=$(aws secretsmanager get-secret-value --secret-id ${SECRET_ID} | jq -cM ".SecretString | fromjson")',
+      `DB_SECRET_ID='${props.dbSecrets.secretArn}'`,
+      'JSON=$(aws secretsmanager get-secret-value --secret-id ${DB_SECRET_ID} | jq -cM ".SecretString | fromjson")',
       'DB_HOST=$(echo ${JSON} | jq -rM .host)',
       'DB_PORT=$(echo ${JSON} | jq -rM .port)',
       'DB_NAME=$(echo ${JSON} | jq -rM .dbname)',
-      'DB_USER_NAME=$(echo ${JSON} | jq -rM .username)',
-      'DB_PASSWORD=$(echo ${JSON} | jq -rM .password)',
+      'DB_USER=$(echo ${JSON} | jq -rM .username)',
+      'DB_PASS=$(echo ${JSON} | jq -rM .password)',
       'echo "DB_HOST=${DB_HOST}" >> .env.production',
       'echo "DB_PORT=${DB_PORT}" >> .env.production',
       'echo "DB_NAME=${DB_NAME}" >> .env.production',
-      'echo "DB_USER=${DB_USER_NAME}" >> .env.production',
-      'echo "DB_PASS=${DB_PASSWORD}" >> .env.production',
+      'echo "DB_USER=${DB_USER}" >> .env.production',
+      'echo "DB_PASS=${DB_PASS}" >> .env.production',
       // Redis/Valkey
       `echo 'REDIS_HOST=${props.cache.endpointAddress}' >> .env.production`,
       `echo 'REDIS_PORT=${props.cache.endpointPort}' >> .env.production`,
@@ -180,9 +182,8 @@ export class BastionConstruct extends Construct {
         if (params.elasticSearch && props.elasticSearch) {
           return [
             `echo 'ES_ENABLED=true' >> .env.production`,
-            `echo 'ES_HOST=https://${props.elasticSearch.domainEndpoint}' >> .env.production`,
-            `echo 'ES_USER=${params.elasticSearch.masterUserName}' >> .env.production`,
-            `echo 'ES_PASS=${props.elasticSearch.masterUserPassword?.unsafeUnwrap()}' >> .env.production`,
+            `echo 'ES_HOST=https://${props.elasticSearch.domain.domainEndpoint}' >> .env.production`,
+            'echo "ES_PORT=443" >> .env.production',
             `echo 'ES_PRESET=single_node_cluster' >> .env.production`,
           ];
         } else {

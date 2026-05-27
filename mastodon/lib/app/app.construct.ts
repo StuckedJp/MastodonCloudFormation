@@ -140,7 +140,7 @@ export class AppConstruct extends Construct {
       `cd /home/mastodon`,
       `sudo -u mastodon git clone ${params.mastodon.git.url} mastodon`,
       `cd mastodon`,
-      `sudo -u mastodon git checkout ${params.mastodon.git.tag}`,
+      `sudo -u mastodon git switch ${params.mastodon.git.tag}`,
       `RUBY_VERSION=$(cat .ruby-version)`,
       // rbenv
       `git clone https://github.com/rbenv/rbenv.git /usr/local/rbenv`,

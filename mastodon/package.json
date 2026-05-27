@@ -8,11 +8,11 @@
     "build": "tsc",
     "watch": "tsc -w",
     "test": "jest",
-    "deploy": "cdk deploy",
-    "deploy:all": "cdk deploy --all",
-    "deploy:only": "cdk deploy -e",
+    "deploy:dev": "cdk deploy",
+    "deploy:dev:all": "cdk deploy --all",
+    "deploy:dev:only": "cdk deploy -e",
     "deploy:prod": "ENV_NAME=prod cdk deploy",
-    "destroy": "cdk destroy",
+    "destroy:dev": "cdk destroy",
     "cdk": "cdk"
   },
   "devDependencies": {

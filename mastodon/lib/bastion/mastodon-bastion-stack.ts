@@ -17,7 +17,9 @@ export interface BastionStackProps extends cdk.StackProps {
     endpointAddress: string;
     endpointPort: string;
   };
-  elasticSearch?: Domain;
+  elasticSearch?: {
+    domain: Domain;
+  };
 }
 
 export class MastodonBastionStack extends cdk.Stack {

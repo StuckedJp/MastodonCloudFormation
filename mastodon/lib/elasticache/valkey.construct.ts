@@ -28,12 +28,12 @@ export class ValkeyConstruct extends Construct {
     this.replicationGroup = new CfnReplicationGroup(this, 'mastodon-valkey-replication-group', {
       replicationGroupDescription: 'mastodon-valkey-replication-group',
       engine: 'valkey',
-      engineVersion: '7.2',
-      cacheNodeType: 'cache.t3.micro',
+      engineVersion: '9.0',
+      cacheNodeType: 'cache.t4g.micro',
       cacheSubnetGroupName: subnetGroup.ref,
       cacheParameterGroupName: new CfnParameterGroup(this, 'mastodon-valkey-parameter-group', {
         description: 'mastodon-valkey-replication-group',
-        cacheParameterGroupFamily: 'valkey7',
+        cacheParameterGroupFamily: 'valkey9',
       }).ref,
       clusterMode: 'disabled',
       numCacheClusters: 1,

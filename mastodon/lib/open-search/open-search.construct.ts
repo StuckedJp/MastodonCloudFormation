@@ -1,23 +1,24 @@
 import { Vpc, SecurityGroup, Peer, Port, SubnetType, EbsDeviceVolumeType } from 'aws-cdk-lib/aws-ec2';
 import { Domain, EngineVersion, IpAddressType } from 'aws-cdk-lib/aws-opensearchservice';
 import { Construct } from 'constructs';
-import { ParamsType } from '../param-type';
 import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
-import { RemovalPolicy } from 'aws-cdk-lib';
+import { RemovalPolicy, Stack } from 'aws-cdk-lib';
 import { AwsCustomResource, AwsCustomResourcePolicy, PhysicalResourceId } from 'aws-cdk-lib/custom-resources';
+import { ParamsType } from '../param-type';
+import { Effect, PolicyStatement, StarPrincipal } from 'aws-cdk-lib/aws-iam';
 
 export class OpenSearchConstruct extends Construct {
   public readonly domain: Domain;
 
   constructor(scope: Construct, vpc: Vpc, params: ParamsType) {
-    super(scope, 'open-search');
+    super(scope, 'opensearch');
 
     if (!params.elasticSearch) {
       return;
     }
 
     // SecurityGroup
-    const securityGroup = new SecurityGroup(this, 'mastodon-open-search-security-group', {
+    const securityGroup = new SecurityGroup(this, 'mastodon-opensearch-security-group', {
       vpc,
       allowAllOutbound: true,
       allowAllIpv6Outbound: true,
@@ -27,8 +28,8 @@ export class OpenSearchConstruct extends Construct {
     });
 
     // ElasticSearch
-    this.domain = new Domain(this, 'mastodon-open-search-domain', {
-      domainName: `mastodon-open-search-${params.envName}`,
+    this.domain = new Domain(this, 'mastodon-opensearch-domain', {
+      domainName: `mastodon-opensearch-${params.envName}`,
       version: EngineVersion.OPENSEARCH_3_5,
       enableVersionUpgrade: true,
       enforceHttps: true,
@@ -36,9 +37,21 @@ export class OpenSearchConstruct extends Construct {
       encryptionAtRest: {
         enabled: true,
       },
-      fineGrainedAccessControl: {
-        masterUserName: params.elasticSearch.masterUserName,
-      },
+      accessPolicies: [
+        new PolicyStatement({
+          effect: Effect.ALLOW,
+          actions: ['es:*'],
+          principals: [new StarPrincipal()],
+          resources: [
+            Stack.of(this).formatArn({
+              region: params.aws.region,
+              service: 'domain',
+              resource: `mastodon-opensearch-${params.envName}`,
+              resourceName: '*',
+            }),
+          ],
+        }),
+      ],
       ebs: {
         volumeSize: params.elasticSearch.storageGB,
         volumeType: EbsDeviceVolumeType.GP3,
@@ -51,21 +64,22 @@ export class OpenSearchConstruct extends Construct {
       },
       securityGroups: [securityGroup],
       vpcSubnets: [{ subnets: [vpc.selectSubnets({ subnetType: SubnetType.PRIVATE_WITH_EGRESS }).subnets[0]] }],
+      removalPolicy: RemovalPolicy.DESTROY,
       logging: {
         slowSearchLogEnabled: true,
-        slowSearchLogGroup: new LogGroup(this, 'mastodon-open-search-domain-slow-search-log', {
+        slowSearchLogGroup: new LogGroup(this, 'mastodon-opensearch-domain-slow-search-log', {
           logGroupName: params.elasticSearch.logGroupName.slowSearch,
           removalPolicy: RemovalPolicy.DESTROY,
           retention: RetentionDays.ONE_YEAR,
         }),
         appLogEnabled: true,
-        appLogGroup: new LogGroup(this, 'mastodon-open-search-domain-app-log', {
+        appLogGroup: new LogGroup(this, 'mastodon-opensearch-domain-app-log', {
           logGroupName: params.elasticSearch.logGroupName.app,
           removalPolicy: RemovalPolicy.DESTROY,
           retention: RetentionDays.ONE_YEAR,
         }),
         slowIndexLogEnabled: true,
-        slowIndexLogGroup: new LogGroup(this, 'mastodon-open-search-domain-slow-index-log', {
+        slowIndexLogGroup: new LogGroup(this, 'mastodon-opensearch-domain-slow-index-log', {
           logGroupName: params.elasticSearch.logGroupName.slowIndex,
           removalPolicy: RemovalPolicy.DESTROY,
           retention: RetentionDays.ONE_YEAR,
@@ -74,7 +88,7 @@ export class OpenSearchConstruct extends Construct {
     });
 
     params.elasticSearch.packages.forEach((packageId) => {
-      new AwsCustomResource(this, 'mastodon-open-search-domain-package-associate', {
+      new AwsCustomResource(this, 'mastodon-opensearch-domain-package-associate', {
         onCreate: {
           service: 'OpenSearch',
           action: 'associatePackage',

@@ -111,7 +111,11 @@ const bastionStack = new MastodonBastionStack(
       endpointAddress: elasticacheStack.valkey.replicationGroup.attrPrimaryEndPointAddress,
       endpointPort: elasticacheStack.valkey.replicationGroup.attrPrimaryEndPointPort,
     },
-    elasticSearch: elasticSearchStack?.openSearch.domain ?? undefined,
+    elasticSearch: elasticSearchStack
+      ? {
+          domain: elasticSearchStack.openSearch.domain,
+        }
+      : undefined,
   },
   params,
 );

@@ -21,7 +21,7 @@ The `cdk.json` file tells the CDK Toolkit how to execute your app.
 
 `環境名` には `dev` と `prod` が利用できる。
 
-`環境名` は増やすこともできる。例えば `環境名` に `stg` を追加する場合は、`params.stg.json` ファイルを作成する。実行コマンドは、`ENV_NAME=stg npm run deploy Mastodon***Stack-stg` となる。
+`環境名` は増やすこともできる。例えば `環境名` に `stg` を追加する場合は、`params.stg.json` ファイルを作成する。実行コマンドは、`ENV_NAME=stg npm run cdk deploy Mastodon***Stack-stg` となる。
 
 初期デプロイの場合は、以下の項目は `null` を設定する。
 
@@ -39,36 +39,36 @@ app.activeRecord.encryption.primaryKey
 
 1. Route53 をデプロイする。
    ```
-   npm run deploy MastodonRoute53Stack-dev
+   npm run deploy:dev MastodonRoute53Stack-dev
    ```
 1. Route53 にホストゾーンが作られるので、NS レコードを DNS プロバイダに設定する。
 1. グローバル証明書をデプロイする
    ```
-   npm run deploy MastodonGlobalCertStack-dev
+   npm run deploy:dev MastodonGlobalCertStack-dev
    ```
 1. リージョナル証明書をデプロイする
    ```
-   npm run deploy MastodonRegionalCertStack-dev
+   npm run deploy:dev MastodonRegionalCertStack-dev
    ```
 1. インフラ (VPC, S3, コンテンツ配信 CDN) をデプロイする。
    ```
-   npm run deploy MastodonInfraStack-dev
+   npm run deploy:dev MastodonInfraStack-dev
    ```
 1. RDS をデプロイする。
    ```
-   npm run deploy MastodonRdsStack-dev
+   npm run deploy:dev MastodonRdsStack-dev
    ```
 1. ElastiCache をデプロイする。
    ```
-   npm run deploy MastodonElasticacheStack-dev
+   npm run deploy:dev MastodonElasticacheStack-dev
    ```
 1. ElasticSearch/OpenSearch を建てる場合 ElasticSearch をデプロイする。
    ```
-   npm run deploy MastodonElasticSearchStack-dev
+   npm run deploy:dev MastodonElasticSearchStack-dev
    ```
 1. 踏み台をデプロイする。
    ```
-   npm run deploy MastodonBastionStack-dev
+   npm run deploy:dev MastodonBastionStack-dev
    ```
 1. 踏み台で作業する。マネージメントコンソールから SSM で接続する。
 1. スーパーユーザーにスイッチする。
@@ -98,7 +98,7 @@ app.activeRecord.encryption.primaryKey
    - `ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY` → `app.activeRecord.encryption.primaryKey`
 1. アプリケーションをデプロイする
    ```
-   npm run deploy MastodonAppStack-dev
+   npm run deploy:dev MastodonAppStack-dev
    ```
 1. アプリケーションサーバーで作業する。マネージメントコンソールから、SSM で接続する。
 1. `tail -f /var/log/cloud-init-output.log` で初期実行スクリプトの実行完了を待つ。30 分ほどかかる。
@@ -110,7 +110,7 @@ app.activeRecord.encryption.primaryKey
 ### アップデート
 
 1. params.\*.json の `mastodon.git.tag` を目的のリリースタグに変更する。
-1. `npm run deploy MastodonAppStack-dev` を実行してスタックを更新する。(本番環境の場合は `npm run deploy:prod MastodonAppStack-prod`)
+1. `npm run deploy:dev MastodonAppStack-dev` を実行してスタックを更新する。(本番環境の場合は `npm run deploy:prod MastodonAppStack-prod`)
 1. マネージメントコンソール → EC2 → Auto Scaling グループで `MastodonAppStack` で始まる Auto Scaling グループを選択し、「希望するキャパシティ」「最小の希望する容量」「最大の希望する容量」をすべて 2 に設定する。
 1. マネージメントコンソール → EC2 → ターゲットグループで `Mastod-appli` で始まるターゲットグループを選択し、「登録済みターゲット」を監視する。
 1. 「起動時間」が直近のインスタンスが、「Healthy」になるまで待つ。30分ほどかかる。
