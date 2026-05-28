@@ -110,7 +110,8 @@ export class BastionConstruct extends Construct {
       // `yarn set version latest`,
       // AWS CLI
       `cd /root`,
-      `curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"`,
+      // `curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"`,
+      `curl "https://awscli.amazonaws.com/awscli-exe-linux-aarch64.zip" -o "awscliv2.zip"`,
       `unzip awscliv2.zip`,
       `./aws/install`,
       // User add
@@ -226,7 +227,7 @@ export class BastionConstruct extends Construct {
 
     // Bastion
     new Instance(this, 'mastodon-bastion-instance', {
-      instanceType: InstanceType.of(InstanceClass.T3A, InstanceSize.MEDIUM),
+      instanceType: InstanceType.of(InstanceClass.T4G, InstanceSize.MEDIUM),
       keyPair: props.keyPair,
       vpc: props.vpc,
       machineImage,

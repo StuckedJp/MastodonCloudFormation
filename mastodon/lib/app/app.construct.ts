@@ -128,7 +128,8 @@ export class AppConstruct extends Construct {
       // `yarn set version latest`,
       // AWS CLI
       `cd /root`,
-      `curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"`,
+      // `curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"`,
+      `curl "https://awscli.amazonaws.com/awscli-exe-linux-aarch64.zip" -o "awscliv2.zip"`,
       `unzip awscliv2.zip`,
       `./aws/install`,
       // User add
@@ -187,7 +188,7 @@ export class AppConstruct extends Construct {
     amiMap.set(params.aws.region, params.bastion.ami);
     const machineImage = MachineImage.genericLinux(Object.fromEntries(amiMap));
     const launchTemplate = new LaunchTemplate(this, 'mastodon-app-launch-template', {
-      instanceType: InstanceType.of(InstanceClass.T3A, InstanceSize.MEDIUM),
+      instanceType: InstanceType.of(InstanceClass.T4G, InstanceSize.MEDIUM),
       keyPair,
       machineImage,
       userData,
