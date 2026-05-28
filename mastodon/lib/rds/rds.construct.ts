@@ -60,7 +60,7 @@ export class RdsConstruct extends Construct {
           version: PostgresEngineVersion.VER_18,
         }),
         credentials: SnapshotCredentials.fromSecret(secret),
-        instanceType: InstanceType.of(InstanceClass.BURSTABLE3, InstanceSize.MICRO),
+        instanceType: InstanceType.of(InstanceClass.BURSTABLE4_GRAVITON, InstanceSize.MICRO),
         allowMajorVersionUpgrade: true,
         autoMinorVersionUpgrade: true,
         allocatedStorage: params.rds.storageGB,
@@ -79,7 +79,7 @@ export class RdsConstruct extends Construct {
         engine: DatabaseInstanceEngine.postgres({
           version: PostgresEngineVersion.VER_18,
         }),
-        instanceType: InstanceType.of(InstanceClass.BURSTABLE3, InstanceSize.MICRO),
+        instanceType: InstanceType.of(InstanceClass.BURSTABLE4_GRAVITON, InstanceSize.MICRO),
         credentials: Credentials.fromSecret(secret),
         databaseName: params.rds.databaseName,
         allowMajorVersionUpgrade: true,

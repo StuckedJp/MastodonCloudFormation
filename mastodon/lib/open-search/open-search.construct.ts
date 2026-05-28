@@ -45,9 +45,9 @@ export class OpenSearchConstruct extends Construct {
           resources: [
             Stack.of(this).formatArn({
               region: params.aws.region,
-              service: 'domain',
-              resource: `mastodon-opensearch-${params.envName}`,
-              resourceName: '*',
+              service: 'es',
+              resource: 'domain',
+              resourceName: `mastodon-opensearch-${params.envName}/*`,
             }),
           ],
         }),
