@@ -17,6 +17,7 @@ import {
   IDatabaseInstance,
   PostgresEngineVersion,
   SnapshotCredentials,
+  StorageType,
 } from 'aws-cdk-lib/aws-rds';
 import { ISecret, Secret } from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
@@ -64,6 +65,7 @@ export class RdsConstruct extends Construct {
         allowMajorVersionUpgrade: true,
         autoMinorVersionUpgrade: true,
         allocatedStorage: params.rds.storageGB,
+        storageType: StorageType.GP3,
         caCertificate: CaCertificate.RDS_CA_RSA4096_G1,
         vpc,
         publiclyAccessible: false,
@@ -85,6 +87,7 @@ export class RdsConstruct extends Construct {
         allowMajorVersionUpgrade: true,
         autoMinorVersionUpgrade: true,
         allocatedStorage: params.rds.storageGB,
+        storageType: StorageType.GP3,
         caCertificate: CaCertificate.RDS_CA_RSA4096_G1,
         vpc,
         publiclyAccessible: false,
