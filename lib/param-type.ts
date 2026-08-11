@@ -106,8 +106,6 @@ export type ParamsType = {
     dataNodeInstanceType: string;
     // ボリュームサイズ (GB)
     storageGB: number;
-    // ユーザー名
-    masterUserName: string;
     // パッケージ
     packages: string[];
     // LogGroup 設定

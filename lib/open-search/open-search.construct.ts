@@ -30,7 +30,7 @@ export class OpenSearchConstruct extends Construct {
     // ElasticSearch
     this.domain = new Domain(this, 'mastodon-opensearch-domain', {
       domainName: `mastodon-opensearch-${params.envName}`,
-      version: EngineVersion.OPENSEARCH_3_5,
+      version: EngineVersion.OPENSEARCH_3_7,
       enableVersionUpgrade: true,
       enforceHttps: true,
       nodeToNodeEncryption: true,
