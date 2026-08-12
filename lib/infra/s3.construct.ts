@@ -1,5 +1,4 @@
 import { RemovalPolicy } from 'aws-cdk-lib';
-import { AccountPrincipal, Effect, PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import { BlockPublicAccess, Bucket, ObjectOwnership } from 'aws-cdk-lib/aws-s3';
 import { Construct } from 'constructs';
 import { ParamsType } from '../param-type';

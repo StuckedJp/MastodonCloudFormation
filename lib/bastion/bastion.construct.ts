@@ -15,8 +15,8 @@ import { Effect, PolicyDocument, PolicyStatement, Role, ServicePrincipal } from 
 import { Bucket } from 'aws-cdk-lib/aws-s3';
 import { Construct } from 'constructs';
 import { ISecret } from 'aws-cdk-lib/aws-secretsmanager';
-import { ParamsType } from '../param-type';
 import { Domain } from 'aws-cdk-lib/aws-opensearchservice';
+import { ParamsType } from '../param-type';
 
 export class BastionConstruct extends Construct {
   constructor(
@@ -32,7 +32,8 @@ export class BastionConstruct extends Construct {
         endpointPort: string;
       };
       elasticSearch?: {
-        domain: Domain;
+        domain?: Domain;
+        instance?: Instance;
       };
     },
     params: ParamsType,
@@ -182,15 +183,22 @@ export class BastionConstruct extends Construct {
       `echo 'REDIS_PORT=${props.cache.endpointPort}' >> .env.production`,
       // ElasticSearch
       ...(() => {
-        if (params.elasticSearch && props.elasticSearch) {
+        if (params.elasticSearch && props.elasticSearch && props.elasticSearch.domain) {
           return [
             `echo 'ES_ENABLED=true' >> .env.production`,
             `echo 'ES_HOST=https://${props.elasticSearch.domain.domainEndpoint}' >> .env.production`,
             'echo "ES_PORT=443" >> .env.production',
             `echo 'ES_PRESET=single_node_cluster' >> .env.production`,
           ];
+        } else if (params.elasticSearch && props.elasticSearch && props.elasticSearch.instance) {
+          return [
+            `echo 'ES_ENABLED=true' >> .env.production`,
+            `echo 'ES_HOST=http://${props.elasticSearch.instance.instancePrivateIp}' >> .env.production`,
+            'echo "ES_PORT=9200" >> .env.production',
+            `echo 'ES_PRESET=single_node_cluster' >> .env.production`,
+          ];
         } else {
-          return [];
+          return [`echo 'ES_ENABLED=false' >> .env.production`];
         }
       })(),
       // Mail
@@ -222,7 +230,7 @@ export class BastionConstruct extends Construct {
     );
 
     const amiMap = new Map();
-    amiMap.set(params.aws.region, params.bastion.ami);
+    amiMap.set(params.aws.region, params.app.ami);
     const machineImage = MachineImage.genericLinux(Object.fromEntries(amiMap), {
       userData,
     });

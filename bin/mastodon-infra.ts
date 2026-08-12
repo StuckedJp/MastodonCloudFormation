@@ -88,7 +88,12 @@ const elasticSearchStack = (() => {
     return new MastodonOpenSearchStack(
       app,
       `MastodonElasticSearchStack-${params.envName}`,
-      { ...config, vpc: infraStack.vpc.vpc },
+      {
+        ...config,
+        vpc: infraStack.vpc.vpc,
+        keyPair: infraStack.keyPair.keyPair,
+        backyardBucket: infraStack.s3.backyard,
+      },
       params,
     );
   } else {
@@ -113,7 +118,8 @@ const bastionStack = new MastodonBastionStack(
     },
     elasticSearch: elasticSearchStack
       ? {
-          domain: elasticSearchStack.openSearch.domain,
+          domain: elasticSearchStack.openSearch?.domain ?? undefined,
+          instance: elasticSearchStack.openSearchLite?.instance ?? undefined,
         }
       : undefined,
   },

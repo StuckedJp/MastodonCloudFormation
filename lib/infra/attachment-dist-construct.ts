@@ -1,10 +1,10 @@
+import { Construct } from 'constructs';
 import { Certificate } from 'aws-cdk-lib/aws-certificatemanager';
 import { Distribution } from 'aws-cdk-lib/aws-cloudfront';
 import { S3BucketOrigin } from 'aws-cdk-lib/aws-cloudfront-origins';
 import { AaaaRecord, ARecord, ARecordProps, PublicHostedZone, RecordTarget } from 'aws-cdk-lib/aws-route53';
 import { CloudFrontTarget } from 'aws-cdk-lib/aws-route53-targets';
 import { Bucket } from 'aws-cdk-lib/aws-s3';
-import { Construct } from 'constructs';
 import { SsmParameterReaderCustomResource } from '../custom-resources/ssm-parameter-reader.construct';
 import { ParamsType } from '../param-type';
 

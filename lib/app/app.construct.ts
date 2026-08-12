@@ -1,7 +1,8 @@
 import * as path from 'path';
+import { Construct } from 'constructs';
+import { Duration } from 'aws-cdk-lib';
 import { Effect, ManagedPolicy, PolicyDocument, PolicyStatement, Role, ServicePrincipal } from 'aws-cdk-lib/aws-iam';
 import { Bucket } from 'aws-cdk-lib/aws-s3';
-import { Construct } from 'constructs';
 import {
   InstanceClass,
   InstanceSize,
@@ -22,7 +23,6 @@ import {
 } from 'aws-cdk-lib/aws-autoscaling';
 import { Asset } from 'aws-cdk-lib/aws-s3-assets';
 import { ParamsType } from '../param-type';
-import { Duration } from 'aws-cdk-lib';
 
 export class AppConstruct extends Construct {
   public readonly autoScalingGroup: AutoScalingGroup;
@@ -185,7 +185,7 @@ export class AppConstruct extends Construct {
 
     // https://cloud-images.ubuntu.com/locator/ec2/
     const amiMap = new Map();
-    amiMap.set(params.aws.region, params.bastion.ami);
+    amiMap.set(params.aws.region, params.app.ami);
     const machineImage = MachineImage.genericLinux(Object.fromEntries(amiMap));
     const launchTemplate = new LaunchTemplate(this, 'mastodon-app-launch-template', {
       instanceType: InstanceType.of(InstanceClass.T4G, InstanceSize.MEDIUM),

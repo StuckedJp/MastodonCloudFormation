@@ -48,13 +48,9 @@ export type ParamsType = {
     // ユーザー名
     userName: string;
   };
-  bastion: {
-    // 踏み台の AMI。AMI は https://cloud-images.ubuntu.com/locator/ec2/ から検索できる。
-    ami: string;
-  };
   // Mastodon サーバーの設定
   app: {
-    // Mastodon サーバーの AMI。AMI は https://cloud-images.ubuntu.com/locator/ec2/ から検索できる。
+    // 踏み台, Mastodon サーバーの AMI。AMI は https://cloud-images.ubuntu.com/locator/ec2/ から検索できる。
     ami: string;
     // ストレージ容量
     storageGB: number;
@@ -102,19 +98,23 @@ export type ParamsType = {
   };
   // ElasticSearch 設定。省略されたときはサーバーを立てない
   elasticSearch?: {
+    // DIY モード (true の場合、自分で Opensearch サーバーを立てる)
+    diy: boolean;
+    // AMI (diy: true)
+    ami: string;
     // インスタンスタイプ
-    dataNodeInstanceType: string;
+    instanceType: string;
     // ボリュームサイズ (GB)
     storageGB: number;
-    // パッケージ
+    // パッケージ (diy: false)
     packages: string[];
-    // LogGroup 設定
+    // LogGroup 設定 (diy: false)
     logGroupName: {
-      // appLog
+      // appLog (diy: false)
       app: string;
-      // slow search
+      // slow search (diy: false)
       slowSearch: string;
-      // slow index
+      // slow index (diy: false)
       slowIndex: string;
     };
   };

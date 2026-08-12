@@ -1,16 +1,16 @@
+import { Construct } from 'constructs';
 import { Vpc, SecurityGroup, Peer, Port, SubnetType, EbsDeviceVolumeType } from 'aws-cdk-lib/aws-ec2';
 import { Domain, EngineVersion, IpAddressType } from 'aws-cdk-lib/aws-opensearchservice';
-import { Construct } from 'constructs';
 import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
 import { RemovalPolicy, Stack } from 'aws-cdk-lib';
 import { AwsCustomResource, AwsCustomResourcePolicy, PhysicalResourceId } from 'aws-cdk-lib/custom-resources';
-import { ParamsType } from '../param-type';
 import { Effect, PolicyStatement, StarPrincipal } from 'aws-cdk-lib/aws-iam';
+import { ParamsType } from '../param-type';
 
 export class OpenSearchConstruct extends Construct {
   public readonly domain: Domain;
 
-  constructor(scope: Construct, vpc: Vpc, params: ParamsType) {
+  constructor(scope: Construct, resources: { vpc: Vpc }, params: ParamsType) {
     super(scope, 'opensearch');
 
     if (!params.elasticSearch) {
@@ -19,11 +19,11 @@ export class OpenSearchConstruct extends Construct {
 
     // SecurityGroup
     const securityGroup = new SecurityGroup(this, 'mastodon-opensearch-security-group', {
-      vpc,
+      vpc: resources.vpc,
       allowAllOutbound: true,
       allowAllIpv6Outbound: true,
     });
-    vpc.selectSubnets({ subnetType: SubnetType.PRIVATE_WITH_EGRESS }).subnets.forEach((subnet) => {
+    resources.vpc.selectSubnets({ subnetType: SubnetType.PRIVATE_WITH_EGRESS }).subnets.forEach((subnet) => {
       securityGroup.addIngressRule(Peer.ipv4(subnet.ipv4CidrBlock), Port.tcp(443));
     });
 
@@ -56,14 +56,16 @@ export class OpenSearchConstruct extends Construct {
         volumeSize: params.elasticSearch.storageGB,
         volumeType: EbsDeviceVolumeType.GP3,
       },
-      vpc,
+      vpc: resources.vpc,
       ipAddressType: IpAddressType.DUAL_STACK,
       capacity: {
         dataNodes: 1,
-        dataNodeInstanceType: params.elasticSearch.dataNodeInstanceType,
+        dataNodeInstanceType: params.elasticSearch.instanceType,
       },
       securityGroups: [securityGroup],
-      vpcSubnets: [{ subnets: [vpc.selectSubnets({ subnetType: SubnetType.PRIVATE_WITH_EGRESS }).subnets[0]] }],
+      vpcSubnets: [
+        { subnets: [resources.vpc.selectSubnets({ subnetType: SubnetType.PRIVATE_WITH_EGRESS }).subnets[0]] },
+      ],
       removalPolicy: RemovalPolicy.DESTROY,
       logging: {
         slowSearchLogEnabled: true,
