@@ -12,6 +12,7 @@
     "deploy:dev:all": "cdk deploy --all",
     "deploy:dev:only": "cdk deploy -e",
     "deploy:prod": "ENV_NAME=prod cdk deploy",
+    "deploy:prod:only": "ENV_NAME=prod cdk deploy -e",
     "destroy:dev": "cdk destroy",
     "cdk": "cdk"
   },

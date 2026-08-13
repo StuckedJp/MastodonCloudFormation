@@ -94,6 +94,13 @@ export class OpenSearchLiteConstruct extends Construct {
       `systemctl start docker`,
       `usermod -aG docker ubuntu`,
 
+      // Swap off
+      `swapoff -a`,
+
+      // Increase the number of memory maps available to OpenSearch.
+      `echo "vm.max_map_count=262144" >> /etc/sysctl.conf`,
+      `sysctl -p`,
+
       // AWS CLI
       `cd /root`,
       `curl "https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m).zip" -o "awscliv2.zip"`,
