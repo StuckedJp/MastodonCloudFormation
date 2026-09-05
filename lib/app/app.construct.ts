@@ -128,7 +128,6 @@ export class AppConstruct extends Construct {
       // `yarn set version latest`,
       // AWS CLI
       `cd /root`,
-      // `curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"`,
       `curl "https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m).zip" -o "awscliv2.zip"`,
       `unzip awscliv2.zip`,
       `./aws/install`,
