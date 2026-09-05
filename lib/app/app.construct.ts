@@ -124,8 +124,6 @@ export class AppConstruct extends Construct {
       `apt-get install -y nodejs`,
       // Yarn
       `corepack enable`,
-      `corepack prepare`,
-      // `yarn set version latest`,
       // AWS CLI
       `cd /root`,
       `curl "https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m).zip" -o "awscliv2.zip"`,
@@ -141,12 +139,11 @@ export class AppConstruct extends Construct {
       `sudo -u mastodon git clone ${params.mastodon.git.url} mastodon`,
       `cd mastodon`,
       `sudo -u mastodon git switch ${params.mastodon.git.tag}`,
+      `corepack prepare`,
       `RUBY_VERSION=$(cat .ruby-version)`,
       // rbenv
       `git clone https://github.com/rbenv/rbenv.git /usr/local/rbenv`,
       `cd /usr/local/rbenv`,
-      `src/configure`,
-      `make -C src`,
       `echo 'export RBENV_ROOT="/usr/local/rbenv"' >> /etc/profile`,
       `echo 'export PATH="/usr/local/rbenv/bin:$PATH"' >> /etc/profile`,
       `echo 'eval "$(rbenv init -)"' >> /etc/profile`,
@@ -157,8 +154,8 @@ export class AppConstruct extends Construct {
       `gem install bundler --no-document`,
       // Mastodon
       `cd /home/mastodon/mastodon`,
-      `sudo -u mastodon /usr/local/rbenv/shims/bundle config deployment 'true'`,
-      `sudo -u mastodon /usr/local/rbenv/shims/bundle config without 'development test'`,
+      `sudo -u mastodon /usr/local/rbenv/shims/bundle config set deployment 'true'`,
+      `sudo -u mastodon /usr/local/rbenv/shims/bundle config set without 'development test'`,
       `sudo -u mastodon /usr/local/rbenv/shims/bundle install -j$(getconf _NPROCESSORS_ONLN)`,
       `sudo -u mastodon yarn install --immutable`,
       // Configure Mastodon
