@@ -22,6 +22,8 @@ export type ParamsType = {
     cidr: string;
   };
   nat: {
+    // NAT の AMI。
+    ami: string;
     // NAT のインスタンスタイプ。通常は "t3a.nano"
     instanceType: string;
   };

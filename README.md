@@ -121,7 +121,7 @@ app.activeRecord.encryption.primaryKey
 
 ### アップデート
 
-1. params.\*.json の `mastodon.git.tag` を目的のリリースタグに変更する。
+1. params.*.json の `mastodon.git.tag` を目的のリリースタグに変更する。
 1. `npm run deploy:dev MastodonAppStack-dev` を実行してスタックを更新する。(本番環境の場合は `npm run deploy:prod MastodonAppStack-prod`)
 1. マネージメントコンソール → EC2 → Auto Scaling グループで `MastodonAppStack` で始まる Auto Scaling グループを選択し、「希望するキャパシティ」「最小の希望する容量」「最大の希望する容量」をすべて 2 に設定する。
 1. マネージメントコンソール → EC2 → ターゲットグループで `Mastod-appli` で始まるターゲットグループを選択し、「登録済みターゲット」を監視する。

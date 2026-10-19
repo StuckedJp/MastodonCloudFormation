@@ -7,6 +7,7 @@ import {
   Vpc,
   IpAddresses,
   IpProtocol,
+  InterfaceVpcEndpointAwsService,
 } from 'aws-cdk-lib/aws-ec2';
 import { Construct } from 'constructs';
 import { ParamsType } from '../param-type';
@@ -46,6 +47,15 @@ export class VpcConstruct extends Construct {
           service: GatewayVpcEndpointAwsService.S3,
         },
       },
+    });
+
+    vpc.addInterfaceEndpoint('mastodon-infra-vpc-endpoint-ssm', { service: InterfaceVpcEndpointAwsService.SSM });
+    vpc.addInterfaceEndpoint('mastodon-infra-vpc-endpoint-ssm-messages', {
+      service: InterfaceVpcEndpointAwsService.SSM_MESSAGES,
+    });
+    vpc.addInterfaceEndpoint('mastodon-infra-vpc-endpoint-ec2', { service: InterfaceVpcEndpointAwsService.EC2 });
+    vpc.addInterfaceEndpoint('mastodon-infra-vpc-endpoint-ec2-messages', {
+      service: InterfaceVpcEndpointAwsService.EC2_MESSAGES,
     });
 
     natGatewayProvider.securityGroup.addIngressRule(Peer.ipv4(vpc.vpcCidrBlock), Port.allTraffic());
