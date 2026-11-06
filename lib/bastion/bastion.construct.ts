@@ -89,17 +89,20 @@ export class BastionConstruct extends Construct {
     userData.addCommands(
       `apt-get update`,
       `apt-get upgrade -y`,
-      `DEBIAN_FRONTEND=noninteractive apt-get install -y git build-essential curl wget gnupg apt-transport-https lsb-release ca-certificates unzip jq imagemagick libvips-tools ffmpeg libpq-dev libxml2-dev libxslt1-dev file git-core g++ libprotobuf-dev protobuf-compiler pkg-config gcc autoconf bison build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev libgdbm-dev libidn11-dev libicu-dev libjemalloc-dev libidn-dev`,
+      `DEBIAN_FRONTEND=noninteractive apt-get install -y git build-essential curl wget gnupg apt-transport-https lsb-release ca-certificates unzip jq imagemagick ffmpeg libpq-dev libxml2-dev libxslt1-dev file git-core g++ libprotobuf-dev protobuf-compiler pkg-config gcc autoconf bison clang cmake libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev libgdbm-dev libidn11-dev libicu-dev libjemalloc-dev libidn-dev libjpeg-turbo8-dev libheif-dev meson ninja-build libglib2.0-dev libexpat1-dev libpng-dev libwebp-dev libexif-dev`,
+
       // Latest Postgresql client
       `sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'`,
       `wget -qO- https://www.postgresql.org/media/keys/ACCC4CF8.asc | tee /etc/apt/trusted.gpg.d/pgdg.asc &>/dev/null`,
       `apt-get update`,
       `DEBIAN_FRONTEND=noninteractive apt-get install -y postgresql-common postgresql-client`,
+
       // Redis client
       `curl -fsSL https://packages.redis.io/gpg | gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg`,
       `echo "deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/redis.list`,
       `apt-get update`,
       `apt-get install -y redis-tools`,
+
       // Node.js
       `mkdir -p /etc/apt/keyrings`,
       `curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg`,
@@ -109,11 +112,38 @@ export class BastionConstruct extends Construct {
       `apt-get install -y nodejs`,
       // Yarn
       `corepack enable`,
+
       // AWS CLI
       `cd /root`,
       `curl "https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m).zip" -o "awscliv2.zip"`,
       `unzip awscliv2.zip`,
       `./aws/install`,
+
+      // libultrahdr
+      `cd /root`,
+      `git clone https://github.com/google/libultrahdr.git`,
+      `cd libultrahdr`,
+      `git switch v2.0.2 --detach`,
+      `mkdir build_directory`,
+      `cd build_directory`,
+      `cmake --fresh -G Ninja -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DUHDR_BUILD_TESTS=1 ../`,
+      `ninja`,
+      `ctest`,
+      `ninja install`,
+      `ldconfig`,
+
+      // libvips
+      `cd /root`,
+      `git clone https://github.com/libvips/libvips.git`,
+      `cd libvips`,
+      `git switch v8.18.7 --detach`,
+      `meson setup build`,
+      `cd build`,
+      `meson compile`,
+      `meson test`,
+      `meson install`,
+      `ldconfig`,
+
       // User add
       `useradd --create-home mastodon`,
       // others に実行権限を付与する
