@@ -49,15 +49,6 @@ export class VpcConstruct extends Construct {
       },
     });
 
-    vpc.addInterfaceEndpoint('mastodon-infra-vpc-endpoint-ssm', { service: InterfaceVpcEndpointAwsService.SSM });
-    vpc.addInterfaceEndpoint('mastodon-infra-vpc-endpoint-ssm-messages', {
-      service: InterfaceVpcEndpointAwsService.SSM_MESSAGES,
-    });
-    vpc.addInterfaceEndpoint('mastodon-infra-vpc-endpoint-ec2', { service: InterfaceVpcEndpointAwsService.EC2 });
-    vpc.addInterfaceEndpoint('mastodon-infra-vpc-endpoint-ec2-messages', {
-      service: InterfaceVpcEndpointAwsService.EC2_MESSAGES,
-    });
-
     natGatewayProvider.securityGroup.addIngressRule(Peer.ipv4(vpc.vpcCidrBlock), Port.allTraffic());
 
     this.vpc = vpc;
