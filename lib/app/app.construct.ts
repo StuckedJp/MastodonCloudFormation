@@ -193,9 +193,7 @@ export class AppConstruct extends Construct {
       `sudo -u mastodon RAILS_ENV=production /usr/local/rbenv/shims/bundle exec rails assets:precompile`,
       // Configure Nginx
       `aws s3 cp s3://${nginxConf.s3BucketName}/${nginxConf.s3ObjectKey} /tmp/nginx.conf`,
-      `cat /tmp/nginx.conf | sed -e 's/example\\.com/${fqdn}/g' > /etc/nginx/sites-available/mastodon`,
-      `ln -s /etc/nginx/sites-available/mastodon /etc/nginx/sites-enabled/mastodon`,
-      `rm /etc/nginx/sites-enabled/default`,
+      `cat /tmp/nginx.conf | sed -e 's/example\\.com/${fqdn}/g' > /etc/nginx/conf.d/default.conf`,
       `systemctl reload nginx`,
       // Configure Daemon
       `aws s3 cp s3://${systemdSideKiq.s3BucketName}/${systemdSideKiq.s3ObjectKey} /etc/systemd/system/mastodon-sidekiq.service`,
