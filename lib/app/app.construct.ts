@@ -108,14 +108,14 @@ export class AppConstruct extends Construct {
     userData.addCommands(
       `apt-get update`,
       `apt-get upgrade -y`,
-      `DEBIAN_FRONTEND=noninteractive apt-get install -y git build-essential curl wget gnupg apt-transport-https lsb-release ca-certificates unzip jq imagemagick ffmpeg libpq-dev libxml2-dev libxslt1-dev file git-core g++ libprotobuf-dev protobuf-compiler pkg-config gcc autoconf bison clang cmake libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev libgdbm-dev libidn11-dev libicu-dev libjemalloc-dev libidn-dev libjpeg-turbo8-dev libheif-dev meson ninja-build libglib2.0-dev libexpat1-dev libpng-dev libwebp-dev libexif-dev`,
-      `DEBIAN_FRONTEND=noninteractive apt-get install -y nginx certbot python3-certbot-nginx`,
+      `DEBIAN_FRONTEND=noninteractive apt-get install -y git build-essential curl wget gnupg apt-transport-https lsb-release ca-certificates ubuntu-keyring gnupg2 unzip jq imagemagick ffmpeg libpq-dev libxml2-dev libxslt1-dev file git-core g++ libprotobuf-dev protobuf-compiler pkg-config gcc autoconf bison clang cmake libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev libgdbm-dev libidn11-dev libicu-dev libjemalloc-dev libidn-dev libjpeg-turbo8-dev libheif-dev meson ninja-build libglib2.0-dev libexpat1-dev libpng-dev libwebp-dev libexif-dev`,
 
-      // Redis client
-      // `curl -fsSL https://packages.redis.io/gpg | gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg`,
-      // `echo "deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/redis.list`,
-      // `apt-get update`,
-      // `apt-get install -y redis-tools`,
+      // Nginx
+      `curl https://nginx.org/keys/nginx_signing.key | gpg --dearmor -o /usr/share/keyrings/nginx-archive-keyring.gpg`,
+      'echo "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] https://nginx.org/packages/ubuntu `lsb_release -cs` nginx" | tee /etc/apt/sources.list.d/nginx.list',
+      `echo -e "Package: *\nPin: origin nginx.org\nPin: release o=nginx\nPin-Priority: 900\n" | tee /etc/apt/preferences.d/99nginx`,
+      `apt-get update`,
+      `apt-get install -y nginx`,
 
       // Node.js
       `mkdir -p /etc/apt/keyrings`,
